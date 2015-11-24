@@ -45,6 +45,8 @@ func TestAccSoftLayerVirtualserver_Basic(t *testing.T) {
 						"softlayer_virtualserver.terraform-acceptance-test-1", "user_data", "{\"fox\":[45]}"),
 					resource.TestCheckResourceAttr(
 						"softlayer_virtualserver.terraform-acceptance-test-1", "local_disk", "false"),
+					resource.TestCheckResourceAttr(
+						"softlayer_virtualserver.terraform-acceptance-test-1", "post_install_script_uri", "https://www.google.ru"),
 				),
 			},
 		},
@@ -124,5 +126,6 @@ resource "softlayer_virtualserver" "terraform-acceptance-test-1" {
     disks = [25, 10, 20]
     user_data = "{\"fox\":[45]}"
     local_disk = false
+    post_install_script_uri = "https://www.google.ru"
 }
 `

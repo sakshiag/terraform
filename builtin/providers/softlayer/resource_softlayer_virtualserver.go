@@ -87,6 +87,12 @@ func resourceSoftLayerVirtualserver() *schema.Resource {
 				Type:     schema.TypeBool,
 				Required: true,
 			},
+
+			"post_install_script_uri": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  nil,
+			},
 		},
 	}
 }
@@ -148,6 +154,7 @@ func resourceSoftLayerVirtualserverCreate(d *schema.ResourceData, meta interface
 		NetworkComponents: []datatypes.NetworkComponents{networkComponent},
 		BlockDevices: getBlockDevices(d),
 		LocalDiskFlag: d.Get("local_disk").(bool),
+		PostInstallScriptUri: d.Get("post_install_script_uri").(string),
 	}
 
 	userData := d.Get("user_data").(string)
