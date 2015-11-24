@@ -82,6 +82,11 @@ func resourceSoftLayerVirtualserver() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+
+			"local_disk": &schema.Schema{
+				Type:     schema.TypeBool,
+				Required: true,
+			},
 		},
 	}
 }
@@ -142,6 +147,7 @@ func resourceSoftLayerVirtualserverCreate(d *schema.ResourceData, meta interface
 		MaxMemory: d.Get("ram").(int),
 		NetworkComponents: []datatypes.NetworkComponents{networkComponent},
 		BlockDevices: getBlockDevices(d),
+		LocalDiskFlag: d.Get("local_disk").(bool),
 	}
 
 	userData := d.Get("user_data").(string)

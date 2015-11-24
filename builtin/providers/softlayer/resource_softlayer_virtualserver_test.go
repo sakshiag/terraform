@@ -43,6 +43,8 @@ func TestAccSoftLayerVirtualserver_Basic(t *testing.T) {
 						"softlayer_virtualserver.terraform-acceptance-test-1", "disks.2", "20"),
 					resource.TestCheckResourceAttr(
 						"softlayer_virtualserver.terraform-acceptance-test-1", "user_data", "{\"fox\":[45]}"),
+					resource.TestCheckResourceAttr(
+						"softlayer_virtualserver.terraform-acceptance-test-1", "local_disk", "false"),
 				),
 			},
 		},
@@ -121,5 +123,6 @@ resource "softlayer_virtualserver" "terraform-acceptance-test-1" {
     ram = 1024
     disks = [25, 10, 20]
     user_data = "{\"fox\":[45]}"
+    local_disk = false
 }
 `
