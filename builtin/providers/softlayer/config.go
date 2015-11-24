@@ -3,8 +3,8 @@ package softlayer
 import (
 	"log"
 
-	slclient "github.com/maximilien/softlayer-go/client"
-	softlayer "github.com/maximilien/softlayer-go/softlayer"
+	slclient "github.com/TheWeatherCompany/softlayer-go/client"
+	softlayer "github.com/TheWeatherCompany/softlayer-go/softlayer"
 )
 
 type Config struct {

@@ -18,7 +18,7 @@ quickdev: generate
 # Shorthand for building and installing just one plugin for local testing.
 # Run as (for example): make plugin-dev PLUGIN=provider-aws
 plugin-dev: generate
-	go install github.com/hashicorp/terraform/builtin/bins/$(PLUGIN)
+	go install github.com/TheWeatherCompany/terraform/builtin/bins/$(PLUGIN)
 	mv $(GOPATH)/bin/$(PLUGIN) $(GOPATH)/bin/terraform-$(PLUGIN)
 
 release: updatedeps
@@ -50,7 +50,7 @@ updatedeps:
 	go get -u golang.org/x/tools/cmd/stringer
 	go list ./... \
 		| xargs go list -f '{{join .Deps "\n"}}' \
-		| grep -v github.com/hashicorp/terraform \
+		| grep -v github.com/TheWeatherCompany/terraform \
 		| grep -v '/internal/' \
 		| sort -u \
 		| xargs go get -f -u -v
