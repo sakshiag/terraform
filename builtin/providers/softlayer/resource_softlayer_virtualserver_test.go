@@ -46,9 +46,28 @@ func TestAccSoftLayerVirtualserver_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"softlayer_virtualserver.terraform-acceptance-test-1", "local_disk", "false"),
 					resource.TestCheckResourceAttr(
-						"softlayer_virtualserver.terraform-acceptance-test-1", "post_install_script_uri", "https://www.google.ru"),
+						"softlayer_virtualserver.terraform-acceptance-test-1", "post_install_script_uri", "https://www.google.com"),
 				),
 			},
+
+			resource.TestStep{
+				Config: testAccCheckSoftLayerVirtualserverConfig_localDiskUpdate,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSoftLayerVirtualserverExists("softlayer_virtualserver.terraform-acceptance-test-1", &server),
+					resource.TestCheckResourceAttr(
+						"softlayer_virtualserver.terraform-acceptance-test-1", "local_disk", "true"),
+				),
+			},
+
+			resource.TestStep{
+				Config: testAccCheckSoftLayerVirtualserverConfig_postInstallScriptUriUpdate,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSoftLayerVirtualserverExists("softlayer_virtualserver.terraform-acceptance-test-1", &server),
+					resource.TestCheckResourceAttr(
+						"softlayer_virtualserver.terraform-acceptance-test-1", "post_install_script_uri", "https://www.ya.com"),
+				),
+			},
+
 		},
 	})
 }
@@ -126,6 +145,38 @@ resource "softlayer_virtualserver" "terraform-acceptance-test-1" {
     disks = [25, 10, 20]
     user_data = "{\"fox\":[45]}"
     local_disk = false
-    post_install_script_uri = "https://www.google.ru"
+    post_install_script_uri = "https://www.google.com"
+}
+`
+
+const testAccCheckSoftLayerVirtualserverConfig_localDiskUpdate = `
+resource "softlayer_virtualserver" "terraform-acceptance-test-1" {
+    name = "terraform-test"
+    domain = "bar.example.com"
+    image = "DEBIAN_7_64"
+    region = "ams01"
+    public_network_speed = 10
+    cpu = 1
+    ram = 1024
+    disks = [25, 10, 20]
+    user_data = "{\"fox\":[45]}"
+    local_disk = true
+    post_install_script_uri = "https://www.google.com"
+}
+`
+
+const testAccCheckSoftLayerVirtualserverConfig_postInstallScriptUriUpdate = `
+resource "softlayer_virtualserver" "terraform-acceptance-test-1" {
+    name = "terraform-test"
+    domain = "bar.example.com"
+    image = "DEBIAN_7_64"
+    region = "ams01"
+    public_network_speed = 10
+    cpu = 1
+    ram = 1024
+    disks = [25, 10, 20]
+    user_data = "{\"fox\":[45]}"
+    local_disk = true
+    post_install_script_uri = "https://www.ya.com"
 }
 `
