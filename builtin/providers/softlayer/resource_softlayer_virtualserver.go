@@ -62,6 +62,22 @@ func resourceSoftLayerVirtualserver() *schema.Resource {
 				Required: true,
 			},
 
+			"dedicated_acct_host_only": &schema.Schema{
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
+
+			"frontend_vlan_id": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+
+			"backend_vlan_id": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+
 			"disks": &schema.Schema{
 				Type:     schema.TypeList,
 				Optional: true,
@@ -162,6 +178,7 @@ func resourceSoftLayerVirtualserverCreate(d *schema.ResourceData, meta interface
 		OperatingSystemReferenceCode: d.Get("image").(string),
 		HourlyBillingFlag: d.Get("hourly_billing").(bool),
 		PrivateNetworkOnlyFlag: privateNetworkOnly,
+		DedicatedAccountHostOnlyFlag: d.Get("dedicated_acct_host_only").(bool),
 		Datacenter: dc,
 		StartCpus: d.Get("cpu").(int),
 		MaxMemory: d.Get("ram").(int),
@@ -169,6 +186,28 @@ func resourceSoftLayerVirtualserverCreate(d *schema.ResourceData, meta interface
 		BlockDevices: getBlockDevices(d),
 		LocalDiskFlag: d.Get("local_disk").(bool),
 		PostInstallScriptUri: d.Get("post_install_script_uri").(string),
+	}
+
+	// Apply frontend VLAN if provided
+	frontendVlanId, err := strconv.Atoi(d.Get("frontend_vlan_id").(string))
+	if err != nil {
+		return fmt.Errorf("Not a valid frontend ID, must be an integer: %s", err)
+	}
+	if frontendVlanId > 0 {
+		opts.PrimaryNetworkComponent = &datatypes.PrimaryNetworkComponent{
+			NetworkVlan:datatypes.NetworkVlan{int(frontendVlanId)},
+		}
+	}
+
+	// Apply backend VLAN if provided
+	backendVlanId, err := strconv.Atoi(d.Get("backend_vlan_id").(string))
+	if err != nil {
+		return fmt.Errorf("Not a valid backend ID, must be an integer: %s", err)
+	}
+	if backendVlanId > 0 {
+		opts.PrimaryBackendNetworkComponent = &datatypes.PrimaryBackendNetworkComponent{
+			NetworkVlan:datatypes.NetworkVlan{int(backendVlanId)},
+		}
 	}
 
 	userData := d.Get("user_data").(string)
@@ -244,11 +283,14 @@ func resourceSoftLayerVirtualserverRead(d *schema.ResourceData, meta interface{}
 	d.Set("public_network_speed", result.NetworkComponents[0].MaxSpeed)
 	d.Set("cpu", result.StartCpus)
 	d.Set("ram", result.MaxMemory)
+	d.Set("dedicated_acct_host_only", result.DedicatedAccountHostOnlyFlag)
 	d.Set("has_public_ip", result.PrimaryIpAddress != "")
 	d.Set("ipv4_address", result.PrimaryIpAddress)
 	d.Set("ipv4_address_private", result.PrimaryBackendIpAddress)
 	d.Set("private_network_only", result.PrivateNetworkOnlyFlag)
 	d.Set("hourly_billing", result.HourlyBillingFlag)
+	d.Set("frontend_vlan_id", result.PrimaryNetworkComponent.NetworkVlan.Id)
+	d.Set("backend_vlan_id", result.PrimaryBackendNetworkComponent.NetworkVlan.Id)
 
 	userData := result.UserData
 	if userData != nil && len(userData) > 0 {
@@ -260,6 +302,7 @@ func resourceSoftLayerVirtualserverRead(d *schema.ResourceData, meta interface{}
 			d.Set("user_data", string(data))
 		}
 	}
+	
 	return nil
 }
 
@@ -276,6 +319,8 @@ func resourceSoftLayerVirtualserverUpdate(d *schema.ResourceData, meta interface
 
 	result.Hostname = d.Get("name").(string)
 	result.Domain = d.Get("domain").(string)
+
+	// TODO (igoonich): remove the following 5 update operation, as they doesn't work
 	result.StartCpus = d.Get("cpu").(int)
 	result.MaxMemory = d.Get("ram").(int)
 	result.NetworkComponents[0].MaxSpeed = d.Get("public_network_speed").(int)
@@ -286,6 +331,8 @@ func resourceSoftLayerVirtualserverUpdate(d *schema.ResourceData, meta interface
 	if userData != "" {
 		client.SetMetadata(id, userData)
 	}
+
+	// TODO (igoonich): perform partial update using "upgrade" method (also add upgrade method to "softlayer-go")
 
 	_, err = client.EditObject(id, result)
 
