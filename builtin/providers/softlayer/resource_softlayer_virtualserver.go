@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	datatypes "github.com/TheWeatherCompany/softlayer-go/data_types"
+	"encoding/base64"
 )
 
 func resourceSoftLayerVirtualserver() *schema.Resource {
@@ -32,6 +33,17 @@ func resourceSoftLayerVirtualserver() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+
+			"hourly_billing": &schema.Schema{
+				Type:     schema.TypeBool,
+				Required: true,
+			},
+
+			"private_network_only": &schema.Schema{
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default: false,
 			},
 
 			"region": &schema.Schema{
@@ -143,11 +155,13 @@ func resourceSoftLayerVirtualserverCreate(d *schema.ResourceData, meta interface
 		MaxSpeed: d.Get("public_network_speed").(int),
 	}
 
+	privateNetworkOnly := d.Get("private_network_only").(bool)
 	opts := datatypes.SoftLayer_Virtual_Guest_Template {
 		Hostname: d.Get("name").(string),
 		Domain: d.Get("domain").(string),
 		OperatingSystemReferenceCode: d.Get("image").(string),
-		HourlyBillingFlag: true,
+		HourlyBillingFlag: d.Get("hourly_billing").(bool),
+		PrivateNetworkOnlyFlag: privateNetworkOnly,
 		Datacenter: dc,
 		StartCpus: d.Get("cpu").(int),
 		MaxMemory: d.Get("ram").(int),
@@ -200,10 +214,12 @@ func resourceSoftLayerVirtualserverCreate(d *schema.ResourceData, meta interface
 			"Error waiting for virtual machine (%s) to become ready: %s", d.Id(), err)
 	}
 
-	_, err = WaitForPublicIpAvailable(d, meta)
-	if err != nil {
-		return fmt.Errorf(
-			"Error waiting for virtual machine (%s) to become ready: %s", d.Id(), err)
+	if (!privateNetworkOnly) {
+		_, err = WaitForPublicIpAvailable(d, meta)
+		if err != nil {
+			return fmt.Errorf(
+				"Error waiting for virtual machine (%s) public ip to become ready: %s", d.Id(), err)
+		}
 	}
 
 	return resourceSoftLayerVirtualserverRead(d, meta)
@@ -231,6 +247,19 @@ func resourceSoftLayerVirtualserverRead(d *schema.ResourceData, meta interface{}
 	d.Set("has_public_ip", result.PrimaryIpAddress != "")
 	d.Set("ipv4_address", result.PrimaryIpAddress)
 	d.Set("ipv4_address_private", result.PrimaryBackendIpAddress)
+	d.Set("private_network_only", result.PrivateNetworkOnlyFlag)
+	d.Set("hourly_billing", result.HourlyBillingFlag)
+
+	userData := result.UserData
+	if userData != nil && len(userData) > 0 {
+		data, err := base64.StdEncoding.DecodeString(userData[0].Value)
+		if err != nil {
+			log.Printf("Can't base64 decode user data %s. error: %s", userData, err)
+			d.Set("user_data", userData)
+		} else {
+			d.Set("user_data", string(data))
+		}
+	}
 	return nil
 }
 
@@ -250,14 +279,12 @@ func resourceSoftLayerVirtualserverUpdate(d *schema.ResourceData, meta interface
 	result.StartCpus = d.Get("cpu").(int)
 	result.MaxMemory = d.Get("ram").(int)
 	result.NetworkComponents[0].MaxSpeed = d.Get("public_network_speed").(int)
+	result.PrivateNetworkOnlyFlag = d.Get("private_network_only").(bool)
+	result.HourlyBillingFlag = d.Get("hourly_billing").(bool)
 
 	userData := d.Get("user_data").(string)
 	if userData != "" {
-		result.UserData = []datatypes.UserData {
-			datatypes.UserData {
-				Value: userData,
-			},
-		}
+		client.SetMetadata(id, userData)
 	}
 
 	_, err = client.EditObject(id, result)

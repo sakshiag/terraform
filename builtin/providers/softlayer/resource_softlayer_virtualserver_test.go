@@ -32,6 +32,10 @@ func TestAccSoftLayerVirtualserver_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"softlayer_virtualserver.terraform-acceptance-test-1", "public_network_speed", "10"),
 					resource.TestCheckResourceAttr(
+						"softlayer_virtualserver.terraform-acceptance-test-1", "hourly_billing", "true"),
+					resource.TestCheckResourceAttr(
+						"softlayer_virtualserver.terraform-acceptance-test-1", "private_network_only", "false"),
+					resource.TestCheckResourceAttr(
 						"softlayer_virtualserver.terraform-acceptance-test-1", "cpu", "1"),
 					resource.TestCheckResourceAttr(
 						"softlayer_virtualserver.terraform-acceptance-test-1", "ram", "1024"),
@@ -42,7 +46,7 @@ func TestAccSoftLayerVirtualserver_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"softlayer_virtualserver.terraform-acceptance-test-1", "disks.2", "20"),
 					resource.TestCheckResourceAttr(
-						"softlayer_virtualserver.terraform-acceptance-test-1", "user_data", "{\"fox\":[45]}"),
+						"softlayer_virtualserver.terraform-acceptance-test-1", "user_data", "{\"value\":\"newvalue\"}"),
 					resource.TestCheckResourceAttr(
 						"softlayer_virtualserver.terraform-acceptance-test-1", "local_disk", "false"),
 					resource.TestCheckResourceAttr(
@@ -68,6 +72,14 @@ func TestAccSoftLayerVirtualserver_Basic(t *testing.T) {
 				),
 			},
 
+			resource.TestStep{
+				Config: testAccCheckSoftLayerVirtualserverConfig_userDataUpdate,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSoftLayerVirtualserverExists("softlayer_virtualserver.terraform-acceptance-test-1", &server),
+					resource.TestCheckResourceAttr(
+						"softlayer_virtualserver.terraform-acceptance-test-1", "user_data", "updatedData"),
+				),
+			},
 		},
 	})
 }
@@ -140,10 +152,12 @@ resource "softlayer_virtualserver" "terraform-acceptance-test-1" {
     image = "DEBIAN_7_64"
     region = "ams01"
     public_network_speed = 10
+    hourly_billing = true
+	private_network_only = false
     cpu = 1
     ram = 1024
     disks = [25, 10, 20]
-    user_data = "{\"fox\":[45]}"
+    user_data = "{\"value\":\"newvalue\"}"
     local_disk = false
     post_install_script_uri = "https://www.google.com"
 }
@@ -156,10 +170,10 @@ resource "softlayer_virtualserver" "terraform-acceptance-test-1" {
     image = "DEBIAN_7_64"
     region = "ams01"
     public_network_speed = 10
+    hourly_billing = true
     cpu = 1
     ram = 1024
     disks = [25, 10, 20]
-    user_data = "{\"fox\":[45]}"
     local_disk = true
     post_install_script_uri = "https://www.google.com"
 }
@@ -172,10 +186,27 @@ resource "softlayer_virtualserver" "terraform-acceptance-test-1" {
     image = "DEBIAN_7_64"
     region = "ams01"
     public_network_speed = 10
+    hourly_billing = true
     cpu = 1
     ram = 1024
     disks = [25, 10, 20]
-    user_data = "{\"fox\":[45]}"
+    local_disk = true
+    post_install_script_uri = "https://www.ya.com"
+}
+`
+
+const testAccCheckSoftLayerVirtualserverConfig_userDataUpdate = `
+resource "softlayer_virtualserver" "terraform-acceptance-test-1" {
+    name = "terraform-test"
+    domain = "bar.example.com"
+    image = "DEBIAN_7_64"
+    region = "ams01"
+    public_network_speed = 10
+    hourly_billing = true
+    cpu = 1
+    ram = 1024
+    disks = [25, 10, 20]
+    user_data = "updatedData"
     local_disk = true
     post_install_script_uri = "https://www.ya.com"
 }
