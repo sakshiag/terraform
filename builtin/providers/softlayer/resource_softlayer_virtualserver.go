@@ -31,7 +31,7 @@ func resourceSoftLayerVirtualserver() *schema.Resource {
 
 			"image": &schema.Schema{
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
 				ForceNew: true,
 			},
 
@@ -121,6 +121,12 @@ func resourceSoftLayerVirtualserver() *schema.Resource {
 				Optional: true,
 				Default:  nil,
 			},
+
+			"block_device_template_group_gid": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -175,7 +181,6 @@ func resourceSoftLayerVirtualserverCreate(d *schema.ResourceData, meta interface
 	opts := datatypes.SoftLayer_Virtual_Guest_Template {
 		Hostname: d.Get("name").(string),
 		Domain: d.Get("domain").(string),
-		OperatingSystemReferenceCode: d.Get("image").(string),
 		HourlyBillingFlag: d.Get("hourly_billing").(bool),
 		PrivateNetworkOnlyFlag: privateNetworkOnly,
 		DedicatedAccountHostOnlyFlag: d.Get("dedicated_acct_host_only").(bool),
@@ -186,6 +191,16 @@ func resourceSoftLayerVirtualserverCreate(d *schema.ResourceData, meta interface
 		BlockDevices: getBlockDevices(d),
 		LocalDiskFlag: d.Get("local_disk").(bool),
 		PostInstallScriptUri: d.Get("post_install_script_uri").(string),
+	}
+
+	if globalIdentifier, ok := d.GetOk("block_device_template_group_gid"); ok {
+		opts.BlockDeviceTemplateGroup = &datatypes.BlockDeviceTemplateGroup {
+			GlobalIdentifier: globalIdentifier.(string),
+		}
+	}
+
+	if operatingSystemReferenceCode, ok := d.GetOk("image") ; ok {
+		opts.OperatingSystemReferenceCode = operatingSystemReferenceCode.(string)
 	}
 
 	// Apply frontend VLAN if provided
@@ -289,6 +304,8 @@ func resourceSoftLayerVirtualserverRead(d *schema.ResourceData, meta interface{}
 	d.Set("ipv4_address_private", result.PrimaryBackendIpAddress)
 	d.Set("private_network_only", result.PrivateNetworkOnlyFlag)
 	d.Set("hourly_billing", result.HourlyBillingFlag)
+	d.Set("local_disk", result.LocalDiskFlag)
+	d.Set("post_install_script_uri", result.PostInstallScriptUri)
 	d.Set("frontend_vlan_id", result.PrimaryNetworkComponent.NetworkVlan.Id)
 	d.Set("backend_vlan_id", result.PrimaryBackendNetworkComponent.NetworkVlan.Id)
 
@@ -324,8 +341,6 @@ func resourceSoftLayerVirtualserverUpdate(d *schema.ResourceData, meta interface
 	result.StartCpus = d.Get("cpu").(int)
 	result.MaxMemory = d.Get("ram").(int)
 	result.NetworkComponents[0].MaxSpeed = d.Get("public_network_speed").(int)
-	result.PrivateNetworkOnlyFlag = d.Get("private_network_only").(bool)
-	result.HourlyBillingFlag = d.Get("hourly_billing").(bool)
 
 	userData := d.Get("user_data").(string)
 	if userData != "" {

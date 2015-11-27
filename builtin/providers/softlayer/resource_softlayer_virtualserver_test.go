@@ -50,8 +50,6 @@ func TestAccSoftLayerVirtualserver_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"softlayer_virtualserver.terraform-acceptance-test-1", "local_disk", "false"),
 					resource.TestCheckResourceAttr(
-						"softlayer_virtualserver.terraform-acceptance-test-1", "post_install_script_uri", "https://www.google.com"),
-					resource.TestCheckResourceAttr(
 						"softlayer_virtualserver.terraform-acceptance-test-1", "dedicated_acct_host_only", "true"),
 					// TODO: Will be changed in future, when the following issue is implemented: https://github.com/TheWeatherCompany/softlayer-go/issues/3.
 					// TODO: For now, as agreed in issue https://github.com/TheWeatherCompany/terraform/issues/5, use hardcoded values for VLANs.
@@ -70,6 +68,23 @@ func TestAccSoftLayerVirtualserver_Basic(t *testing.T) {
 						"softlayer_virtualserver.terraform-acceptance-test-1", "user_data", "updatedData"),
 				),
 			},
+
+			resource.TestStep{
+				Config: testAccCheckSoftLayerVirtualserverConfig_blockDeviceTemplateGroup,
+				Check: resource.ComposeTestCheckFunc(
+					// block_device_template_group_gid value is hardcoded. If it's valid then virtual server will be created well
+					testAccCheckSoftLayerVirtualserverExists("softlayer_virtualserver.terraform-acceptance-test-BDTGroup", &server),
+				),
+			},
+
+			resource.TestStep{
+				Config: testAccCheckSoftLayerVirtualserverConfig_postInstallScriptUri,
+				Check: resource.ComposeTestCheckFunc(
+					// it's enough if virtual server exists as url will be used after it's install.
+					testAccCheckSoftLayerVirtualserverExists("softlayer_virtualserver.terraform-acceptance-test-pISU", &server),
+				),
+			},
+
 		},
 	})
 }
@@ -150,7 +165,6 @@ resource "softlayer_virtualserver" "terraform-acceptance-test-1" {
     user_data = "{\"value\":\"newvalue\"}"
     dedicated_acct_host_only = true
     local_disk = false
-    post_install_script_uri = "https://www.google.com"
     frontend_vlan_id = 1085155
 	backend_vlan_id = 1085157
 }
@@ -169,8 +183,44 @@ resource "softlayer_virtualserver" "terraform-acceptance-test-1" {
     disks = [25, 10, 20]
     user_data = "updatedData"
     dedicated_acct_host_only = true
-    local_disk = true
-    post_install_script_uri = "https://www.ya.com"
+    local_disk = false
+    frontend_vlan_id = 1085155
+	backend_vlan_id = 1085157
+}
+`
+
+const testAccCheckSoftLayerVirtualserverConfig_postInstallScriptUri = `
+resource "softlayer_virtualserver" "terraform-acceptance-test-pISU" {
+    name = "terraform-test-pISU"
+    domain = "bar.example.com"
+    image = "DEBIAN_7_64"
+    region = "ams01"
+    public_network_speed = 10
+    hourly_billing = true
+	private_network_only = false
+    cpu = 1
+    ram = 1024
+    disks = [25, 10, 20]
+    user_data = "{\"value\":\"newvalue\"}"
+    dedicated_acct_host_only = true
+    local_disk = false
+    post_install_script_uri = "https://www.google.com"
+    frontend_vlan_id = 1085155
+	backend_vlan_id = 1085157
+}
+`
+
+const testAccCheckSoftLayerVirtualserverConfig_blockDeviceTemplateGroup = `
+resource "softlayer_virtualserver" "terraform-acceptance-test-BDTGroup" {
+    name = "terraform-test-blockDeviceTemplateGroup"
+    domain = "bar.example.com"
+    region = "ams01"
+    public_network_speed = 10
+    hourly_billing = false
+    cpu = 1
+    ram = 1024
+    local_disk = false
+    block_device_template_group_gid = "ac2b413c-9893-4178-8e62-a24cbe2864db"
     frontend_vlan_id = 1085155
 	backend_vlan_id = 1085157
 }
