@@ -18,14 +18,13 @@ type Client struct {
 	productOrderService            softlayer.SoftLayer_Product_Order_Service
 	dnsDomainResourceRecordService softlayer.SoftLayer_Dns_Domain_Record_Service
 	dnsDomainService               softlayer.SoftLayer_Dns_Domain_Service
-=======
 	ApiKey string
 }
 
 type Client struct {
 	productOrderService softlayer.SoftLayer_Product_Order_Service
+	productOrderService softlayer.SoftLayer_Product_Order_Service
 	dnsDomainService 		softlayer.SoftLayer_Dns_Domain_Service
->>>>>>> #7 implement resource_softlayer_dns_domain
 }
 
 func (c *Config) Client() (*Client, error) {
