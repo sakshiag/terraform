@@ -304,7 +304,6 @@ func resourceSoftLayerVirtualserverRead(d *schema.ResourceData, meta interface{}
 	d.Set("private_network_only", result.PrivateNetworkOnlyFlag)
 	d.Set("hourly_billing", result.HourlyBillingFlag)
 	d.Set("local_disk", result.LocalDiskFlag)
-	d.Set("post_install_script_uri", result.PostInstallScriptUri)
 	d.Set("frontend_vlan_id", result.PrimaryNetworkComponent.NetworkVlan.Id)
 	d.Set("backend_vlan_id", result.PrimaryBackendNetworkComponent.NetworkVlan.Id)
 

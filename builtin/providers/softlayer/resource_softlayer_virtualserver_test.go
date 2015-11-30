@@ -69,6 +69,19 @@ func TestAccSoftLayerVirtualserver_Basic(t *testing.T) {
 				),
 			},
 
+		},
+	})
+}
+
+
+func TestAccSoftLayerVirtualserver_BlockDeviceTemplateGroup(t *testing.T) {
+	var server datatypes.SoftLayer_Virtual_Guest
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		CheckDestroy: testAccCheckSoftLayerVirtualserverDestroy,
+		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: testAccCheckSoftLayerVirtualserverConfig_blockDeviceTemplateGroup,
 				Check: resource.ComposeTestCheckFunc(
@@ -76,15 +89,25 @@ func TestAccSoftLayerVirtualserver_Basic(t *testing.T) {
 					testAccCheckSoftLayerVirtualserverExists("softlayer_virtualserver.terraform-acceptance-test-BDTGroup", &server),
 				),
 			},
+		},
+	})
+}
 
+func TestAccSoftLayerVirtualserver_postInstallScriptUri(t *testing.T) {
+	var server datatypes.SoftLayer_Virtual_Guest
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		CheckDestroy: testAccCheckSoftLayerVirtualserverDestroy,
+		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: testAccCheckSoftLayerVirtualserverConfig_postInstallScriptUri,
 				Check: resource.ComposeTestCheckFunc(
-					// it's enough if virtual server exists as url will be used after it's install.
+					// block_device_template_group_gid value is hardcoded. If it's valid then virtual server will be created well
 					testAccCheckSoftLayerVirtualserverExists("softlayer_virtualserver.terraform-acceptance-test-pISU", &server),
 				),
 			},
-
 		},
 	})
 }
