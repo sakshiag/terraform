@@ -28,6 +28,21 @@ func TestAccSoftLayerSSHKey_Basic(t *testing.T) {
 						"softlayer_ssh_key.testacc_foobar", "name", "testacc_foobar"),
 					resource.TestCheckResourceAttr(
 						"softlayer_ssh_key.testacc_foobar", "public_key", testAccValidPublicKey),
+					resource.TestCheckResourceAttr(
+						"softlayer_ssh_key.testacc_foobar", "notes", "first_note"),
+				),
+			},
+
+			resource.TestStep{
+				Config: testAccCheckSoftLayerSSHKeyConfig_updated,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSoftLayerSSHKeyExists("softlayer_ssh_key.testacc_foobar", &key),
+					resource.TestCheckResourceAttr(
+						"softlayer_ssh_key.testacc_foobar", "name", "changed_name"),
+					resource.TestCheckResourceAttr(
+						"softlayer_ssh_key.testacc_foobar", "public_key", testAccValidPublicKey),
+					resource.TestCheckResourceAttr(
+						"softlayer_ssh_key.testacc_foobar", "notes", "changed_note"),
 				),
 			},
 		},
@@ -100,6 +115,14 @@ func testAccCheckSoftLayerSSHKeyExists(n string, key *datatypes.SoftLayer_Securi
 var testAccCheckSoftLayerSSHKeyConfig_basic = fmt.Sprintf(`
 resource "softlayer_ssh_key" "testacc_foobar" {
     name = "testacc_foobar"
+    notes = "first_note"
+    public_key = "%s"
+}`, testAccValidPublicKey)
+
+var testAccCheckSoftLayerSSHKeyConfig_updated = fmt.Sprintf(`
+resource "softlayer_ssh_key" "testacc_foobar" {
+    name = "changed_name"
+    notes = "changed_note"
     public_key = "%s"
 }`, testAccValidPublicKey)
 
