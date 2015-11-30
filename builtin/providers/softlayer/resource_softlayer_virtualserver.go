@@ -225,11 +225,10 @@ func resourceSoftLayerVirtualserverCreate(d *schema.ResourceData, meta interface
 		}
 	}
 
-	userData := d.Get("user_data").(string)
-	if userData != "" {
+	if userData, ok := d.GetOk("user_data"); ok {
 		opts.UserData = []datatypes.UserData {
 			datatypes.UserData {
-				Value: userData,
+				Value: userData.(string),
 			},
 		}
 	}
@@ -342,9 +341,8 @@ func resourceSoftLayerVirtualserverUpdate(d *schema.ResourceData, meta interface
 	result.MaxMemory = d.Get("ram").(int)
 	result.NetworkComponents[0].MaxSpeed = d.Get("public_network_speed").(int)
 
-	userData := d.Get("user_data").(string)
-	if userData != "" {
-		client.SetMetadata(id, userData)
+	if d.HasChange("user_data") {
+		client.SetMetadata(id, d.Get("user_data").(string))
 	}
 
 	// TODO (igoonich): perform partial update using "upgrade" method (also add upgrade method to "softlayer-go")
