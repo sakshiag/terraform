@@ -15,6 +15,7 @@ type Config struct {
 type Client struct {
 	productOrderService softlayer.SoftLayer_Product_Order_Service
 	dnsDomainService 		softlayer.SoftLayer_Dns_Domain_Service
+	dnsDomainResourceRecord softlayer.SoftLayer_Dns_Domain_Record_Service
 }
 
 func (c *Config) Client() (*Client, error) {
@@ -26,8 +27,11 @@ func (c *Config) Client() (*Client, error) {
 		return nil, err
 	}
 
+	dnsDomainResourceRecordService, err := slc.GetSoftLayer_Dns_Domain_Record_Service()
+
 	client := &Client {
 		dnsDomainService : 		dnsDomainService,
+		dnsDomainResourceRecord: dnsDomainResourceRecordService,
 	}
 
 	log.Println("[INFO] Created SoftLayer client")
