@@ -31,7 +31,6 @@ func resourceSoftLayerDnsDomainResourceRecord() *schema.Resource {
 			"expire": &schema.Schema{
 				Type:     schema.TypeInt,
 				Optional: true,
-//TODO check 	Default: 0
 			},
 
 			"host": &schema.Schema{
@@ -42,7 +41,6 @@ func resourceSoftLayerDnsDomainResourceRecord() *schema.Resource {
 			"minimum_ttl": &schema.Schema{
 				Type:     schema.TypeInt,
 				Optional: true,
-//TODO check 	Default: 0
 			},
 
 			"mx_priority": &schema.Schema{
@@ -53,7 +51,6 @@ func resourceSoftLayerDnsDomainResourceRecord() *schema.Resource {
 			"refresh": &schema.Schema{
 				Type:     schema.TypeInt,
 				Optional: true,
-//TODO check 	Default: 0
 			},
 
 			"contact_email ": &schema.Schema{
@@ -85,7 +82,8 @@ func resourceSoftLayerDnsDomainResourceRecordCreate(d *schema.ResourceData, meta
 		return fmt.Errorf("The client was nil.")
 	}
 
-//	guest, err := client.CreateObject(nil)
+	//	guest, err := client.CreateObject(nil)
+
 
 	return resourceSoftLayerDnsDomainResourceRecordRead(d, meta)
 }
@@ -125,3 +123,4 @@ func resourceSoftLayerDnsDomainResourceRecordDelete(d *schema.ResourceData, meta
 
 	return nil
 }
+
