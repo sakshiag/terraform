@@ -26,6 +26,7 @@ func Provider() terraform.ResourceProvider {
 			"softlayer_virtualserver": resourceSoftLayerVirtualserver(),
 			"softlayer_ssh_key": resourceSoftLayerSSHKey(),
 			"softlayer_dns_domain_record": resourceSoftLayerDnsDomainResourceRecord(),
+			"softlayer_dns_domain": resourceSoftLayerDnsDomain(),
 		},
 
 		ConfigureFunc: providerConfigure,
