@@ -13,9 +13,9 @@ type Config struct {
 }
 
 type Client struct {
-	virtualGuestService softlayer.SoftLayer_Virtual_Guest_Service
-	sshKeyService softlayer.SoftLayer_Security_Ssh_Key_Service
-	productOrderService softlayer.SoftLayer_Product_Order_Service
+	virtualGuestService     softlayer.SoftLayer_Virtual_Guest_Service
+	sshKeyService           softlayer.SoftLayer_Security_Ssh_Key_Service
+	productOrderService 	softlayer.SoftLayer_Product_Order_Service
 	dnsDomainService 		softlayer.SoftLayer_Dns_Domain_Service
 	dnsDomainResourceRecord softlayer.SoftLayer_Dns_Domain_Record_Service
 }

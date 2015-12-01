@@ -25,6 +25,7 @@ func Provider() terraform.ResourceProvider {
 		ResourcesMap: map[string]*schema.Resource{
 			"softlayer_virtualserver": resourceSoftLayerVirtualserver(),
 			"softlayer_ssh_key": resourceSoftLayerSSHKey(),
+			"softlayer_dns_domain_record": resourceSoftLayerDnsDomainResourceRecord(),
 			"softlayer_dns_domain": resourceSoftLayerDnsDomain(),
 		},
 
@@ -35,7 +36,8 @@ func Provider() terraform.ResourceProvider {
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	config := Config{
 		Username: d.Get("username").(string),
-		ApiKey:   d.Get("api_key").(string),
+		ApiKey: d.Get("api_key").(string),
+
 	}
 
 	return config.Client()
