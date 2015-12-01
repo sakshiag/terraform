@@ -9,14 +9,14 @@ import (
 
 type Config struct {
 	Username string
-	ApiKey string
+	ApiKey   string
 }
 
 type Client struct {
-	virtualGuestService softlayer.SoftLayer_Virtual_Guest_Service
-	sshKeyService softlayer.SoftLayer_Security_Ssh_Key_Service
+	virtualGuestService     softlayer.SoftLayer_Virtual_Guest_Service
+	sshKeyService           softlayer.SoftLayer_Security_Ssh_Key_Service
 	dnsDomainResourceRecord softlayer.SoftLayer_Dns_Domain_Record_Service
-	dnsDomainService 		softlayer.SoftLayer_Dns_Domain_Service
+	dnsDomainService        softlayer.SoftLayer_Dns_Domain_Service
 }
 
 func (c *Config) Client() (*Client, error) {
@@ -41,12 +41,10 @@ func (c *Config) Client() (*Client, error) {
 		return nil, err
 	}
 
-	client := &Client {
-		virtualGuestService: 	virtualGuestService,
-		sshKeyService: 			sshKeyService,
-		dnsDomainService : 		dnsDomainService,
-		virtualGuestService: virtualGuestService,
-		sshKeyService: sshKeyService,
+	client := &Client{
+		virtualGuestService:    virtualGuestService,
+		sshKeyService:            sshKeyService,
+		dnsDomainService :        dnsDomainService,
 		dnsDomainResourceRecord: dnsDomainResourceRecordService,
 	}
 
