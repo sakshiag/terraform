@@ -27,7 +27,6 @@ func resourceSoftLayerDnsDomain() *schema.Resource {
 
 			"serial": &schema.Schema{
 				Type: 		schema.TypeInt,
-				Optional:	true,
 				Computed:	true,
 			},
 
@@ -38,7 +37,7 @@ func resourceSoftLayerDnsDomain() *schema.Resource {
 
 			"records": &schema.Schema{
 				Type:		schema.TypeList,
-				Optional:	true,
+				Computed:	true,
 				Elem:		&schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"record_data": &schema.Schema{
@@ -108,10 +107,6 @@ func resourceSoftLayerDnsDomainCreate(d *schema.ResourceData, meta interface{}) 
 	// prepare creation parameters
 	opts := datatypes.SoftLayer_Dns_Domain_Template{
 		Name: d.Get("name").(string),
-	}
-
-	if serial, ok := d.GetOk("serial"); ok {
-		opts.Serial = serial.(int)
 	}
 
 	response, err := client.CreateObject(opts)
