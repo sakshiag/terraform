@@ -99,12 +99,12 @@ func resourceSoftLayerDnsDomainResourceRecordCreate(d *schema.ResourceData, meta
 		Type: d.Get("record_type").(string),
 	}
 
-	log.Printf("[INFO] Creating dns resource record for '%d' dns domain", d.Get("id"))
+	log.Printf("[INFO] Creating DNS Resource Record for '%d' dns domain", d.Get("id"))
 
 	record, err := client.CreateObject(opts)
 
 	if err != nil {
-		return fmt.Errorf("Error creating dns resource record: %s", err)
+		return fmt.Errorf("Error creating DNS Resource Record: %s", err)
 	}
 
 	d.SetId(fmt.Sprintf("%d", record.Id))
@@ -124,7 +124,7 @@ func resourceSoftLayerDnsDomainResourceRecordRead(d *schema.ResourceData, meta i
 	}
 	result, err := client.GetObject(id)
 	if err != nil {
-		return fmt.Errorf("Error retrieving dns domain resource record: %s", err)
+		return fmt.Errorf("Error retrieving DNS Resource Record: %s", err)
 	}
 
 	d.Set("data", result.Data)
@@ -147,7 +147,53 @@ func resourceSoftLayerDnsDomainResourceRecordRead(d *schema.ResourceData, meta i
 //  Updates DNS Domain Resource Record in SL system
 //  https://sldn.softlayer.com/reference/services/SoftLayer_Dns_Domain_ResourceRecord/editObject
 func resourceSoftLayerDnsDomainResourceRecordUpdate(d *schema.ResourceData, meta interface{}) error {
-	//TODO
+	client := meta.(*Client).dnsDomainResourceRecord
+
+	recordId, _ := strconv.Atoi(d.Id())
+
+	record, err := client.GetObject(recordId)
+	if err != nil {
+		return fmt.Errorf("Error retrieving DNS Resource Record: %s", err)
+	}
+
+	if data, ok := d.GetOk("record_data"); ok {
+		record.Data = data.(string)
+	}
+	if domain_id, ok := d.GetOk("domain_id"); ok {
+		record.DomainId = domain_id.(int)
+	}
+	if expire, ok := d.GetOk("expire"); ok {
+		record.Expire = expire.(int)
+	}
+	if host, ok := d.GetOk("host"); ok {
+		record.Host = host.(string)
+	}
+	if minimum_ttl, ok := d.GetOk("minimum_ttl"); ok {
+		record.Minimum = minimum_ttl.(int)
+	}
+	if mx_priority, ok := d.GetOk("mx_priority"); ok {
+		record.MxPriority = mx_priority.(int)
+	}
+	if refresh, ok := d.GetOk("refresh"); ok {
+		record.Refresh = refresh.(int)
+	}
+	if contact_email, ok := d.GetOk("contact_email"); ok {
+		record.ResponsiblePerson = contact_email.(string)
+	}
+	if retry, ok := d.GetOk("retry"); ok {
+		record.Retry = retry.(int)
+	}
+	if ttl, ok := d.GetOk("ttl"); ok {
+		record.Ttl = ttl.(int)
+	}
+	if record_type, ok := d.GetOk("record_type"); ok {
+		record.Type = record_type.(string)
+	}
+
+	_, err = client.EditObject(recordId, record)
+	if err != nil {
+		return fmt.Errorf("Error editing DNS Resoource Record: %s", err)
+	}
 	return nil
 }
 
@@ -164,7 +210,7 @@ func resourceSoftLayerDnsDomainResourceRecordDelete(d *schema.ResourceData, meta
 	_, err = client.DeleteObject(id)
 
 	if err != nil {
-		return fmt.Errorf("Error deleting dns domain resource record: %s", err)
+		return fmt.Errorf("Error deleting DNS Resource Record: %s", err)
 	}
 
 	return nil
