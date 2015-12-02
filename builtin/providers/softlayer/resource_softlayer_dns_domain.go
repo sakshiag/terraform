@@ -76,7 +76,12 @@ func resourceSoftLayerDnsDomain() *schema.Resource {
 							Optional: true,
 						},
 
-						"retry ": &schema.Schema{
+						"contact_email": &schema.Schema{
+							Type:     schema.TypeString,
+							Required: true,
+						},
+
+						"retry": &schema.Schema{
 							Type:     schema.TypeInt,
 							Optional: true,
 						},
@@ -135,14 +140,14 @@ func resourceSoftLayerDnsDomainRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("name", dns_domain.Name)
 	d.Set("serial", dns_domain.Serial)
 	d.Set("update_date", dns_domain.UpdateDate)
-	d.Set("records", q(dns_domain.ResourceRecords))
+	d.Set("records", read_resource_records(dns_domain.ResourceRecords))
 
 	return nil
 }
 
-func q(list []datatypes.SoftLayer_Dns_Domain_Record) []map[string]interface{} {
-	records := make([]map[string]interface{}, len(list))
-	for i,record := range list {
+func read_resource_records(list []datatypes.SoftLayer_Dns_Domain_Record) []map[string]interface{} {
+	records := make([]map[string]interface{}, 0, len(list))
+	for _,record := range list {
 		r := make(map[string]interface{})
 		r["record_data"] =	record.Data
 		r["domain_id"] =	record.DomainId
@@ -154,7 +159,7 @@ func q(list []datatypes.SoftLayer_Dns_Domain_Record) []map[string]interface{} {
 		r["retry"] = 		record.Retry
 		r["ttl"] = 			record.Ttl
 		r["record_type"] =	record.Type
-		records[i] = r
+		records = append(records, r)
 	}
 	return records
 }
