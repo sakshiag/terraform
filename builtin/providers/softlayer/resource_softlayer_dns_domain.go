@@ -76,11 +76,6 @@ func resourceSoftLayerDnsDomain() *schema.Resource {
 							Optional: true,
 						},
 
-						"contact_email ": &schema.Schema{
-							Type:     schema.TypeString,
-							Required: true,
-						},
-
 						"retry ": &schema.Schema{
 							Type:     schema.TypeInt,
 							Optional: true,
@@ -140,8 +135,28 @@ func resourceSoftLayerDnsDomainRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("name", dns_domain.Name)
 	d.Set("serial", dns_domain.Serial)
 	d.Set("update_date", dns_domain.UpdateDate)
+	d.Set("records", q(dns_domain.ResourceRecords))
 
 	return nil
+}
+
+func q(list []datatypes.SoftLayer_Dns_Domain_Record) []map[string]interface{} {
+	records := make([]map[string]interface{}, len(list))
+	for i,record := range list {
+		r := make(map[string]interface{})
+		r["record_data"] =	record.Data
+		r["domain_id"] =	record.DomainId
+		r["expire"] = 		record.Expire
+		r["host"] = 		record.Host
+		r["minimum_ttl"] = 	record.Minimum
+		r["mx_priority"] =	record.MxPriority
+		r["refresh"] = 		record.Refresh
+		r["retry"] = 		record.Retry
+		r["ttl"] = 			record.Ttl
+		r["record_type"] =	record.Type
+		records[i] = r
+	}
+	return records
 }
 
 func resourceSoftLayerDnsDomainUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -163,7 +178,7 @@ func resourceSoftLayerDnsDomainDelete(d *schema.ResourceData, meta interface{}) 
 		return fmt.Errorf("Error deleting Dns Domain: %s", err)
 	}
 
-	if result {
+	if !result {
 		return fmt.Errorf("Error deleting Dns Domain")
 	}
 
