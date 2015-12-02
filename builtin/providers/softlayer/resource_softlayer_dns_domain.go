@@ -27,7 +27,6 @@ func resourceSoftLayerDnsDomain() *schema.Resource {
 
 			"serial": &schema.Schema{
 				Type: 		schema.TypeInt,
-				Optional:	true,
 				Computed:	true,
 			},
 
@@ -38,7 +37,7 @@ func resourceSoftLayerDnsDomain() *schema.Resource {
 
 			"records": &schema.Schema{
 				Type:		schema.TypeList,
-				Optional:	true,
+				Computed:	true,
 				Elem:		&schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"record_data": &schema.Schema{
@@ -110,19 +109,18 @@ func resourceSoftLayerDnsDomainCreate(d *schema.ResourceData, meta interface{}) 
 		Name: d.Get("name").(string),
 	}
 
-	if serial, ok := d.GetOk("serial"); ok {
-		opts.Serial = serial.(int)
-	}
-
+	// create Dns_Domain object
 	response, err := client.CreateObject(opts)
 	if err != nil {
 		return fmt.Errorf("Error creating Dns Domain: %s", err)
 	}
 
+	// populate id
 	id := response.Id
 	d.SetId(strconv.Itoa(id))
 	log.Printf("[INFO] Created Dns Domain: %d", id)
 
+	// read remote state
 	return resourceSoftLayerDnsDomainRead(d, meta)
 }
 
@@ -131,11 +129,13 @@ func resourceSoftLayerDnsDomainRead(d *schema.ResourceData, meta interface{}) er
 
 	dnsId, _ := strconv.Atoi(d.Id())
 
+	// retrieve remote object state
 	dns_domain, err := client.GetObject(dnsId)
 	if err != nil {
 		return fmt.Errorf("Error retrieving Dns Domain %d: %s", dnsId, err)
 	}
 
+	// populate fields
 	d.Set("id", dns_domain.Id)
 	d.Set("name", dns_domain.Name)
 	d.Set("serial", dns_domain.Serial)
