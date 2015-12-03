@@ -17,62 +17,7 @@ func resourceSoftLayerDnsDomainResourceRecord() *schema.Resource {
 		Read: resourceSoftLayerDnsDomainResourceRecordRead,
 		Update: resourceSoftLayerDnsDomainResourceRecordUpdate,
 		Delete: resourceSoftLayerDnsDomainResourceRecordDelete,
-		Schema: map[string]*schema.Schema{
-			"record_data": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-			},
-
-			"domain_id": &schema.Schema{
-				Type:     schema.TypeInt,
-				Required: true,
-			},
-
-			"expire": &schema.Schema{
-				Type:     schema.TypeInt,
-				Optional: true,
-			},
-
-			"host": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-			},
-
-			"minimum_ttl": &schema.Schema{
-				Type:     schema.TypeInt,
-				Optional: true,
-			},
-
-			"mx_priority": &schema.Schema{
-				Type:     schema.TypeInt,
-				Optional: true,
-			},
-
-			"refresh": &schema.Schema{
-				Type:     schema.TypeInt,
-				Optional: true,
-			},
-
-			"contact_email": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-			},
-
-			"retry": &schema.Schema{
-				Type:     schema.TypeInt,
-				Optional: true,
-			},
-
-			"ttl": &schema.Schema{
-				Type:     schema.TypeInt,
-				Required: true,
-			},
-
-			"record_type": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-			},
-		},
+		Schema: get_dns_domain_record_scheme(),
 	}
 }
 
@@ -214,4 +159,65 @@ func resourceSoftLayerDnsDomainResourceRecordDelete(d *schema.ResourceData, meta
 	}
 
 	return nil
+}
+
+// the scheme is used by dns_domain_service,
+// so it's creation is extracted to a separate function
+func get_dns_domain_record_scheme()  map[string]*schema.Schema {
+	return map[string]*schema.Schema{
+		"record_data": &schema.Schema{
+			Type:     schema.TypeString,
+			Required: true,
+		},
+
+		"domain_id": &schema.Schema{
+			Type:     schema.TypeInt,
+			Required: true,
+		},
+
+		"expire": &schema.Schema{
+			Type:     schema.TypeInt,
+			Optional: true,
+		},
+
+		"host": &schema.Schema{
+			Type:     schema.TypeString,
+			Required: true,
+		},
+
+		"minimum_ttl": &schema.Schema{
+			Type:     schema.TypeInt,
+			Optional: true,
+		},
+
+		"mx_priority": &schema.Schema{
+			Type:     schema.TypeInt,
+			Optional: true,
+		},
+
+		"refresh": &schema.Schema{
+			Type:     schema.TypeInt,
+			Optional: true,
+		},
+
+		"contact_email": &schema.Schema{
+			Type:     schema.TypeString,
+			Required: true,
+		},
+
+		"retry": &schema.Schema{
+			Type:     schema.TypeInt,
+			Optional: true,
+		},
+
+		"ttl": &schema.Schema{
+			Type:     schema.TypeInt,
+			Required: true,
+		},
+
+		"record_type": &schema.Schema{
+			Type:     schema.TypeString,
+			Required: true,
+		},
+	}
 }
