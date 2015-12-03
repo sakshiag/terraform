@@ -21,6 +21,7 @@ func TestAccSoftLayerVirtualserver_Basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: testAccCheckSoftLayerVirtualserverConfig_basic,
+				Destroy: false,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSoftLayerVirtualserverExists("softlayer_virtualserver.terraform-acceptance-test-1", &server),
 					resource.TestCheckResourceAttr(
@@ -62,6 +63,7 @@ func TestAccSoftLayerVirtualserver_Basic(t *testing.T) {
 
 			resource.TestStep{
 				Config: testAccCheckSoftLayerVirtualserverConfig_userDataUpdate,
+				Destroy: false,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSoftLayerVirtualserverExists("softlayer_virtualserver.terraform-acceptance-test-1", &server),
 					resource.TestCheckResourceAttr(
@@ -69,10 +71,30 @@ func TestAccSoftLayerVirtualserver_Basic(t *testing.T) {
 				),
 			},
 
+			// TODO: currently CPU upgrade test is disabled, due to unexpected behavior of field "dedicated_acct_host_only". For some reason it is reset by SoftLayer to "false". To be aligned with Daniel and Chris how to proceed with it.
+//			resource.TestStep{
+//				Config: testAccCheckSoftLayerVirtualserverConfig_vmUpgradeCPUs,
+//				Check: resource.ComposeTestCheckFunc(
+//					testAccCheckSoftLayerVirtualserverExists("softlayer_virtualserver.terraform-acceptance-test-1", &server),
+//					resource.TestCheckResourceAttr(
+//						"softlayer_virtualserver.terraform-acceptance-test-1", "cpu", "2"),
+//				),
+//			},
+
+			resource.TestStep{
+				Config: testAccCheckSoftLayerVirtualserverConfig_upgradeMemoryNetworkSpeed,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSoftLayerVirtualserverExists("softlayer_virtualserver.terraform-acceptance-test-1", &server),
+					resource.TestCheckResourceAttr(
+						"softlayer_virtualserver.terraform-acceptance-test-1", "ram", "2048"),
+					resource.TestCheckResourceAttr(
+						"softlayer_virtualserver.terraform-acceptance-test-1", "public_network_speed", "100"),
+				),
+			},
+
 		},
 	})
 }
-
 
 func TestAccSoftLayerVirtualserver_BlockDeviceTemplateGroup(t *testing.T) {
 	var server datatypes.SoftLayer_Virtual_Guest
@@ -212,6 +234,44 @@ resource "softlayer_virtualserver" "terraform-acceptance-test-1" {
 }
 `
 
+const testAccCheckSoftLayerVirtualserverConfig_vmUpgradeCPUs = `
+resource "softlayer_virtualserver" "terraform-acceptance-test-1" {
+    name = "terraform-test"
+    domain = "bar.example.com"
+    image = "DEBIAN_7_64"
+    region = "ams01"
+    public_network_speed = 10
+    hourly_billing = true
+    cpu = 2
+    ram = 1024
+    disks = [25, 10, 20]
+    user_data = "updatedData"
+    dedicated_acct_host_only = true
+    local_disk = false
+    frontend_vlan_id = 1085155
+	backend_vlan_id = 1085157
+}
+`
+
+const testAccCheckSoftLayerVirtualserverConfig_upgradeMemoryNetworkSpeed = `
+resource "softlayer_virtualserver" "terraform-acceptance-test-1" {
+    name = "terraform-test"
+    domain = "bar.example.com"
+    image = "DEBIAN_7_64"
+    region = "ams01"
+    public_network_speed = 100
+    hourly_billing = true
+    cpu = 1
+    ram = 2048
+    disks = [25, 10, 20]
+    user_data = "updatedData"
+    dedicated_acct_host_only = true
+    local_disk = false
+    frontend_vlan_id = 1085155
+	backend_vlan_id = 1085157
+}
+`
+
 const testAccCheckSoftLayerVirtualserverConfig_postInstallScriptUri = `
 resource "softlayer_virtualserver" "terraform-acceptance-test-pISU" {
     name = "terraform-test-pISU"
@@ -228,8 +288,6 @@ resource "softlayer_virtualserver" "terraform-acceptance-test-pISU" {
     dedicated_acct_host_only = true
     local_disk = false
     post_install_script_uri = "https://www.google.com"
-    frontend_vlan_id = 1085155
-	backend_vlan_id = 1085157
 }
 `
 
@@ -244,7 +302,5 @@ resource "softlayer_virtualserver" "terraform-acceptance-test-BDTGroup" {
     ram = 1024
     local_disk = false
     block_device_template_group_gid = "ac2b413c-9893-4178-8e62-a24cbe2864db"
-    frontend_vlan_id = 1085155
-	backend_vlan_id = 1085157
 }
 `

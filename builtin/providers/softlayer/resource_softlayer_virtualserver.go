@@ -9,7 +9,9 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	datatypes "github.com/TheWeatherCompany/softlayer-go/data_types"
+	"github.com/TheWeatherCompany/softlayer-go/softlayer"
 	"encoding/base64"
+	"math"
 )
 
 func resourceSoftLayerVirtualserver() *schema.Resource {
@@ -65,7 +67,6 @@ func resourceSoftLayerVirtualserver() *schema.Resource {
 			"dedicated_acct_host_only": &schema.Schema{
 				Type:     schema.TypeBool,
 				Optional: true,
-				Default:  false,
 			},
 
 			"frontend_vlan_id": &schema.Schema{
@@ -183,7 +184,6 @@ func resourceSoftLayerVirtualserverCreate(d *schema.ResourceData, meta interface
 		Domain: d.Get("domain").(string),
 		HourlyBillingFlag: d.Get("hourly_billing").(bool),
 		PrivateNetworkOnlyFlag: privateNetworkOnly,
-		DedicatedAccountHostOnlyFlag: d.Get("dedicated_acct_host_only").(bool),
 		Datacenter: dc,
 		StartCpus: d.Get("cpu").(int),
 		MaxMemory: d.Get("ram").(int),
@@ -191,6 +191,10 @@ func resourceSoftLayerVirtualserverCreate(d *schema.ResourceData, meta interface
 		BlockDevices: getBlockDevices(d),
 		LocalDiskFlag: d.Get("local_disk").(bool),
 		PostInstallScriptUri: d.Get("post_install_script_uri").(string),
+	}
+
+	if dedicatedAcctHostOnly, ok := d.GetOk("dedicated_acct_host_only"); ok {
+		opts.DedicatedAccountHostOnlyFlag = dedicatedAcctHostOnly.(bool)
 	}
 
 	if globalIdentifier, ok := d.GetOk("block_device_template_group_gid"); ok {
@@ -204,22 +208,22 @@ func resourceSoftLayerVirtualserverCreate(d *schema.ResourceData, meta interface
 	}
 
 	// Apply frontend VLAN if provided
-	frontendVlanId, err := strconv.Atoi(d.Get("frontend_vlan_id").(string))
-	if err != nil {
-		return fmt.Errorf("Not a valid frontend ID, must be an integer: %s", err)
-	}
-	if frontendVlanId > 0 {
+	if param, ok := d.GetOk("frontend_vlan_id"); ok {
+		frontendVlanId, err := strconv.Atoi(param.(string))
+		if err != nil {
+			return fmt.Errorf("Not a valid frontend ID, must be an integer: %s", err)
+		}
 		opts.PrimaryNetworkComponent = &datatypes.PrimaryNetworkComponent{
 			NetworkVlan:datatypes.NetworkVlan{int(frontendVlanId)},
 		}
 	}
 
 	// Apply backend VLAN if provided
-	backendVlanId, err := strconv.Atoi(d.Get("backend_vlan_id").(string))
-	if err != nil {
-		return fmt.Errorf("Not a valid backend ID, must be an integer: %s", err)
-	}
-	if backendVlanId > 0 {
+	if param, ok := d.GetOk("backend_vlan_id"); ok {
+		backendVlanId, err := strconv.Atoi(param.(string))
+		if err != nil {
+			return fmt.Errorf("Not a valid backend ID, must be an integer: %s", err)
+		}
 		opts.PrimaryBackendNetworkComponent = &datatypes.PrimaryBackendNetworkComponent{
 			NetworkVlan:datatypes.NetworkVlan{int(backendVlanId)},
 		}
@@ -332,27 +336,47 @@ func resourceSoftLayerVirtualserverUpdate(d *schema.ResourceData, meta interface
 		return fmt.Errorf("Error retrieving virtual server: %s", err)
 	}
 
-	result.Hostname = d.Get("name").(string)
-	result.Domain = d.Get("domain").(string)
+	// Update "name" and "domain" fields if present and changed
+	// Those are the only fields, which could be updated
+	if d.HasChange("name") || d.HasChange("domain") {
+		result.Hostname = d.Get("name").(string)
+		result.Domain = d.Get("domain").(string)
 
-	// TODO (igoonich): remove the following 5 update operation, as they doesn't work
-	result.StartCpus = d.Get("cpu").(int)
-	result.MaxMemory = d.Get("ram").(int)
-	result.NetworkComponents[0].MaxSpeed = d.Get("public_network_speed").(int)
+		_, err = client.EditObject(id, result)
 
+		if err != nil {
+			return fmt.Errorf("Couldn't update virtual server: %s", err)
+		}
+	}
+	
+	// Set user data if provided and not empty
 	if d.HasChange("user_data") {
 		client.SetMetadata(id, d.Get("user_data").(string))
 	}
-
-	// TODO (igoonich): perform partial update using "upgrade" method (also add upgrade method to "softlayer-go")
-
-	_, err = client.EditObject(id, result)
-
-	if err != nil {
-		return fmt.Errorf("Couldn't update virtual server: %s", err)
+	
+	// Upgrade "cpu", "ram" and "nic_speed" if provided and changed
+	upgradeOptions := softlayer.UpgradeOptions{}
+	if d.HasChange("cpu") {
+		upgradeOptions.Cpus = d.Get("cpu").(int)
+	}
+	if d.HasChange("ram") {
+		memoryInMB := float64(d.Get("ram").(int))
+		// Convert memory to GB, as softlayer only allows to upgrade RAM in Gigs
+		upgradeOptions.MemoryInGB = int(math.Ceil(memoryInMB / 1024))
+	}
+	if d.HasChange("public_network_speed") {
+		upgradeOptions.NicSpeed = d.Get("public_network_speed").(int)
 	}
 
-	return nil
+	_, err = client.UpgradeObject(id, &upgradeOptions)
+	if err != nil {
+		return fmt.Errorf("Couldn't upgrade virtual server: %s", err)
+	}
+
+	// Wait for upgrade transactions to finish
+	_, err = WaitForNoActiveTransactions(d, meta)
+
+	return err
 }
 
 func resourceSoftLayerVirtualserverDelete(d *schema.ResourceData, meta interface{}) error {
