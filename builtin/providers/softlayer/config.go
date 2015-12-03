@@ -13,11 +13,11 @@ type Config struct {
 }
 
 type Client struct {
-	virtualGuestService     softlayer.SoftLayer_Virtual_Guest_Service
-	sshKeyService           softlayer.SoftLayer_Security_Ssh_Key_Service
-	productOrderService 	softlayer.SoftLayer_Product_Order_Service
-	dnsDomainService 		softlayer.SoftLayer_Dns_Domain_Service
-	dnsDomainResourceRecord softlayer.SoftLayer_Dns_Domain_Record_Service
+	virtualGuestService            softlayer.SoftLayer_Virtual_Guest_Service
+	sshKeyService                  softlayer.SoftLayer_Security_Ssh_Key_Service
+	productOrderService            softlayer.SoftLayer_Product_Order_Service
+	dnsDomainResourceRecordService softlayer.SoftLayer_Dns_Domain_Record_Service
+	dnsDomainService               softlayer.SoftLayer_Dns_Domain_Service
 }
 
 func (c *Config) Client() (*Client, error) {
@@ -43,10 +43,10 @@ func (c *Config) Client() (*Client, error) {
 	dnsDomainResourceRecordService, err := slc.GetSoftLayer_Dns_Domain_Record_Service()
 
 	client := &Client {
-		virtualGuestService: 	virtualGuestService,
-		sshKeyService: 			sshKeyService,
-		dnsDomainService : 		dnsDomainService,
-		dnsDomainResourceRecord: dnsDomainResourceRecordService,
+		virtualGuestService:			virtualGuestService,
+		sshKeyService:            		sshKeyService,
+		dnsDomainService :   		    dnsDomainService,
+		dnsDomainResourceRecordService: dnsDomainResourceRecordService,
 	}
 
 	log.Println("[INFO] Created SoftLayer client")
