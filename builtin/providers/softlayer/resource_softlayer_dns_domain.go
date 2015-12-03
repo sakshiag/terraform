@@ -1,11 +1,12 @@
 package softlayer
 
 import (
-	"github.com/hashicorp/terraform/helper/schema"
-	datatypes "github.com/TheWeatherCompany/softlayer-go/data_types"
 	"fmt"
 	"strconv"
 	"log"
+
+	"github.com/hashicorp/terraform/helper/schema"
+	datatypes "github.com/TheWeatherCompany/softlayer-go/data_types"
 )
 
 func resourceSoftLayerDnsDomain() *schema.Resource {
@@ -39,62 +40,7 @@ func resourceSoftLayerDnsDomain() *schema.Resource {
 				Type:		schema.TypeList,
 				Computed:	true,
 				Elem:		&schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"record_data": &schema.Schema{
-							Type:     schema.TypeString,
-							Required: true,
-						},
-
-						"domain_id": &schema.Schema{
-							Type:     schema.TypeInt,
-							Required: true,
-						},
-
-						"expire": &schema.Schema{
-							Type:     schema.TypeInt,
-							Optional: true,
-						},
-
-						"host": &schema.Schema{
-							Type:     schema.TypeString,
-							Required: true,
-						},
-
-						"minimum_ttl": &schema.Schema{
-							Type:     schema.TypeInt,
-							Optional: true,
-						},
-
-						"mx_priority": &schema.Schema{
-							Type:     schema.TypeInt,
-							Optional: true,
-						},
-
-						"refresh": &schema.Schema{
-							Type:     schema.TypeInt,
-							Optional: true,
-						},
-
-						"contact_email": &schema.Schema{
-							Type:     schema.TypeString,
-							Required: true,
-						},
-
-						"retry": &schema.Schema{
-							Type:     schema.TypeInt,
-							Optional: true,
-						},
-
-						"ttl": &schema.Schema{
-							Type:     schema.TypeInt,
-							Required: true,
-						},
-
-						"record_type": &schema.Schema{
-							Type:     schema.TypeString,
-							Required: true,
-						},
-					},
+					Schema: get_dns_domain_record_scheme(),
 				},
 			},
 		},
