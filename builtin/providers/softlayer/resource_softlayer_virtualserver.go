@@ -12,6 +12,7 @@ import (
 	"github.com/TheWeatherCompany/softlayer-go/softlayer"
 	"encoding/base64"
 	"math"
+	"strings"
 )
 
 func resourceSoftLayerVirtualserver() *schema.Resource {
@@ -62,6 +63,19 @@ func resourceSoftLayerVirtualserver() *schema.Resource {
 			"ram": &schema.Schema{
 				Type:     schema.TypeInt,
 				Required: true,
+				ValidateFunc: func(v interface{}, k string) (ws []string, errors []error) {
+					memoryInMB := float64(v.(int))
+
+					// Validate memory to match gigs format
+					remaining := math.Mod(memoryInMB, 1024)
+					if remaining > 0 {
+						suggested := math.Ceil(memoryInMB / 1024) * 1024
+						errors = append(errors, fmt.Errorf(
+							"Invalid 'ram' value %d megabytes, must be a multiple of 1024 (e.g. use %d)", int(memoryInMB), int(suggested)))
+					}
+
+					return
+				},
 			},
 
 			"dedicated_acct_host_only": &schema.Schema{
@@ -361,20 +375,27 @@ func resourceSoftLayerVirtualserverUpdate(d *schema.ResourceData, meta interface
 	}
 	if d.HasChange("ram") {
 		memoryInMB := float64(d.Get("ram").(int))
+
 		// Convert memory to GB, as softlayer only allows to upgrade RAM in Gigs
-		upgradeOptions.MemoryInGB = int(math.Ceil(memoryInMB / 1024))
+		// Must be already validated at this step
+		upgradeOptions.MemoryInGB = int(memoryInMB / 1024)
 	}
 	if d.HasChange("public_network_speed") {
 		upgradeOptions.NicSpeed = d.Get("public_network_speed").(int)
 	}
 
-	_, err = client.UpgradeObject(id, &upgradeOptions)
+	started, err := client.UpgradeObject(id, &upgradeOptions)
 	if err != nil {
 		return fmt.Errorf("Couldn't upgrade virtual server: %s", err)
 	}
 
-	// Wait for upgrade transactions to finish
-	_, err = WaitForNoActiveTransactions(d, meta)
+	if started {
+		// Wait for softlayer to start upgrading...
+		_,err = WaitForUpgradeTransactionsToAppear(d, meta)
+
+		// Wait for upgrade transactions to finish
+		_, err = WaitForNoActiveTransactions(d, meta)
+	}
 
 	return err
 }
@@ -399,6 +420,39 @@ func resourceSoftLayerVirtualserverDelete(d *schema.ResourceData, meta interface
 	}
 
 	return nil
+}
+
+func WaitForUpgradeTransactionsToAppear(d *schema.ResourceData, meta interface{}) (interface{}, error) {
+
+	log.Printf("Waiting for server (%s) to have upgrade transactions", d.Id())
+
+	id, err := strconv.Atoi(d.Id())
+	if err != nil {
+		return nil, fmt.Errorf("The instance ID %s must be numeric", d.Id())
+	}
+
+	stateConf := &resource.StateChangeConf{
+		Pending: []string{"pending_upgrade"},
+		Target: "upgrade_started",
+		Refresh: func() (interface{}, string, error) {
+			client := meta.(*Client).virtualGuestService
+			transactions, err := client.GetActiveTransactions(id)
+			if err != nil {
+				return nil, "", fmt.Errorf("Couldn't fetch active transactions: %s", err)
+			}
+			for _, transaction := range transactions {
+				if strings.Contains(transaction.TransactionStatus.Name, "UPGRADE") {
+					return transactions, "upgrade_started", nil
+				}
+			}
+			return transactions, "pending_upgrade", nil
+		},
+		Timeout: 5 * time.Minute,
+		Delay: 5 * time.Second,
+		MinTimeout: 3 * time.Second,
+	}
+
+	return stateConf.WaitForState()
 }
 
 func WaitForPublicIpAvailable(d *schema.ResourceData, meta interface{}) (interface{}, error) {
