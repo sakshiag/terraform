@@ -184,4 +184,18 @@ resource "softlayer_dns_domain_record" "recordTXT" {
     ttl = 900
     record_type = "txt"
 }
+
+resource "softlayer_dns_domain_record" "recordSRV" {
+    record_data = "ns1.example.org"
+    domain_id = 1857408
+    host = "hosta-srv.com"
+    contact_email = "user@softlaer.com"
+    ttl = 900
+    record_type = "srv"
+	port = 8080
+	priority = 3
+	protocol = "_tcp"
+	weight = 3
+	service = "_mail"
+}
 `
