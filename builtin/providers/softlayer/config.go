@@ -16,7 +16,6 @@ type Client struct {
 	virtualGuestService            		softlayer.SoftLayer_Virtual_Guest_Service
 	sshKeyService                  		softlayer.SoftLayer_Security_Ssh_Key_Service
 	dnsDomainResourceRecordService 		softlayer.SoftLayer_Dns_Domain_Record_Service
-	dnsDomainResourceRecordSrvService 	softlayer.SoftLayer_Dns_Domain_Record_Srv_Service
 	dnsDomainService               		softlayer.SoftLayer_Dns_Domain_Service
 }
 
@@ -36,12 +35,6 @@ func (c *Config) Client() (*Client, error) {
 		return nil, err
 	}
 
-	dnsDomainResourceRecordSrvService, err := slc.GetSoftLayer_Dns_Domain_Record_Srv_Service()
-
-	if err != nil {
-		return nil, err
-	}
-
 	dnsDomainService, err := slc.GetSoftLayer_Dns_Domain_Service()
 
 	if err != nil {
@@ -53,7 +46,6 @@ func (c *Config) Client() (*Client, error) {
 		sshKeyService:            			sshKeyService,
 		dnsDomainService :   		    	dnsDomainService,
 		dnsDomainResourceRecordService: 	dnsDomainResourceRecordService,
-		dnsDomainResourceRecordSrvService: 	dnsDomainResourceRecordSrvService,
 	}
 
 	log.Println("[INFO] Created SoftLayer client")
