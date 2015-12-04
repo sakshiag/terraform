@@ -24,6 +24,7 @@ func resourceSoftLayerDnsDomain() *schema.Resource {
 			"name": &schema.Schema{
 				Type: 		schema.TypeString,
 				Required: 	true,
+				ForceNew:	true,
 			},
 
 			"serial": &schema.Schema{
@@ -39,6 +40,7 @@ func resourceSoftLayerDnsDomain() *schema.Resource {
 			"records": &schema.Schema{
 				Type:		schema.TypeList,
 				Computed:	true,
+				Optional:	true,
 				Elem:		&schema.Resource{
 					Schema: get_dns_domain_record_scheme(),
 				},
