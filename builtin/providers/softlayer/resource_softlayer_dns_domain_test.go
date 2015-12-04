@@ -21,8 +21,21 @@ func TestAccSoftLayerDnsDomain_Basic(t *testing.T) {
 			resource.TestStep{
 				Config: testAccCheckSoftLayerDnsDomainConfig_basic,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckSoftLayerDnsDomainExists("softlayer_dns_domain.test_dns_domain-1", &dns_domain),
+					testAccCheckSoftLayerDnsDomainExists("softlayer_dns_domain.acceptance_test_dns_domain-1", &dns_domain),
 					testAccCheckSoftLayerDnsDomainAttributes(&dns_domain),
+					resource.TestCheckResourceAttr(
+						"softlayer_dns_domain.acceptance_test_dns_domain-1", "name", test_dns_domain_name),
+					saveSoftLayerDnsDomainId(&dns_domain, &firstDnsId),
+				),
+				Destroy: false,
+			},
+			resource.TestStep{
+				Config: testAccCheckSoftLayerDnsDomainConfig_changed,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSoftLayerDnsDomainAttributes(&dns_domain),
+					resource.TestCheckResourceAttr(
+						"softlayer_dns_domain.acceptance_test_dns_domain-1", "name", changed_dns_domain_name),
+					testAccCheckSoftLayerDnsDomainChanged(&dns_domain),
 				),
 			},
 		},
@@ -42,8 +55,8 @@ func testAccCheckSoftLayerDnsDomainDestroy(s *terraform.State) error {
 		// Try to find the domain
 		_, err := client.GetObject(dnsId)
 
-		if err == nil {
-			fmt.Errorf("Dns Domain with id %d does not exist", dnsId)
+		if err != nil {
+			return fmt.Errorf("Dns Domain with id %d does not exist", dnsId)
 		}
 	}
 
@@ -53,8 +66,8 @@ func testAccCheckSoftLayerDnsDomainDestroy(s *terraform.State) error {
 func testAccCheckSoftLayerDnsDomainAttributes(dns *datatypes.SoftLayer_Dns_Domain) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 
-		if dns.Name != test_dns_domain_name {
-			return fmt.Errorf("Bad dns domain name: %s  Expected: %s", dns.Name, test_dns_domain_name)
+		if dns.Name == "" {
+			return fmt.Errorf("Empty dns domain name")
 		}
 
 		if dns.Serial == 0 {
@@ -63,6 +76,27 @@ func testAccCheckSoftLayerDnsDomainAttributes(dns *datatypes.SoftLayer_Dns_Domai
 
 		if dns.Id == 0 {
 			return fmt.Errorf("Bad dns domain id: %d", dns.Id)
+		}
+
+		return nil
+	}
+}
+
+func saveSoftLayerDnsDomainId(dns *datatypes.SoftLayer_Dns_Domain, id_holder *int) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		*id_holder = dns.Id
+
+		return nil
+	}
+}
+
+func testAccCheckSoftLayerDnsDomainChanged(dns *datatypes.SoftLayer_Dns_Domain) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		client := testAccProvider.Meta().(*Client).dnsDomainService
+
+		response, _ := client.GetObject(firstDnsId)
+		if response.Id == firstDnsId {
+			return fmt.Errorf("Dns domain with id %d still exists", firstDnsId)
 		}
 
 		return nil
@@ -101,9 +135,17 @@ func testAccCheckSoftLayerDnsDomainExists(n string, dns_domain *datatypes.SoftLa
 }
 
 var testAccCheckSoftLayerDnsDomainConfig_basic = fmt.Sprintf(`
-resource "softlayer_dns_domain" "test_dns_domain-1" {
+resource "softlayer_dns_domain" "acceptance_test_dns_domain-1" {
 	name = "%s"
 }
 `, test_dns_domain_name)
 
-var test_dns_domain_name = "zxczcxzxc.com"
+var testAccCheckSoftLayerDnsDomainConfig_changed = fmt.Sprintf(`
+resource "softlayer_dns_domain" "acceptance_test_dns_domain-1" {
+	name = "%s"
+}
+`, changed_dns_domain_name)
+
+var test_dns_domain_name = 		"zxczcxzxc.com"
+var changed_dns_domain_name = 	"vbnvnvbnv.com"
+var firstDnsId = 0
