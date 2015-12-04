@@ -168,6 +168,7 @@ func get_dns_domain_record_scheme()  map[string]*schema.Schema {
 		"record_data": &schema.Schema{
 			Type:     schema.TypeString,
 			Required: true,
+			ForceNew: true,
 		},
 
 		"domain_id": &schema.Schema{
