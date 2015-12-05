@@ -57,6 +57,10 @@ func resourceSoftLayerDnsDomainCreate(d *schema.ResourceData, meta interface{}) 
 		Name: d.Get("name").(string),
 	}
 
+	if records, ok := d.GetOk("records"); ok {
+		opts.ResourceRecords = prepareRecords(records.([]interface{}))
+	}
+
 	// create Dns_Domain object
 	response, err := client.CreateObject(opts)
 	if err != nil {
@@ -70,6 +74,30 @@ func resourceSoftLayerDnsDomainCreate(d *schema.ResourceData, meta interface{}) 
 
 	// read remote state
 	return resourceSoftLayerDnsDomainRead(d, meta)
+}
+
+func prepareRecords(raw_records []interface{}) []datatypes.SoftLayer_Dns_Domain_Record {
+	sl_records := make([]datatypes.SoftLayer_Dns_Domain_Record, 0)
+	for _, raw_record := range raw_records {
+		var sl_record datatypes.SoftLayer_Dns_Domain_Record
+		record := raw_record.(map[string]interface{})
+
+		sl_record.Data 		= record["record_data"].(string)
+		sl_record.DomainId 	= record["domain_id"].(int)
+		sl_record.Expire 	= record["expire"].(int)
+		sl_record.Host 		= record["host"].(string)
+		sl_record.Minimum	= record["minimum_ttl"].(int)
+		sl_record.MxPriority= record["mx_priority"].(int)
+		sl_record.Refresh	= record["refresh"].(int)
+		sl_record.ResponsiblePerson = record["contact_email"].(string)
+		sl_record.Retry		= record["retry"].(int)
+		sl_record.Ttl		= record["ttl"].(int)
+		sl_record.Type		= record["record_type"].(string)
+
+		sl_records = append(sl_records, sl_record)
+	}
+
+	return sl_records
 }
 
 func resourceSoftLayerDnsDomainRead(d *schema.ResourceData, meta interface{}) error {

@@ -37,6 +37,7 @@ func TestAccSoftLayerDnsDomain_Basic(t *testing.T) {
 						"softlayer_dns_domain.acceptance_test_dns_domain-1", "name", changed_dns_domain_name),
 					testAccCheckSoftLayerDnsDomainChanged(&dns_domain),
 				),
+				Destroy:	true,
 			},
 		},
 	})
