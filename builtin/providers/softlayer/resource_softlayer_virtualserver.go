@@ -9,6 +9,10 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	datatypes "github.com/TheWeatherCompany/softlayer-go/data_types"
+	"github.com/TheWeatherCompany/softlayer-go/softlayer"
+	"encoding/base64"
+	"math"
+	"strings"
 )
 
 func resourceSoftLayerVirtualserver() *schema.Resource {
@@ -30,8 +34,19 @@ func resourceSoftLayerVirtualserver() *schema.Resource {
 
 			"image": &schema.Schema{
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
 				ForceNew: true,
+			},
+
+			"hourly_billing": &schema.Schema{
+				Type:     schema.TypeBool,
+				Required: true,
+			},
+
+			"private_network_only": &schema.Schema{
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default: false,
 			},
 
 			"region": &schema.Schema{
@@ -48,6 +63,34 @@ func resourceSoftLayerVirtualserver() *schema.Resource {
 			"ram": &schema.Schema{
 				Type:     schema.TypeInt,
 				Required: true,
+				ValidateFunc: func(v interface{}, k string) (ws []string, errors []error) {
+					memoryInMB := float64(v.(int))
+
+					// Validate memory to match gigs format
+					remaining := math.Mod(memoryInMB, 1024)
+					if remaining > 0 {
+						suggested := math.Ceil(memoryInMB / 1024) * 1024
+						errors = append(errors, fmt.Errorf(
+							"Invalid 'ram' value %d megabytes, must be a multiple of 1024 (e.g. use %d)", int(memoryInMB), int(suggested)))
+					}
+
+					return
+				},
+			},
+
+			"dedicated_acct_host_only": &schema.Schema{
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+
+			"frontend_vlan_id": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+
+			"backend_vlan_id": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 
 			"disks": &schema.Schema{
@@ -81,6 +124,23 @@ func resourceSoftLayerVirtualserver() *schema.Resource {
 			"user_data": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+
+			"local_disk": &schema.Schema{
+				Type:     schema.TypeBool,
+				Required: true,
+			},
+
+			"post_install_script_uri": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  nil,
+			},
+
+			"block_device_template_group_gid": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 		},
 	}
@@ -132,23 +192,61 @@ func resourceSoftLayerVirtualserverCreate(d *schema.ResourceData, meta interface
 		MaxSpeed: d.Get("public_network_speed").(int),
 	}
 
+	privateNetworkOnly := d.Get("private_network_only").(bool)
 	opts := datatypes.SoftLayer_Virtual_Guest_Template {
 		Hostname: d.Get("name").(string),
 		Domain: d.Get("domain").(string),
-		OperatingSystemReferenceCode: d.Get("image").(string),
-		HourlyBillingFlag: true,
+		HourlyBillingFlag: d.Get("hourly_billing").(bool),
+		PrivateNetworkOnlyFlag: privateNetworkOnly,
 		Datacenter: dc,
 		StartCpus: d.Get("cpu").(int),
 		MaxMemory: d.Get("ram").(int),
 		NetworkComponents: []datatypes.NetworkComponents{networkComponent},
 		BlockDevices: getBlockDevices(d),
+		LocalDiskFlag: d.Get("local_disk").(bool),
+		PostInstallScriptUri: d.Get("post_install_script_uri").(string),
 	}
 
-	userData := d.Get("user_data").(string)
-	if userData != "" {
+	if dedicatedAcctHostOnly, ok := d.GetOk("dedicated_acct_host_only"); ok {
+		opts.DedicatedAccountHostOnlyFlag = dedicatedAcctHostOnly.(bool)
+	}
+
+	if globalIdentifier, ok := d.GetOk("block_device_template_group_gid"); ok {
+		opts.BlockDeviceTemplateGroup = &datatypes.BlockDeviceTemplateGroup {
+			GlobalIdentifier: globalIdentifier.(string),
+		}
+	}
+
+	if operatingSystemReferenceCode, ok := d.GetOk("image") ; ok {
+		opts.OperatingSystemReferenceCode = operatingSystemReferenceCode.(string)
+	}
+
+	// Apply frontend VLAN if provided
+	if param, ok := d.GetOk("frontend_vlan_id"); ok {
+		frontendVlanId, err := strconv.Atoi(param.(string))
+		if err != nil {
+			return fmt.Errorf("Not a valid frontend ID, must be an integer: %s", err)
+		}
+		opts.PrimaryNetworkComponent = &datatypes.PrimaryNetworkComponent{
+			NetworkVlan:datatypes.NetworkVlan{int(frontendVlanId)},
+		}
+	}
+
+	// Apply backend VLAN if provided
+	if param, ok := d.GetOk("backend_vlan_id"); ok {
+		backendVlanId, err := strconv.Atoi(param.(string))
+		if err != nil {
+			return fmt.Errorf("Not a valid backend ID, must be an integer: %s", err)
+		}
+		opts.PrimaryBackendNetworkComponent = &datatypes.PrimaryBackendNetworkComponent{
+			NetworkVlan:datatypes.NetworkVlan{int(backendVlanId)},
+		}
+	}
+
+	if userData, ok := d.GetOk("user_data"); ok {
 		opts.UserData = []datatypes.UserData {
 			datatypes.UserData {
-				Value: userData,
+				Value: userData.(string),
 			},
 		}
 	}
@@ -187,10 +285,12 @@ func resourceSoftLayerVirtualserverCreate(d *schema.ResourceData, meta interface
 			"Error waiting for virtual machine (%s) to become ready: %s", d.Id(), err)
 	}
 
-	_, err = WaitForPublicIpAvailable(d, meta)
-	if err != nil {
-		return fmt.Errorf(
-			"Error waiting for virtual machine (%s) to become ready: %s", d.Id(), err)
+	if (!privateNetworkOnly) {
+		_, err = WaitForPublicIpAvailable(d, meta)
+		if err != nil {
+			return fmt.Errorf(
+				"Error waiting for virtual machine (%s) public ip to become ready: %s", d.Id(), err)
+		}
 	}
 
 	return resourceSoftLayerVirtualserverRead(d, meta)
@@ -215,9 +315,27 @@ func resourceSoftLayerVirtualserverRead(d *schema.ResourceData, meta interface{}
 	d.Set("public_network_speed", result.NetworkComponents[0].MaxSpeed)
 	d.Set("cpu", result.StartCpus)
 	d.Set("ram", result.MaxMemory)
+	d.Set("dedicated_acct_host_only", result.DedicatedAccountHostOnlyFlag)
 	d.Set("has_public_ip", result.PrimaryIpAddress != "")
 	d.Set("ipv4_address", result.PrimaryIpAddress)
 	d.Set("ipv4_address_private", result.PrimaryBackendIpAddress)
+	d.Set("private_network_only", result.PrivateNetworkOnlyFlag)
+	d.Set("hourly_billing", result.HourlyBillingFlag)
+	d.Set("local_disk", result.LocalDiskFlag)
+	d.Set("frontend_vlan_id", result.PrimaryNetworkComponent.NetworkVlan.Id)
+	d.Set("backend_vlan_id", result.PrimaryBackendNetworkComponent.NetworkVlan.Id)
+
+	userData := result.UserData
+	if userData != nil && len(userData) > 0 {
+		data, err := base64.StdEncoding.DecodeString(userData[0].Value)
+		if err != nil {
+			log.Printf("Can't base64 decode user data %s. error: %s", userData, err)
+			d.Set("user_data", userData)
+		} else {
+			d.Set("user_data", string(data))
+		}
+	}
+	
 	return nil
 }
 
@@ -232,28 +350,54 @@ func resourceSoftLayerVirtualserverUpdate(d *schema.ResourceData, meta interface
 		return fmt.Errorf("Error retrieving virtual server: %s", err)
 	}
 
-	result.Hostname = d.Get("name").(string)
-	result.Domain = d.Get("domain").(string)
-	result.StartCpus = d.Get("cpu").(int)
-	result.MaxMemory = d.Get("ram").(int)
-	result.NetworkComponents[0].MaxSpeed = d.Get("public_network_speed").(int)
+	// Update "name" and "domain" fields if present and changed
+	// Those are the only fields, which could be updated
+	if d.HasChange("name") || d.HasChange("domain") {
+		result.Hostname = d.Get("name").(string)
+		result.Domain = d.Get("domain").(string)
 
-	userData := d.Get("user_data").(string)
-	if userData != "" {
-		result.UserData = []datatypes.UserData {
-			datatypes.UserData {
-				Value: userData,
-			},
+		_, err = client.EditObject(id, result)
+
+		if err != nil {
+			return fmt.Errorf("Couldn't update virtual server: %s", err)
 		}
 	}
+	
+	// Set user data if provided and not empty
+	if d.HasChange("user_data") {
+		client.SetMetadata(id, d.Get("user_data").(string))
+	}
+	
+	// Upgrade "cpu", "ram" and "nic_speed" if provided and changed
+	upgradeOptions := softlayer.UpgradeOptions{}
+	if d.HasChange("cpu") {
+		upgradeOptions.Cpus = d.Get("cpu").(int)
+	}
+	if d.HasChange("ram") {
+		memoryInMB := float64(d.Get("ram").(int))
 
-	_, err = client.EditObject(id, result)
-
-	if err != nil {
-		return fmt.Errorf("Couldn't update virtual server: %s", err)
+		// Convert memory to GB, as softlayer only allows to upgrade RAM in Gigs
+		// Must be already validated at this step
+		upgradeOptions.MemoryInGB = int(memoryInMB / 1024)
+	}
+	if d.HasChange("public_network_speed") {
+		upgradeOptions.NicSpeed = d.Get("public_network_speed").(int)
 	}
 
-	return nil
+	started, err := client.UpgradeObject(id, &upgradeOptions)
+	if err != nil {
+		return fmt.Errorf("Couldn't upgrade virtual server: %s", err)
+	}
+
+	if started {
+		// Wait for softlayer to start upgrading...
+		_,err = WaitForUpgradeTransactionsToAppear(d, meta)
+
+		// Wait for upgrade transactions to finish
+		_, err = WaitForNoActiveTransactions(d, meta)
+	}
+
+	return err
 }
 
 func resourceSoftLayerVirtualserverDelete(d *schema.ResourceData, meta interface{}) error {
@@ -276,6 +420,39 @@ func resourceSoftLayerVirtualserverDelete(d *schema.ResourceData, meta interface
 	}
 
 	return nil
+}
+
+func WaitForUpgradeTransactionsToAppear(d *schema.ResourceData, meta interface{}) (interface{}, error) {
+
+	log.Printf("Waiting for server (%s) to have upgrade transactions", d.Id())
+
+	id, err := strconv.Atoi(d.Id())
+	if err != nil {
+		return nil, fmt.Errorf("The instance ID %s must be numeric", d.Id())
+	}
+
+	stateConf := &resource.StateChangeConf{
+		Pending: []string{"pending_upgrade"},
+		Target: "upgrade_started",
+		Refresh: func() (interface{}, string, error) {
+			client := meta.(*Client).virtualGuestService
+			transactions, err := client.GetActiveTransactions(id)
+			if err != nil {
+				return nil, "", fmt.Errorf("Couldn't fetch active transactions: %s", err)
+			}
+			for _, transaction := range transactions {
+				if strings.Contains(transaction.TransactionStatus.Name, "UPGRADE") {
+					return transactions, "upgrade_started", nil
+				}
+			}
+			return transactions, "pending_upgrade", nil
+		},
+		Timeout: 5 * time.Minute,
+		Delay: 5 * time.Second,
+		MinTimeout: 3 * time.Second,
+	}
+
+	return stateConf.WaitForState()
 }
 
 func WaitForPublicIpAvailable(d *schema.ResourceData, meta interface{}) (interface{}, error) {
