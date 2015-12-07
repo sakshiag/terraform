@@ -48,6 +48,7 @@ The following arguments are supported:
 * `network_interface` - (Required) Configures virtual network interfaces; see [Network Interfaces](#network-interfaces) below for details.
 * `disk` - (Required) Configures virtual disks; see [Disks](#disks) below for details
 * `boot_delay` - (Optional) Time in seconds to wait for machine network to be ready.
+* `custom_configuration_parameters` - (Optional) Map of values that is set as virtual machine custom configurations.
 
 <a id="network-interfaces"></a>
 ## Network Interfaces
@@ -55,7 +56,7 @@ The following arguments are supported:
 Network interfaces support the following attributes:
 
 * `label` - (Required) Label to assign to this network interface
-* `ip_address` - (Optional) Static IP to assign to this network interface. Interface will use DHCP if this is left blank.
+* `ip_address` - (Optional) Static IP to assign to this network interface. Interface will use DHCP if this is left blank. Currently only IPv4 IP addresses are supported.
 * `subnet_mask` - (Optional) Subnet mask to use when statically assigning an IP.
 
 <a id="disks"></a>

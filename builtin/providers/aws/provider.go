@@ -5,11 +5,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/awslabs/aws-sdk-go/aws/credentials/ec2rolecreds"
 	"github.com/hashicorp/terraform/helper/hashcode"
+	"github.com/hashicorp/terraform/helper/mutexkv"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
+
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
+	"github.com/aws/aws-sdk-go/aws/ec2metadata"
+	"github.com/aws/aws-sdk-go/aws/session"
 )
 
 // Provider returns a terraform.ResourceProvider.
@@ -40,7 +44,7 @@ func Provider() terraform.ResourceProvider {
 		conn, err := net.DialTimeout("tcp", "169.254.169.254:80", 100*time.Millisecond)
 		if err == nil {
 			conn.Close()
-			providers = append(providers, &ec2rolecreds.EC2RoleProvider{})
+			providers = append(providers, &ec2rolecreds.EC2RoleProvider{Client: ec2metadata.New(session.New())})
 		}
 
 		credVal, credErr = credentials.NewChainCredentials(providers).Get()
@@ -219,6 +223,7 @@ func Provider() terraform.ResourceProvider {
 			"aws_kinesis_firehose_delivery_stream": resourceAwsKinesisFirehoseDeliveryStream(),
 			"aws_kinesis_stream":                   resourceAwsKinesisStream(),
 			"aws_lambda_function":                  resourceAwsLambdaFunction(),
+			"aws_lambda_event_source_mapping":      resourceAwsLambdaEventSourceMapping(),
 			"aws_launch_configuration":             resourceAwsLaunchConfiguration(),
 			"aws_lb_cookie_stickiness_policy":      resourceAwsLBCookieStickinessPolicy(),
 			"aws_main_route_table_association":     resourceAwsMainRouteTableAssociation(),
@@ -320,3 +325,6 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 
 	return config.Client()
 }
+
+// This is a global MutexKV for use within this plugin.
+var awsMutexKV = mutexkv.NewMutexKV()
