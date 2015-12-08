@@ -11,6 +11,7 @@ import (
 
 func resourceSoftLayerDnsDomain() *schema.Resource {
 	return &schema.Resource{
+		Exists: resourceSoftLayerDnsDomainExists,
 		Create: resourceSoftLayerDnsDomainCreate,
 		Read: resourceSoftLayerDnsDomainRead,
 		Update: resourceSoftLayerDnsDomainUpdate,
@@ -42,7 +43,90 @@ func resourceSoftLayerDnsDomain() *schema.Resource {
 				Computed:	true,
 				Optional:	true,
 				Elem:		&schema.Resource{
-					Schema: get_dns_domain_record_scheme(),
+					Schema: map[string]*schema.Schema{
+						"record_data": &schema.Schema{
+							Type:     schema.TypeString,
+							Required: true,
+							ForceNew: true,
+						},
+
+						"domain_id": &schema.Schema{
+							Type:     schema.TypeInt,
+							Required: true,
+							ForceNew: true,
+						},
+
+						"expire": &schema.Schema{
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+
+						"host": &schema.Schema{
+							Type:     schema.TypeString,
+							Required: true,
+						},
+
+						"minimum_ttl": &schema.Schema{
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+
+						"mx_priority": &schema.Schema{
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+
+						"refresh": &schema.Schema{
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+
+						"contact_email": &schema.Schema{
+							Type:     schema.TypeString,
+							Required: true,
+						},
+
+						"retry": &schema.Schema{
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+
+						"ttl": &schema.Schema{
+							Type:     schema.TypeInt,
+							Required: true,
+						},
+
+						"record_type": &schema.Schema{
+							Type:     schema.TypeString,
+							Required: true,
+							ForceNew: true,
+						},
+
+						"service": &schema.Schema{
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+
+						"protocol": &schema.Schema{
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+
+						"port": &schema.Schema{
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+
+						"priority": &schema.Schema{
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+
+						"weight": &schema.Schema{
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+					},
 				},
 			},
 		},
@@ -165,4 +249,16 @@ func resourceSoftLayerDnsDomainDelete(d *schema.ResourceData, meta interface{}) 
 
 	d.SetId("")
 	return nil
+}
+
+func resourceSoftLayerDnsDomainExists(d *schema.ResourceData, meta interface{}) (bool, error) {
+	client := meta.(*Client).dnsDomainService
+
+	dnsId, err := strconv.Atoi(d.Id())
+	if err != nil {
+		return false, fmt.Errorf("Error deleting Dns Domain: %s", err)
+	}
+
+	result, err := client.GetObject(dnsId)
+	return result.Id == dnsId && err == nil, nil
 }
