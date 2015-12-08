@@ -41,12 +41,14 @@ func resourceSoftLayerVirtualserver() *schema.Resource {
 			"hourly_billing": &schema.Schema{
 				Type:     schema.TypeBool,
 				Required: true,
+				ForceNew: true,
 			},
 
 			"private_network_only": &schema.Schema{
 				Type:     schema.TypeBool,
 				Optional: true,
-				Default: false,
+				Default:  false,
+				ForceNew: true,
 			},
 
 			"region": &schema.Schema{
@@ -58,6 +60,10 @@ func resourceSoftLayerVirtualserver() *schema.Resource {
 			"cpu": &schema.Schema{
 				Type:     schema.TypeInt,
 				Required: true,
+				// TODO: This fields for now requires recreation, because currently for some reason SoftLayer resets "dedicated_acct_host_only"
+				// TODO: flag to false, while upgrading CPUs. That problem is reported to SoftLayer team. "ForceNew" can be set back
+				// TODO: to false as soon as it is fixed at their side. Also corresponding test for virtual guest upgrade will be uncommented.
+				ForceNew: true,
 			},
 
 			"ram": &schema.Schema{
@@ -81,16 +87,19 @@ func resourceSoftLayerVirtualserver() *schema.Resource {
 			"dedicated_acct_host_only": &schema.Schema{
 				Type:     schema.TypeBool,
 				Optional: true,
+				ForceNew: true,
 			},
 
 			"frontend_vlan_id": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 			},
 
 			"backend_vlan_id": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 			},
 
 			"disks": &schema.Schema{
@@ -102,7 +111,7 @@ func resourceSoftLayerVirtualserver() *schema.Resource {
 			"public_network_speed": &schema.Schema{
 				Type:     schema.TypeInt,
 				Optional: true,
-				Default: 1000,
+				Default:  1000,
 			},
 
 			"ipv4_address": &schema.Schema{
@@ -129,12 +138,14 @@ func resourceSoftLayerVirtualserver() *schema.Resource {
 			"local_disk": &schema.Schema{
 				Type:     schema.TypeBool,
 				Required: true,
+				ForceNew: true,
 			},
 
 			"post_install_script_uri": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  nil,
+				ForceNew: true,
 			},
 
 			"block_device_template_group_gid": &schema.Schema{
