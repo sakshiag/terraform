@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
-//	"time"
 
-//	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	datatypes "github.com/TheWeatherCompany/softlayer-go/data_types"
 )
@@ -25,7 +23,8 @@ func resourceSoftLayerDnsDomainResourceRecord() *schema.Resource {
 //  Creates DNS Domain Resource Record
 //  https://sldn.softlayer.com/reference/services/SoftLayer_Dns_Domain_ResourceRecord/createObject
 func resourceSoftLayerDnsDomainResourceRecordCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*Client).dnsDomainResourceRecord
+	client := meta.(*Client).dnsDomainResourceRecordService
+
 	if client == nil {
 		return fmt.Errorf("The client was nil.")
 	}
@@ -42,6 +41,11 @@ func resourceSoftLayerDnsDomainResourceRecordCreate(d *schema.ResourceData, meta
 		Retry: d.Get("retry").(int),
 		Ttl: d.Get("ttl").(int),
 		Type: d.Get("record_type").(string),
+		Service: d.Get("service").(string),
+		Protocol: d.Get("protocol").(string),
+		Priority: d.Get("priority").(int),
+		Weight: d.Get("weight").(int),
+		Port: d.Get("port").(int),
 	}
 
 	log.Printf("[INFO] Creating DNS Resource Record for '%d' dns domain", d.Get("id"))
@@ -62,7 +66,12 @@ func resourceSoftLayerDnsDomainResourceRecordCreate(d *schema.ResourceData, meta
 //  Reads DNS Domain Resource Record from SL system
 //  https://sldn.softlayer.com/reference/services/SoftLayer_Dns_Domain_ResourceRecord/getObject
 func resourceSoftLayerDnsDomainResourceRecordRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*Client).dnsDomainResourceRecord
+	client := meta.(*Client).dnsDomainResourceRecordService
+
+	if client == nil {
+		return fmt.Errorf("The client was nil.")
+	}
+
 	id, err := strconv.Atoi(d.Id())
 	if err != nil {
 		return fmt.Errorf("Not a valid ID, must be an integer: %s", err)
@@ -84,6 +93,11 @@ func resourceSoftLayerDnsDomainResourceRecordRead(d *schema.ResourceData, meta i
 	d.Set("retry", result.Retry)
 	d.Set("ttl", result.Ttl)
 	d.Set("type", result.Type)
+	d.Set("service", result.Service)
+	d.Set("protocol", result.Protocol)
+	d.Set("port", result.Port)
+	d.Set("priority", result.Priority)
+	d.Set("weight", result.Weight)
 
 	return nil
 }
@@ -92,7 +106,11 @@ func resourceSoftLayerDnsDomainResourceRecordRead(d *schema.ResourceData, meta i
 //  Updates DNS Domain Resource Record in SL system
 //  https://sldn.softlayer.com/reference/services/SoftLayer_Dns_Domain_ResourceRecord/editObject
 func resourceSoftLayerDnsDomainResourceRecordUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*Client).dnsDomainResourceRecord
+	client := meta.(*Client).dnsDomainResourceRecordService
+
+	if client == nil {
+		return fmt.Errorf("The client was nil.")
+	}
 
 	recordId, _ := strconv.Atoi(d.Id())
 
@@ -134,6 +152,21 @@ func resourceSoftLayerDnsDomainResourceRecordUpdate(d *schema.ResourceData, meta
 	if record_type, ok := d.GetOk("record_type"); ok {
 		record.Type = record_type.(string)
 	}
+	if service, ok := d.GetOk("service"); ok {
+		record.Service = service.(string)
+	}
+	if priority, ok := d.GetOk("priority"); ok {
+		record.Priority = priority.(int)
+	}
+	if protocol, ok := d.GetOk("protocol"); ok {
+		record.Protocol = protocol.(string)
+	}
+	if port, ok := d.GetOk("port"); ok {
+		record.Port = port.(int)
+	}
+	if weight, ok := d.GetOk("weight"); ok {
+		record.Weight = weight.(int)
+	}
 
 	_, err = client.EditObject(recordId, record)
 	if err != nil {
@@ -145,8 +178,12 @@ func resourceSoftLayerDnsDomainResourceRecordUpdate(d *schema.ResourceData, meta
 //  Deletes DNS Domain Resource Record in SL system
 //  https://sldn.softlayer.com/reference/services/SoftLayer_Dns_Domain_ResourceRecord/deleteObject
 func resourceSoftLayerDnsDomainResourceRecordDelete(d *schema.ResourceData, meta interface{}) error {
-	log.Println("DeleteDNS Record!")
-	client := meta.(*Client).dnsDomainResourceRecord
+	client := meta.(*Client).dnsDomainResourceRecordService
+
+	if client == nil {
+		return fmt.Errorf("The client was nil.")
+	}
+
 	id, err := strconv.Atoi(d.Id())
 	if err != nil {
 		return fmt.Errorf("Not a valid ID, must be an integer: %s", err)
@@ -168,6 +205,7 @@ func get_dns_domain_record_scheme()  map[string]*schema.Schema {
 		"record_data": &schema.Schema{
 			Type:     schema.TypeString,
 			Required: true,
+			ForceNew: true,
 		},
 
 		"domain_id": &schema.Schema{
@@ -218,6 +256,32 @@ func get_dns_domain_record_scheme()  map[string]*schema.Schema {
 		"record_type": &schema.Schema{
 			Type:     schema.TypeString,
 			Required: true,
+			ForceNew: true,
+		},
+
+		"service": &schema.Schema{
+			Type:     schema.TypeString,
+			Optional: true,
+		},
+
+		"protocol": &schema.Schema{
+			Type:     schema.TypeString,
+			Optional: true,
+		},
+
+		"port": &schema.Schema{
+			Type:     schema.TypeInt,
+			Optional: true,
+		},
+
+		"priority": &schema.Schema{
+			Type:     schema.TypeInt,
+			Optional: true,
+		},
+
+		"weight": &schema.Schema{
+			Type:     schema.TypeInt,
+			Optional: true,
 		},
 	}
 }
