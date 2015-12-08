@@ -11,11 +11,94 @@ import (
 
 func resourceSoftLayerDnsDomainResourceRecord() *schema.Resource {
 	return &schema.Resource{
+		Exists: resourceSoftLayerDnsDomainResourceRecordExists,
 		Create: resourceSoftLayerDnsDomainResourceRecordCreate,
 		Read: resourceSoftLayerDnsDomainResourceRecordRead,
 		Update: resourceSoftLayerDnsDomainResourceRecordUpdate,
 		Delete: resourceSoftLayerDnsDomainResourceRecordDelete,
-		Schema: get_dns_domain_record_scheme(),
+		Schema: map[string]*schema.Schema{
+			"record_data": &schema.Schema{
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+
+			"domain_id": &schema.Schema{
+				Type:     schema.TypeInt,
+				Required: true,
+			},
+
+			"expire": &schema.Schema{
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+
+			"host": &schema.Schema{
+				Type:     schema.TypeString,
+				Required: true,
+			},
+
+			"minimum_ttl": &schema.Schema{
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+
+			"mx_priority": &schema.Schema{
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+
+			"refresh": &schema.Schema{
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+
+			"contact_email": &schema.Schema{
+				Type:     schema.TypeString,
+				Required: true,
+			},
+
+			"retry": &schema.Schema{
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+
+			"ttl": &schema.Schema{
+				Type:     schema.TypeInt,
+				Required: true,
+			},
+
+			"record_type": &schema.Schema{
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+
+			"service": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+
+			"protocol": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+
+			"port": &schema.Schema{
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+
+			"priority": &schema.Schema{
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+
+			"weight": &schema.Schema{
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+		},
 	}
 }
 
@@ -198,90 +281,21 @@ func resourceSoftLayerDnsDomainResourceRecordDelete(d *schema.ResourceData, meta
 	return nil
 }
 
-// the scheme is used by dns_domain_service,
-// so it's creation is extracted to a separate function
-func get_dns_domain_record_scheme()  map[string]*schema.Schema {
-	return map[string]*schema.Schema{
-		"record_data": &schema.Schema{
-			Type:     schema.TypeString,
-			Required: true,
-			ForceNew: true,
-		},
+// Exists function is called by refresh
+// if the entity is absent - it is deleted from the .tfstate file
+func resourceSoftLayerDnsDomainResourceRecordExists(d *schema.ResourceData, meta interface{}) (bool, error) {
+	client := meta.(*Client).dnsDomainResourceRecordService
 
-		"domain_id": &schema.Schema{
-			Type:     schema.TypeInt,
-			Required: true,
-		},
-
-		"expire": &schema.Schema{
-			Type:     schema.TypeInt,
-			Optional: true,
-		},
-
-		"host": &schema.Schema{
-			Type:     schema.TypeString,
-			Required: true,
-		},
-
-		"minimum_ttl": &schema.Schema{
-			Type:     schema.TypeInt,
-			Optional: true,
-		},
-
-		"mx_priority": &schema.Schema{
-			Type:     schema.TypeInt,
-			Optional: true,
-		},
-
-		"refresh": &schema.Schema{
-			Type:     schema.TypeInt,
-			Optional: true,
-		},
-
-		"contact_email": &schema.Schema{
-			Type:     schema.TypeString,
-			Required: true,
-		},
-
-		"retry": &schema.Schema{
-			Type:     schema.TypeInt,
-			Optional: true,
-		},
-
-		"ttl": &schema.Schema{
-			Type:     schema.TypeInt,
-			Required: true,
-		},
-
-		"record_type": &schema.Schema{
-			Type:     schema.TypeString,
-			Required: true,
-			ForceNew: true,
-		},
-
-		"service": &schema.Schema{
-			Type:     schema.TypeString,
-			Optional: true,
-		},
-
-		"protocol": &schema.Schema{
-			Type:     schema.TypeString,
-			Optional: true,
-		},
-
-		"port": &schema.Schema{
-			Type:     schema.TypeInt,
-			Optional: true,
-		},
-
-		"priority": &schema.Schema{
-			Type:     schema.TypeInt,
-			Optional: true,
-		},
-
-		"weight": &schema.Schema{
-			Type:     schema.TypeInt,
-			Optional: true,
-		},
+	if client == nil {
+		return false, fmt.Errorf("The client was nil.")
 	}
+
+	id, err := strconv.Atoi(d.Id())
+	if err != nil {
+		return false, fmt.Errorf("Not a valid ID, must be an integer: %s", err)
+	}
+
+	record, err := client.GetObject(id)
+
+	return record.Id == id && err == nil, nil
 }
