@@ -26,6 +26,7 @@ func resourceSoftLayerDnsDomainResourceRecord() *schema.Resource {
 			"domain_id": &schema.Schema{
 				Type:     schema.TypeInt,
 				Required: true,
+				ForceNew: true,
 			},
 
 			"expire": &schema.Schema{
