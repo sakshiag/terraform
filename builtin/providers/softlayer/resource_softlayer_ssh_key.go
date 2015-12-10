@@ -38,6 +38,12 @@ func resourceSoftLayerSSHKey() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+
+			"notes": &schema.Schema{
+				Type: 		schema.TypeString,
+				Optional:	true,
+				Default:	nil,
+			},
 		},
 	}
 }
@@ -49,6 +55,10 @@ func resourceSoftLayerSSHKeyCreate(d *schema.ResourceData, meta interface{}) err
 	opts := datatypes.SoftLayer_Security_Ssh_Key{
 		Label: d.Get("name").(string),
 		Key: d.Get("public_key").(string),
+	}
+
+	if notes, ok := d.GetOk("notes"); ok {
+		opts.Notes = notes.(string)
 	}
 
 	res, err := client.CreateObject(opts)
@@ -83,6 +93,7 @@ func resourceSoftLayerSSHKeyRead(d *schema.ResourceData, meta interface{}) error
 	d.Set("name", key.Label)
 	d.Set("public_key", strings.TrimSpace(key.Key))
 	d.Set("fingerprint", key.Fingerprint)
+	d.Set("notes", key.Notes)
 
 	return nil
 }
@@ -97,7 +108,13 @@ func resourceSoftLayerSSHKeyUpdate(d *schema.ResourceData, meta interface{}) err
 		return fmt.Errorf("Error retrieving SSH key: %s", err)
 	}
 
-	key.Label = d.Get("name").(string)
+	if d.HasChange("name") {
+		key.Label = d.Get("name").(string)
+	}
+
+	if d.HasChange("notes") {
+		key.Notes = d.Get("notes").(string)
+	}
 
 	_, err = client.EditObject(keyId, key)
 	if err != nil {
