@@ -8,11 +8,12 @@ import (
 
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
-	datatypes "github.com/TheWeatherCompany/softlayer-go/data_types"
-	"github.com/TheWeatherCompany/softlayer-go/softlayer"
+	datatypes "github.com/maximilien/softlayer-go/data_types"
+	"github.com/maximilien/softlayer-go/softlayer"
 	"encoding/base64"
 	"math"
 	"strings"
+	
 )
 
 func resourceSoftLayerVirtualserver() *schema.Resource {
