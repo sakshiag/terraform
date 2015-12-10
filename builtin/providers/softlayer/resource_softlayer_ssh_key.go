@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/terraform/helper/schema"
-	datatypes "github.com/TheWeatherCompany/softlayer-go/data_types"
+	datatypes "github.com/maximilien/softlayer-go/data_types"
 )
 
 func resourceSoftLayerSSHKey() *schema.Resource {

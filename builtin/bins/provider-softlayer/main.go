@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/TheWeatherCompany/terraform/builtin/providers/softlayer"
+	"github.com/hashicorp/terraform/builtin/providers/softlayer"
 	"github.com/hashicorp/terraform/plugin"
 )
 
