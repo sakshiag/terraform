@@ -16,12 +16,12 @@ import (
 	
 )
 
-func resourceSoftLayerVirtualserver() *schema.Resource {
+func resourceSoftLayerVirtualGuest() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceSoftLayerVirtualserverCreate,
-		Read: resourceSoftLayerVirtualserverRead,
-		Update: resourceSoftLayerVirtualserverUpdate,
-		Delete: resourceSoftLayerVirtualserverDelete,
+		Create: resourceSoftLayerVirtualGuestCreate,
+		Read: resourceSoftLayerVirtualGuestRead,
+		Update: resourceSoftLayerVirtualGuestUpdate,
+		Delete: resourceSoftLayerVirtualGuestDelete,
 		Schema: map[string]*schema.Schema{
 			"name": &schema.Schema{
 				Type:     schema.TypeString,
@@ -190,7 +190,7 @@ func getBlockDevices(d *schema.ResourceData) []datatypes.BlockDevice {
 	}
 }
 
-func resourceSoftLayerVirtualserverCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceSoftLayerVirtualGuestCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client).virtualGuestService
 	if client == nil {
 		return fmt.Errorf("The client was nil.")
@@ -282,7 +282,7 @@ func resourceSoftLayerVirtualserverCreate(d *schema.ResourceData, meta interface
 	guest, err := client.CreateObject(opts)
 
 	if err != nil {
-		return fmt.Errorf("Error creating virtual server: %s", err)
+		return fmt.Errorf("Error creating virtual guest: %s", err)
 	}
 
 	d.SetId(fmt.Sprintf("%d", guest.Id))
@@ -305,10 +305,10 @@ func resourceSoftLayerVirtualserverCreate(d *schema.ResourceData, meta interface
 		}
 	}
 
-	return resourceSoftLayerVirtualserverRead(d, meta)
+	return resourceSoftLayerVirtualGuestRead(d, meta)
 }
 
-func resourceSoftLayerVirtualserverRead(d *schema.ResourceData, meta interface{}) error {
+func resourceSoftLayerVirtualGuestRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client).virtualGuestService
 	id, err := strconv.Atoi(d.Id())
 	if err != nil {
@@ -316,7 +316,7 @@ func resourceSoftLayerVirtualserverRead(d *schema.ResourceData, meta interface{}
 	}
 	result, err := client.GetObject(id)
 	if err != nil {
-		return fmt.Errorf("Error retrieving virtual server: %s", err)
+		return fmt.Errorf("Error retrieving virtual guest: %s", err)
 	}
 
 	d.Set("name", result.Hostname)
@@ -351,7 +351,7 @@ func resourceSoftLayerVirtualserverRead(d *schema.ResourceData, meta interface{}
 	return nil
 }
 
-func resourceSoftLayerVirtualserverUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceSoftLayerVirtualGuestUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client).virtualGuestService
 	id, err := strconv.Atoi(d.Id())
 	if err != nil {
@@ -359,7 +359,7 @@ func resourceSoftLayerVirtualserverUpdate(d *schema.ResourceData, meta interface
 	}
 	result, err := client.GetObject(id)
 	if err != nil {
-		return fmt.Errorf("Error retrieving virtual server: %s", err)
+		return fmt.Errorf("Error retrieving virtual guest: %s", err)
 	}
 
 	// Update "name" and "domain" fields if present and changed
@@ -371,7 +371,7 @@ func resourceSoftLayerVirtualserverUpdate(d *schema.ResourceData, meta interface
 		_, err = client.EditObject(id, result)
 
 		if err != nil {
-			return fmt.Errorf("Couldn't update virtual server: %s", err)
+			return fmt.Errorf("Couldn't update virtual guest: %s", err)
 		}
 	}
 	
@@ -398,7 +398,7 @@ func resourceSoftLayerVirtualserverUpdate(d *schema.ResourceData, meta interface
 
 	started, err := client.UpgradeObject(id, &upgradeOptions)
 	if err != nil {
-		return fmt.Errorf("Couldn't upgrade virtual server: %s", err)
+		return fmt.Errorf("Couldn't upgrade virtual guest: %s", err)
 	}
 
 	if started {
@@ -412,7 +412,7 @@ func resourceSoftLayerVirtualserverUpdate(d *schema.ResourceData, meta interface
 	return err
 }
 
-func resourceSoftLayerVirtualserverDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceSoftLayerVirtualGuestDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client).virtualGuestService
 	id, err := strconv.Atoi(d.Id())
 	if err != nil {
@@ -422,13 +422,13 @@ func resourceSoftLayerVirtualserverDelete(d *schema.ResourceData, meta interface
 	_, err = WaitForNoActiveTransactions(d, meta)
 
 	if err != nil {
-		return fmt.Errorf("Error deleting virtual server, couldn't wait for zero active transactions: %s", err)
+		return fmt.Errorf("Error deleting virtual guest, couldn't wait for zero active transactions: %s", err)
 	}
 
 	_, err = client.DeleteObject(id)
 
 	if err != nil {
-		return fmt.Errorf("Error deleting virtual server: %s", err)
+		return fmt.Errorf("Error deleting virtual guest: %s", err)
 	}
 
 	return nil
@@ -482,7 +482,7 @@ func WaitForPublicIpAvailable(d *schema.ResourceData, meta interface{}) (interfa
 			}
 			result, err := client.GetObject(id)
 			if err != nil {
-				return nil, "", fmt.Errorf("Error retrieving virtual server: %s", err)
+				return nil, "", fmt.Errorf("Error retrieving virtual guest: %s", err)
 			}
 			if result.PrimaryIpAddress == "" {
 				return result, "unavailable", nil

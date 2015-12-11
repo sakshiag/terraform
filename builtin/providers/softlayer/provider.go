@@ -23,7 +23,7 @@ func Provider() terraform.ResourceProvider {
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
-			"softlayer_virtualserver": resourceSoftLayerVirtualserver(),
+			"softlayer_virtual_guest": resourceSoftLayerVirtualGuest(),
 			"softlayer_ssh_key": resourceSoftLayerSSHKey(),
 			"softlayer_dns_domain_record": resourceSoftLayerDnsDomainResourceRecord(),
 			"softlayer_dns_domain": resourceSoftLayerDnsDomain(),
