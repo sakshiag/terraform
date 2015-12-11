@@ -254,9 +254,13 @@ func resourceSoftLayerDnsDomainDelete(d *schema.ResourceData, meta interface{}) 
 func resourceSoftLayerDnsDomainExists(d *schema.ResourceData, meta interface{}) (bool, error) {
 	client := meta.(*Client).dnsDomainService
 
+	if client == nil {
+		return false, fmt.Errorf("The client was nil.")
+	}
+
 	dnsId, err := strconv.Atoi(d.Id())
 	if err != nil {
-		return false, fmt.Errorf("Error deleting Dns Domain: %s", err)
+		return false, fmt.Errorf("Not a valid ID, must be an integer: %s", err)
 	}
 
 	result, err := client.GetObject(dnsId)
