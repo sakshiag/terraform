@@ -16,6 +16,7 @@ func resourceSoftLayerSSHKey() *schema.Resource {
 		Read:   resourceSoftLayerSSHKeyRead,
 		Update: resourceSoftLayerSSHKeyUpdate,
 		Delete: resourceSoftLayerSSHKeyDelete,
+		Exists: resourceSoftLayerSSHKeyExists,
 
 		Schema: map[string]*schema.Schema{
 			"id": &schema.Schema{
@@ -139,4 +140,20 @@ func resourceSoftLayerSSHKeyDelete(d *schema.ResourceData, meta interface{}) err
 
 	d.SetId("")
 	return nil
+}
+
+func resourceSoftLayerSSHKeyExists(d *schema.ResourceData, meta interface{}) (bool, error) {
+	client := meta.(*Client).sshKeyService
+
+	if client == nil {
+		return false, fmt.Errorf("The client was nil.")
+	}
+
+	keyId, err := strconv.Atoi(d.Id())
+	if err != nil {
+		return false, fmt.Errorf("Not a valid ID, must be an integer: %s", err)
+	}
+
+	result, err := client.GetObject(keyId)
+	return result.Id == keyId && err == nil, nil
 }

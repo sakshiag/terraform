@@ -22,6 +22,8 @@ func resourceSoftLayerVirtualGuest() *schema.Resource {
 		Read: resourceSoftLayerVirtualGuestRead,
 		Update: resourceSoftLayerVirtualGuestUpdate,
 		Delete: resourceSoftLayerVirtualGuestDelete,
+		Exists: resourceSoftLayerVirtualGuestExists,
+
 		Schema: map[string]*schema.Schema{
 			"name": &schema.Schema{
 				Type:     schema.TypeString,
@@ -526,4 +528,20 @@ func WaitForNoActiveTransactions(d *schema.ResourceData, meta interface{}) (inte
 	}
 
 	return stateConf.WaitForState()
+}
+
+func resourceSoftLayerVirtualGuestExists(d *schema.ResourceData, meta interface{}) (bool, error) {
+	client := meta.(*Client).virtualGuestService
+
+	if client == nil {
+		return false, fmt.Errorf("The client was nil.")
+	}
+
+	guestId, err := strconv.Atoi(d.Id())
+	if err != nil {
+		return false, fmt.Errorf("Not a valid ID, must be an integer: %s", err)
+	}
+
+	result, err := client.GetObject(guestId)
+	return result.Id == guestId && err == nil, nil
 }
