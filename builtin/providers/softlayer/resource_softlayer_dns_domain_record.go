@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/hashicorp/terraform/helper/schema"
-	datatypes "github.com/TheWeatherCompany/softlayer-go/data_types"
+	datatypes "github.com/maximilien/softlayer-go/data_types"
 )
 
 func resourceSoftLayerDnsDomainResourceRecord() *schema.Resource {
@@ -113,7 +113,7 @@ func resourceSoftLayerDnsDomainResourceRecordCreate(d *schema.ResourceData, meta
 		return fmt.Errorf("The client was nil.")
 	}
 
-	opts := datatypes.SoftLayer_Dns_Domain_Record_Template{
+	opts := datatypes.SoftLayer_Dns_Domain_Resource_Record_Template{
 		Data: d.Get("record_data").(string),
 		DomainId: d.Get("domain_id").(int),
 		Expire: d.Get("expire").(int),

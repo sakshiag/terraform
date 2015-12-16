@@ -16,7 +16,7 @@ type Client struct {
 	virtualGuestService            softlayer.SoftLayer_Virtual_Guest_Service
 	sshKeyService                  softlayer.SoftLayer_Security_Ssh_Key_Service
 	productOrderService            softlayer.SoftLayer_Product_Order_Service
-	dnsDomainResourceRecordService softlayer.SoftLayer_Dns_Domain_Record_Service
+	dnsDomainResourceRecordService softlayer.SoftLayer_Dns_Domain_Resource_Record_Service
 	dnsDomainService               softlayer.SoftLayer_Dns_Domain_Service
 	ApiKey string
 }
@@ -47,7 +47,7 @@ func (c *Config) Client() (*Client, error) {
 		return nil, err
 	}
 
-	dnsDomainResourceRecordService, err := slc.GetSoftLayer_Dns_Domain_Record_Service()
+	dnsDomainResourceRecordService, err := slc.GetSoftLayer_Dns_Domain_Resource_Record_Service()
 
 	client := &Client {
 		virtualGuestService:			virtualGuestService,
