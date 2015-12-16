@@ -7,12 +7,12 @@ import (
 
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
-	datatypes "github.com/TheWeatherCompany/softlayer-go/data_types"
+	datatypes "github.com/maximilien/softlayer-go/data_types"
 )
 
 func TestAccSoftLayerDnsDomainRecord_Basic(t *testing.T) {
 	var dns_domain datatypes.SoftLayer_Dns_Domain
-	var dns_domain_record datatypes.SoftLayer_Dns_Domain_Record
+	var dns_domain_record datatypes.SoftLayer_Dns_Domain_Resource_Record
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -42,7 +42,7 @@ func TestAccSoftLayerDnsDomainRecord_Basic(t *testing.T) {
 
 func TestAccSoftLayerDnsDomainRecord_Types(t *testing.T) {
 	var dns_domain datatypes.SoftLayer_Dns_Domain
-	var dns_domain_record datatypes.SoftLayer_Dns_Domain_Record
+	var dns_domain_record datatypes.SoftLayer_Dns_Domain_Resource_Record
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -69,7 +69,7 @@ func TestAccSoftLayerDnsDomainRecord_Types(t *testing.T) {
 	})
 }
 
-func testAccCheckSoftLayerDnsDomainRecordExists(n string, dns_domain_record *datatypes.SoftLayer_Dns_Domain_Record) resource.TestCheckFunc {
+func testAccCheckSoftLayerDnsDomainRecordExists(n string, dns_domain_record *datatypes.SoftLayer_Dns_Domain_Resource_Record) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 
