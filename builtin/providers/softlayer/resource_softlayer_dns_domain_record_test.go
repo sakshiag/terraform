@@ -61,7 +61,6 @@ func TestAccSoftLayerDnsDomainRecord_Types(t *testing.T) {
 					testAccCheckSoftLayerDnsDomainRecordExists("softlayer_dns_domain_record.recordSPF", &dns_domain_record),
 					testAccCheckSoftLayerDnsDomainRecordExists("softlayer_dns_domain_record.recordTXT", &dns_domain_record),
 					testAccCheckSoftLayerDnsDomainRecordExists("softlayer_dns_domain_record.recordSRV", &dns_domain_record),
-					testAccCheckSoftLayerDnsDomainRecordExists("softlayer_dns_domain_record.recordPTR", &dns_domain_record),
 				),
 				Destroy: false,
 			},
@@ -199,14 +198,5 @@ resource "softlayer_dns_domain_record" "recordSRV" {
 	protocol = "_tcp"
 	weight = 3
 	service = "_mail"
-}
-
-resource "softlayer_dns_domain_record" "recordPTR" {
-    record_data = "ptr.domain.com"
-    domain_id = 1653916
-    host = "46"
-    contact_email = "user@softlaer.com"
-    ttl = 900
-    record_type = "ptr"
 }
 `
