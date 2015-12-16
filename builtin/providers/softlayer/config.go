@@ -20,6 +20,7 @@ type Client struct {
 
 func (c *Config) Client() (*Client, error) {
 	slc := slclient.NewSoftLayerClient(c.Username, c.ApiKey)
+	virtualGuestService, err := slc.GetSoftLayer_Virtual_Guest_Service()
 
 	dnsDomainService, err := slc.GetSoftLayer_Dns_Domain_Service()
 
