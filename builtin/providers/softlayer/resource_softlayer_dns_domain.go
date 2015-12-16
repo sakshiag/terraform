@@ -30,6 +30,7 @@ func resourceSoftLayerDnsDomain() *schema.Resource {
 
 			"serial": &schema.Schema{
 				Type: 		schema.TypeInt,
+				Optional:	true,
 				Computed:	true,
 			},
 
