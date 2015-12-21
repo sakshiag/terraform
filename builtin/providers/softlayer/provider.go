@@ -24,6 +24,7 @@ func Provider() terraform.ResourceProvider {
 
 		ResourcesMap: map[string]*schema.Resource{
 			"softlayer_network_application_delivery_controller": resourceSoftLayerNetworkApplicationDeliveryController(),
+			"softlayer_network_loadbalancer_virtualipaddress": resourceSoftLayerNetworkLoadBalancerVirtualIpAddress(),
 		},
 
 		ConfigureFunc: providerConfigure,
