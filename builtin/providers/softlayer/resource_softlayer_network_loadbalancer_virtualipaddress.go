@@ -46,13 +46,21 @@ func resourceSoftLayerNetworkLoadBalancerVirtualIpAddress() *schema.Resource {
 				Computed: true,
 			},
 
+			// name field is actually used as an ID in SoftLayer
+			// http://sldn.softlayer.com/reference/services/SoftLayer_Network_Application_Delivery_Controller/updateLiveLoadBalancer
 			"name": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 
 			"notes": &schema.Schema{
 				Type:     schema.TypeString,
+				Optional: true,
+			},
+
+			"security_certificate_id": &schema.Schema{
+				Type: schema.TypeInt,
 				Optional: true,
 			},
 
@@ -90,6 +98,7 @@ func resourceSoftLayerNetworkLoadBalancerVirtualIpAddressCreate(d *schema.Resour
 		SourcePort: d.Get("source_port").(int),
 		Type: d.Get("type").(string),
 		VirtualIpAddress: d.Get("virtual_ip_address").(string),
+		SecurityCertificateId: d.Get("security_certificate_id").(int),
 	}
 
 	log.Printf("[INFO] Creating Virtual Ip Address %s", template.VirtualIpAddress)
@@ -129,6 +138,7 @@ func resourceSoftLayerNetworkLoadBalancerVirtualIpAddressRead(d *schema.Resource
 	d.Set("modify_date", vip.ModifyDate)
 	d.Set("name", vip.Name)
 	d.Set("notes", vip.Notes)
+	d.Set("security_certificate_id", vip.SecurityCertificateId)
 	d.Set("source_port", vip.SourcePort)
 	d.Set("type", vip.Type)
 	d.Set("virtual_ip_address", vip.VirtualIpAddress)
@@ -137,7 +147,43 @@ func resourceSoftLayerNetworkLoadBalancerVirtualIpAddressRead(d *schema.Resource
 }
 
 func resourceSoftLayerNetworkLoadBalancerVirtualIpAddressUpdate(d *schema.ResourceData, meta interface{}) error {
-	//	client := meta.(*Client).networkApplicationDeliveryControllerService
+	client := meta.(*Client).networkApplicationDeliveryControllerService
+	if client == nil {
+		return fmt.Errorf("The client is nil.")
+	}
+
+	nadcId := d.Get("nad_controller_id").(int)
+	template := datatypes.SoftLayer_Network_LoadBalancer_VirtualIpAddress_Template {
+		Name: d.Get("name").(string),
+	}
+
+	if d.HasChange("load_balancing_method") {
+		template.LoadBalancingMethod = d.Get("load_balancing_method").(string)
+	}
+
+	if d.HasChange("notes") {
+		template.Notes = d.Get("notes").(string)
+	}
+
+	if d.HasChange("security_certificate_id") {
+		template.SecurityCertificateId = d.Get("security_certificate_id").(int)
+	}
+
+	if d.HasChange("source_port") {
+		template.SourcePort = d.Get("source_port").(int)
+	}
+
+	if d.HasChange("type") {
+		template.Type = d.Get("type").(string)
+	}
+
+	if d.HasChange("virtual_ip_address") {
+		template.VirtualIpAddress = d.Get("virtual_ip_address").(string)
+	}
+
+	client.EditVirtualIpAddress(nadcId, template)
+
+
 	return fmt.Errorf("Update is not supported yet")
 }
 
