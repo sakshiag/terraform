@@ -11,7 +11,6 @@ func resourceSoftLayerNetworkLoadBalancerVirtualIpAddress() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceSoftLayerNetworkLoadBalancerVirtualIpAddressCreate,
 		Read: resourceSoftLayerNetworkLoadBalancerVirtualIpAddressRead,
-		Update: resourceSoftLayerNetworkLoadBalancerVirtualIpAddressUpdate,
 		Delete: resourceSoftLayerNetworkLoadBalancerVirtualIpAddressDelete,
 		Exists: resourceSoftLayerNetworkLoadBalancerVirtualIpAddressExists,
 
@@ -189,10 +188,13 @@ func resourceSoftLayerNetworkLoadBalancerVirtualIpAddressUpdate(d *schema.Resour
 		template.VirtualIpAddress = d.Get("virtual_ip_address").(string)
 	}
 
-	client.EditVirtualIpAddress(nadcId, template)
+	_, err := client.EditVirtualIpAddress(nadcId, template)
 
+	if err != nil {
+		return fmt.Errorf("Error updating Virtual Ip Address: %s", err)
+	}
 
-	return fmt.Errorf("Update is not supported yet")
+	return nil
 }
 
 func resourceSoftLayerNetworkLoadBalancerVirtualIpAddressDelete(d *schema.ResourceData, meta interface{}) error {
