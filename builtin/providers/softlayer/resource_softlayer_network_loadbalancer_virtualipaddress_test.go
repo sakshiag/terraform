@@ -58,7 +58,7 @@ func testAccCheckSoftLayerVirtualIpAddressDestroy(s *terraform.State) error {
 		_, err := client.GetVirtualIpAddress(nadcId, vipName)
 
 		if err == nil {
-			fmt.Errorf("Viretual ip address still exists")
+			fmt.Errorf("Virtual ip address still exists")
 		}
 	}
 

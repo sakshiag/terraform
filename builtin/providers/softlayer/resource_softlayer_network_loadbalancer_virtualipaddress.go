@@ -24,16 +24,19 @@ func resourceSoftLayerNetworkLoadBalancerVirtualIpAddress() *schema.Resource {
 			"nad_controller_id": &schema.Schema{
 				Type:     schema.TypeInt,
 				Required: true,
+				ForceNew: true,
 			},
 
 			"connection_limit": &schema.Schema{
 				Type:     schema.TypeInt,
 				Optional: true,
+				ForceNew: true,
 			},
 
 			"load_balancing_method": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 
 			"load_labancing_method_name": &schema.Schema{
@@ -57,26 +60,31 @@ func resourceSoftLayerNetworkLoadBalancerVirtualIpAddress() *schema.Resource {
 			"notes": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 			},
 
 			"security_certificate_id": &schema.Schema{
 				Type: schema.TypeInt,
 				Optional: true,
+				ForceNew: true,
 			},
 
 			"source_port": &schema.Schema{
 				Type:     schema.TypeInt,
 				Required: true,
+				ForceNew: true,
 			},
 
 			"type": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 
 			"virtual_ip_address": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 		},
 	}
