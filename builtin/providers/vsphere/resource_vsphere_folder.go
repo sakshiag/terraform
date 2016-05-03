@@ -14,9 +14,9 @@ import (
 )
 
 type folder struct {
-	datacenter        string
-	existingPath      string
-	path              string
+	datacenter   string
+	existingPath string
+	path         string
 }
 
 func resourceVSphereFolder() *schema.Resource {
@@ -47,7 +47,7 @@ func resourceVSphereFolder() *schema.Resource {
 }
 
 func resourceVSphereFolderCreate(d *schema.ResourceData, meta interface{}) error {
-	
+
 	client := meta.(*govmomi.Client)
 
 	f := folder{
@@ -58,7 +58,10 @@ func resourceVSphereFolderCreate(d *schema.ResourceData, meta interface{}) error
 		f.datacenter = v.(string)
 	}
 
-	createFolder(client, &f)
+	err := createFolder(client, &f)
+	if err != nil {
+		return err
+	}
 
 	d.Set("existing_path", f.existingPath)
 	d.SetId(fmt.Sprintf("%v/%v", f.datacenter, f.path))
@@ -66,7 +69,6 @@ func resourceVSphereFolderCreate(d *schema.ResourceData, meta interface{}) error
 
 	return resourceVSphereFolderRead(d, meta)
 }
-
 
 func createFolder(client *govmomi.Client, f *folder) error {
 
@@ -96,41 +98,40 @@ func createFolder(client *govmomi.Client, f *folder) error {
 		subfolder, err := si.FindByInventoryPath(
 			context.TODO(), fmt.Sprintf("%v/vm/%v", f.datacenter, workingPath))
 
- 		if err != nil {
- 			return fmt.Errorf("error %s", err)
- 		} else if subfolder == nil {
- 			log.Printf("[DEBUG] folder not found; creating: %s", workingPath)
- 			folder, err = folder.CreateFolder(context.TODO(), pathPart)
+		if err != nil {
+			return fmt.Errorf("error %s", err)
+		} else if subfolder == nil {
+			log.Printf("[DEBUG] folder not found; creating: %s", workingPath)
+			folder, err = folder.CreateFolder(context.TODO(), pathPart)
 			if err != nil {
 				return fmt.Errorf("Failed to create folder at %s; %s", workingPath, err)
 			}
- 		} else {
- 			log.Printf("[DEBUG] folder already exists: %s", workingPath)
- 			f.existingPath = workingPath
- 			folder = subfolder.(*object.Folder)
- 		}
+		} else {
+			log.Printf("[DEBUG] folder already exists: %s", workingPath)
+			f.existingPath = workingPath
+			folder = subfolder.(*object.Folder)
+		}
 	}
 	return nil
 }
 
-
 func resourceVSphereFolderRead(d *schema.ResourceData, meta interface{}) error {
-	
+
 	log.Printf("[DEBUG] reading folder: %#v", d)
 	client := meta.(*govmomi.Client)
-	
+
 	dc, err := getDatacenter(client, d.Get("datacenter").(string))
 	if err != nil {
 		return err
 	}
-	
+
 	finder := find.NewFinder(client.Client, true)
 	finder = finder.SetDatacenter(dc)
 
 	folder, err := object.NewSearchIndex(client.Client).FindByInventoryPath(
-			context.TODO(), fmt.Sprintf("%v/vm/%v", d.Get("datacenter").(string), 
-				d.Get("path").(string)))
-	
+		context.TODO(), fmt.Sprintf("%v/vm/%v", d.Get("datacenter").(string),
+			d.Get("path").(string)))
+
 	if err != nil {
 		return err
 	}
@@ -143,9 +144,9 @@ func resourceVSphereFolderRead(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceVSphereFolderDelete(d *schema.ResourceData, meta interface{}) error {
-	
+
 	f := folder{
-		path: strings.TrimRight(d.Get("path").(string), "/"),
+		path:         strings.TrimRight(d.Get("path").(string), "/"),
 		existingPath: d.Get("existing_path").(string),
 	}
 
@@ -155,8 +156,11 @@ func resourceVSphereFolderDelete(d *schema.ResourceData, meta interface{}) error
 
 	client := meta.(*govmomi.Client)
 
-	deleteFolder(client, &f)
-	
+	err := deleteFolder(client, &f)
+	if err != nil {
+		return err
+	}
+
 	d.SetId("")
 	return nil
 }
@@ -175,7 +179,7 @@ func deleteFolder(client *govmomi.Client, f *folder) error {
 
 	folderRef, err := si.FindByInventoryPath(
 		context.TODO(), fmt.Sprintf("%v/vm/%v", f.datacenter, f.path))
-	
+
 	if err != nil {
 		return fmt.Errorf("[ERROR] Could not locate folder %s: %v", f.path, err)
 	} else {

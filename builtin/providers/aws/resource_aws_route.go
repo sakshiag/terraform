@@ -4,16 +4,19 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/hashicorp/terraform/helper/hashcode"
+	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
 // How long to sleep if a limit-exceeded event happens
 var routeTargetValidationError = errors.New("Error: more than 1 target specified. Only 1 of gateway_id" +
-	"instance_id, network_interface_id, route_table_id or" +
+	"nat_gateway_id, instance_id, network_interface_id, route_table_id or" +
 	"vpc_peering_connection_id is allowed.")
 
 // AWS Route resource Schema declaration
@@ -40,11 +43,19 @@ func resourceAwsRoute() *schema.Resource {
 			"gateway_id": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
+			},
+
+			"nat_gateway_id": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 
 			"instance_id": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 
 			"instance_owner_id": &schema.Schema{
@@ -55,6 +66,7 @@ func resourceAwsRoute() *schema.Resource {
 			"network_interface_id": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 
 			"origin": &schema.Schema{
@@ -86,6 +98,7 @@ func resourceAwsRouteCreate(d *schema.ResourceData, meta interface{}) error {
 	var setTarget string
 	allowedTargets := []string{
 		"gateway_id",
+		"nat_gateway_id",
 		"instance_id",
 		"network_interface_id",
 		"vpc_peering_connection_id",
@@ -112,6 +125,12 @@ func resourceAwsRouteCreate(d *schema.ResourceData, meta interface{}) error {
 			DestinationCidrBlock: aws.String(d.Get("destination_cidr_block").(string)),
 			GatewayId:            aws.String(d.Get("gateway_id").(string)),
 		}
+	case "nat_gateway_id":
+		createOpts = &ec2.CreateRouteInput{
+			RouteTableId:         aws.String(d.Get("route_table_id").(string)),
+			DestinationCidrBlock: aws.String(d.Get("destination_cidr_block").(string)),
+			NatGatewayId:         aws.String(d.Get("nat_gateway_id").(string)),
+		}
 	case "instance_id":
 		createOpts = &ec2.CreateRouteInput{
 			RouteTableId:         aws.String(d.Get("route_table_id").(string)),
@@ -136,7 +155,26 @@ func resourceAwsRouteCreate(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[DEBUG] Route create config: %s", createOpts)
 
 	// Create the route
-	_, err := conn.CreateRoute(createOpts)
+	var err error
+
+	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+		_, err = conn.CreateRoute(createOpts)
+
+		if err != nil {
+			ec2err, ok := err.(awserr.Error)
+			if !ok {
+				return resource.NonRetryableError(err)
+			}
+			if ec2err.Code() == "InvalidParameterException" {
+				log.Printf("[DEBUG] Trying to create route again: %q", ec2err.Message())
+				return resource.RetryableError(err)
+			}
+
+			return resource.NonRetryableError(err)
+		}
+
+		return nil
+	})
 	if err != nil {
 		return fmt.Errorf("Error creating route: %s", err)
 	}
@@ -160,6 +198,7 @@ func resourceAwsRouteRead(d *schema.ResourceData, meta interface{}) error {
 
 	d.Set("destination_prefix_list_id", route.DestinationPrefixListId)
 	d.Set("gateway_id", route.GatewayId)
+	d.Set("nat_gateway_id", route.NatGatewayId)
 	d.Set("instance_id", route.InstanceId)
 	d.Set("instance_owner_id", route.InstanceOwnerId)
 	d.Set("network_interface_id", route.NetworkInterfaceId)
@@ -176,6 +215,7 @@ func resourceAwsRouteUpdate(d *schema.ResourceData, meta interface{}) error {
 	var setTarget string
 	allowedTargets := []string{
 		"gateway_id",
+		"nat_gateway_id",
 		"instance_id",
 		"network_interface_id",
 		"vpc_peering_connection_id",
@@ -201,6 +241,12 @@ func resourceAwsRouteUpdate(d *schema.ResourceData, meta interface{}) error {
 			RouteTableId:         aws.String(d.Get("route_table_id").(string)),
 			DestinationCidrBlock: aws.String(d.Get("destination_cidr_block").(string)),
 			GatewayId:            aws.String(d.Get("gateway_id").(string)),
+		}
+	case "nat_gateway_id":
+		replaceOpts = &ec2.ReplaceRouteInput{
+			RouteTableId:         aws.String(d.Get("route_table_id").(string)),
+			DestinationCidrBlock: aws.String(d.Get("destination_cidr_block").(string)),
+			NatGatewayId:         aws.String(d.Get("nat_gateway_id").(string)),
 		}
 	case "instance_id":
 		replaceOpts = &ec2.ReplaceRouteInput{
@@ -245,8 +291,29 @@ func resourceAwsRouteDelete(d *schema.ResourceData, meta interface{}) error {
 	}
 	log.Printf("[DEBUG] Route delete opts: %s", deleteOpts)
 
-	resp, err := conn.DeleteRoute(deleteOpts)
-	log.Printf("[DEBUG] Route delete result: %s", resp)
+	var err error
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		log.Printf("[DEBUG] Trying to delete route with opts %s", deleteOpts)
+		resp, err := conn.DeleteRoute(deleteOpts)
+		log.Printf("[DEBUG] Route delete result: %s", resp)
+
+		if err == nil {
+			return nil
+		}
+
+		ec2err, ok := err.(awserr.Error)
+		if !ok {
+			return resource.NonRetryableError(err)
+		}
+		if ec2err.Code() == "InvalidParameterException" {
+			log.Printf("[DEBUG] Trying to delete route again: %q",
+				ec2err.Message())
+			return resource.RetryableError(err)
+		}
+
+		return resource.NonRetryableError(err)
+	})
+
 	if err != nil {
 		return err
 	}
@@ -265,12 +332,18 @@ func resourceAwsRouteExists(d *schema.ResourceData, meta interface{}) (bool, err
 
 	res, err := conn.DescribeRouteTables(findOpts)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("Error while checking if route exists: %s", err)
+	}
+
+	if len(res.RouteTables) < 1 || res.RouteTables[0] == nil {
+		log.Printf("[WARN] Route table %s is gone, so route does not exist.",
+			routeTableId)
+		return false, nil
 	}
 
 	cidr := d.Get("destination_cidr_block").(string)
 	for _, route := range (*res.RouteTables[0]).Routes {
-		if *route.DestinationCidrBlock == cidr {
+		if route.DestinationCidrBlock != nil && *route.DestinationCidrBlock == cidr {
 			return true, nil
 		}
 	}
@@ -296,11 +369,18 @@ func findResourceRoute(conn *ec2.EC2, rtbid string, cidr string) (*ec2.Route, er
 		return nil, err
 	}
 
+	if len(resp.RouteTables) < 1 || resp.RouteTables[0] == nil {
+		return nil, fmt.Errorf("Route table %s is gone, so route does not exist.",
+			routeTableID)
+	}
+
 	for _, route := range (*resp.RouteTables[0]).Routes {
-		if *route.DestinationCidrBlock == cidr {
+		if route.DestinationCidrBlock != nil && *route.DestinationCidrBlock == cidr {
 			return route, nil
 		}
 	}
 
-	return nil, nil
+	return nil, fmt.Errorf(`
+error finding matching route for Route table (%s) and destination CIDR block (%s)`,
+		rtbid, cidr)
 }

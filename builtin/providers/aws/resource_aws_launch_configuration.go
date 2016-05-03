@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -185,6 +186,13 @@ func resourceAwsLaunchConfiguration() *schema.Resource {
 							Computed: true,
 							ForceNew: true,
 						},
+
+						"encrypted": &schema.Schema{
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+							ForceNew: true,
+						},
 					},
 				},
 				Set: func(v interface{}) int {
@@ -326,6 +334,7 @@ func resourceAwsLaunchConfigurationCreate(d *schema.ResourceData, meta interface
 			bd := v.(map[string]interface{})
 			ebs := &autoscaling.Ebs{
 				DeleteOnTermination: aws.Bool(bd["delete_on_termination"].(bool)),
+				Encrypted:           aws.Bool(bd["encrypted"].(bool)),
 			}
 
 			if v, ok := bd["snapshot_id"].(string); ok && v != "" {
@@ -420,17 +429,15 @@ func resourceAwsLaunchConfigurationCreate(d *schema.ResourceData, meta interface
 
 	// IAM profiles can take ~10 seconds to propagate in AWS:
 	// http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html#launch-instance-with-role-console
-	err := resource.Retry(30*time.Second, func() error {
+	err := resource.Retry(30*time.Second, func() *resource.RetryError {
 		_, err := autoscalingconn.CreateLaunchConfiguration(&createLaunchConfigurationOpts)
 		if err != nil {
 			if awsErr, ok := err.(awserr.Error); ok {
-				if awsErr.Message() == "Invalid IamInstanceProfile" {
-					return err
+				if strings.Contains(awsErr.Message(), "Invalid IamInstanceProfile") {
+					return resource.RetryableError(err)
 				}
 			}
-			return &resource.RetryError{
-				Err: err,
-			}
+			return resource.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -444,8 +451,12 @@ func resourceAwsLaunchConfigurationCreate(d *schema.ResourceData, meta interface
 
 	// We put a Retry here since sometimes eventual consistency bites
 	// us and we need to retry a few times to get the LC to load properly
-	return resource.Retry(30*time.Second, func() error {
-		return resourceAwsLaunchConfigurationRead(d, meta)
+	return resource.Retry(30*time.Second, func() *resource.RetryError {
+		err := resourceAwsLaunchConfigurationRead(d, meta)
+		if err != nil {
+			return resource.RetryableError(err)
+		}
+		return nil
 	})
 }
 
@@ -569,6 +580,9 @@ func readBlockDevicesFromLaunchConfiguration(d *schema.ResourceData, lc *autosca
 		}
 		if bdm.Ebs != nil && bdm.Ebs.Iops != nil {
 			bd["iops"] = *bdm.Ebs.Iops
+		}
+		if bdm.Ebs != nil && bdm.Ebs.Encrypted != nil {
+			bd["encrypted"] = *bdm.Ebs.Encrypted
 		}
 		if bdm.DeviceName != nil && *bdm.DeviceName == *rootDeviceName {
 			blockDevices["root"] = bd

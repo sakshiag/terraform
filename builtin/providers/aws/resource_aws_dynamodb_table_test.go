@@ -2,23 +2,25 @@ package aws
 
 import (
 	"fmt"
+	"log"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
 
-func TestAccAWSDynamoDbTable(t *testing.T) {
+func TestAccAWSDynamoDbTable_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckAWSDynamoDbTableDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccAWSDynamoDbConfigInitialState,
+				Config: testAccAWSDynamoDbConfigInitialState(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInitialAWSDynamoDbTableExists("aws_dynamodb_table.basic-dynamodb-table"),
 				),
@@ -40,7 +42,7 @@ func TestAccAWSDynamoDbTable_streamSpecification(t *testing.T) {
 		CheckDestroy: testAccCheckAWSDynamoDbTableDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccAWSDynamoDbConfigStreamSpecification,
+				Config: testAccAWSDynamoDbConfigStreamSpecification(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckInitialAWSDynamoDbTableExists("aws_dynamodb_table.basic-dynamodb-table"),
 					resource.TestCheckResourceAttr(
@@ -101,21 +103,23 @@ func testAccCheckAWSDynamoDbTableDestroy(s *terraform.State) error {
 			continue
 		}
 
-		fmt.Printf("[DEBUG] Checking if DynamoDB table %s exists", rs.Primary.ID)
+		log.Printf("[DEBUG] Checking if DynamoDB table %s exists", rs.Primary.ID)
 		// Check if queue exists by checking for its attributes
 		params := &dynamodb.DescribeTableInput{
 			TableName: aws.String(rs.Primary.ID),
 		}
+
 		_, err := conn.DescribeTable(params)
 		if err == nil {
 			return fmt.Errorf("DynamoDB table %s still exists. Failing!", rs.Primary.ID)
 		}
 
 		// Verify the error is what we want
-		_, ok := err.(awserr.Error)
-		if !ok {
-			return err
+		if dbErr, ok := err.(awserr.Error); ok && dbErr.Code() == "ResourceNotFoundException" {
+			return nil
 		}
+
+		return err
 	}
 
 	return nil
@@ -277,9 +281,10 @@ func dynamoDbAttributesToMap(attributes *[]*dynamodb.AttributeDefinition) map[st
 	return attrmap
 }
 
-const testAccAWSDynamoDbConfigInitialState = `
+func testAccAWSDynamoDbConfigInitialState() string {
+	return fmt.Sprintf(`
 resource "aws_dynamodb_table" "basic-dynamodb-table" {
-    name = "TerraformTestTable"
+    name = "TerraformTestTable-%d"
 		read_capacity = 10
 		write_capacity = 20
 		hash_key = "TestTableHashKey"
@@ -314,7 +319,8 @@ resource "aws_dynamodb_table" "basic-dynamodb-table" {
 			projection_type = "KEYS_ONLY"
 		}
 }
-`
+`, acctest.RandInt())
+}
 
 const testAccAWSDynamoDbConfigAddSecondaryGSI = `
 resource "aws_dynamodb_table" "basic-dynamodb-table" {
@@ -356,9 +362,10 @@ resource "aws_dynamodb_table" "basic-dynamodb-table" {
 }
 `
 
-const testAccAWSDynamoDbConfigStreamSpecification = `
+func testAccAWSDynamoDbConfigStreamSpecification() string {
+	return fmt.Sprintf(`
 resource "aws_dynamodb_table" "basic-dynamodb-table" {
-    name = "TerraformTestStreamTable"
+    name = "TerraformTestStreamTable-%d"
 	read_capacity = 10
 	write_capacity = 20
 	hash_key = "TestTableHashKey"
@@ -395,4 +402,5 @@ resource "aws_dynamodb_table" "basic-dynamodb-table" {
 	stream_enabled = true
 	stream_view_type = "KEYS_ONLY"
 }
-`
+`, acctest.RandInt())
+}

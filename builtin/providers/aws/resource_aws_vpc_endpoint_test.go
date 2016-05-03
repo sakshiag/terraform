@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/ec2"
 
 	"github.com/hashicorp/terraform/helper/resource"
@@ -15,14 +16,15 @@ func TestAccAWSVpcEndpoint_basic(t *testing.T) {
 	var endpoint ec2.VpcEndpoint
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckVpcEndpointDestroy,
+		PreCheck:      func() { testAccPreCheck(t) },
+		IDRefreshName: "aws_vpc_endpoint.second-private-s3",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckVpcEndpointDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccVpcEndpointConfig,
+				Config: testAccVpcEndpointWithRouteTableAndPolicyConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckVpcEndpointExists("aws_vpc_endpoint.private-s3", &endpoint),
+					testAccCheckVpcEndpointExists("aws_vpc_endpoint.second-private-s3", &endpoint),
 				),
 			},
 		},
@@ -34,9 +36,10 @@ func TestAccAWSVpcEndpoint_withRouteTableAndPolicy(t *testing.T) {
 	var routeTable ec2.RouteTable
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckVpcEndpointDestroy,
+		PreCheck:      func() { testAccPreCheck(t) },
+		IDRefreshName: "aws_vpc_endpoint.second-private-s3",
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckVpcEndpointDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: testAccVpcEndpointWithRouteTableAndPolicyConfig,
@@ -69,7 +72,13 @@ func testAccCheckVpcEndpointDestroy(s *terraform.State) error {
 			VpcEndpointIds: []*string{aws.String(rs.Primary.ID)},
 		}
 		resp, err := conn.DescribeVpcEndpoints(input)
-
+		if err != nil {
+			// Verify the error is what we want
+			if ae, ok := err.(awserr.Error); ok && ae.Code() == "InvalidVpcEndpointId.NotFound" {
+				continue
+			}
+			return err
+		}
 		if len(resp.VpcEndpoints) > 0 {
 			return fmt.Errorf("VPC Endpoints still exist.")
 		}
@@ -108,17 +117,6 @@ func testAccCheckVpcEndpointExists(n string, endpoint *ec2.VpcEndpoint) resource
 		return nil
 	}
 }
-
-const testAccVpcEndpointConfig = `
-resource "aws_vpc" "foo" {
-    cidr_block = "10.1.0.0/16"
-}
-
-resource "aws_vpc_endpoint" "private-s3" {
-    vpc_id = "${aws_vpc.foo.id}"
-    service_name = "com.amazonaws.us-west-2.s3"
-}
-`
 
 const testAccVpcEndpointWithRouteTableAndPolicyConfig = `
 resource "aws_vpc" "foo" {

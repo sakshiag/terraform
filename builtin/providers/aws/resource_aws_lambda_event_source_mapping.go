@@ -3,10 +3,13 @@ package aws
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/lambda"
 
+	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -88,13 +91,32 @@ func resourceAwsLambdaEventSourceMappingCreate(d *schema.ResourceData, meta inte
 		Enabled:          aws.Bool(d.Get("enabled").(bool)),
 	}
 
-	eventSourceMappingConfiguration, err := conn.CreateEventSourceMapping(params)
+	// IAM profiles and roles can take some time to propagate in AWS:
+	//  http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html#launch-instance-with-role-console
+	// Error creating Lambda function: InvalidParameterValueException: The
+	// function defined for the task cannot be assumed by Lambda.
+	//
+	// The role may exist, but the permissions may not have propagated, so we
+	// retry
+	err := resource.Retry(1*time.Minute, func() *resource.RetryError {
+		eventSourceMappingConfiguration, err := conn.CreateEventSourceMapping(params)
+		if err != nil {
+			if awserr, ok := err.(awserr.Error); ok {
+				if awserr.Code() == "InvalidParameterValueException" {
+					return resource.RetryableError(awserr)
+				}
+			}
+			return resource.NonRetryableError(err)
+		}
+		// No error
+		d.Set("uuid", eventSourceMappingConfiguration.UUID)
+		d.SetId(*eventSourceMappingConfiguration.UUID)
+		return nil
+	})
+
 	if err != nil {
 		return fmt.Errorf("Error creating Lambda event source mapping: %s", err)
 	}
-
-	d.Set("uuid", eventSourceMappingConfiguration.UUID)
-	d.SetId(*eventSourceMappingConfiguration.UUID)
 
 	return resourceAwsLambdaEventSourceMappingRead(d, meta)
 }
@@ -162,7 +184,19 @@ func resourceAwsLambdaEventSourceMappingUpdate(d *schema.ResourceData, meta inte
 		Enabled:      aws.Bool(d.Get("enabled").(bool)),
 	}
 
-	_, err := conn.UpdateEventSourceMapping(params)
+	err := resource.Retry(1*time.Minute, func() *resource.RetryError {
+		_, err := conn.UpdateEventSourceMapping(params)
+		if err != nil {
+			if awserr, ok := err.(awserr.Error); ok {
+				if awserr.Code() == "InvalidParameterValueException" {
+					return resource.RetryableError(awserr)
+				}
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+
 	if err != nil {
 		return fmt.Errorf("Error updating Lambda event source mapping: %s", err)
 	}
