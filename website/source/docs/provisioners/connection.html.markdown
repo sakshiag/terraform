@@ -64,7 +64,7 @@ provisioner "file" {
 * `timeout` - The timeout to wait for the connection to become available. This defaults
   to 5 minutes. Should be provided as a string like "30s" or "5m".
 
-* `script_path` - The path used to copy scripts to meant for remote execution.
+* `script_path` - The path used to copy scripts meant for remote execution.
 
 **Additional arguments only supported by the "ssh" connection type:**
 
@@ -73,7 +73,9 @@ provisioner "file" {
   function](/docs/configuration/interpolation.html#file_path_). This takes
   preference over the password if provided.
 
-* `agent` - Set to false to disable using ssh-agent to authenticate.
+* `agent` - Set to false to disable using ssh-agent to authenticate. On Windows the
+  only supported SSH authentication agent is
+  [Pageant](http://the.earth.li/~sgtatham/putty/0.66/htmldoc/Chapter9.html#pageant)
 
 **Additional arguments only supported by the "winrm" connection type:**
 

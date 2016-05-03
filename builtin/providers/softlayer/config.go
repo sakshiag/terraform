@@ -9,6 +9,7 @@ import (
 
 type Config struct {
 	Username string
+<<<<<<< HEAD
 	ApiKey   string
 }
 
@@ -17,11 +18,20 @@ type Client struct {
 	sshKeyService                  softlayer.SoftLayer_Security_Ssh_Key_Service
 	productOrderService            softlayer.SoftLayer_Product_Order_Service
 	dnsDomainResourceRecordService softlayer.SoftLayer_Dns_Domain_Record_Service
+=======
+	ApiKey string
+}
+
+type Client struct {
+	productOrderService            softlayer.SoftLayer_Product_Order_Service
+	dnsDomainResourceRecordService softlayer.SoftLayer_Dns_Domain_Resource_Record_Service
+>>>>>>> feature/softlayer-dns
 	dnsDomainService               softlayer.SoftLayer_Dns_Domain_Service
 }
 
 func (c *Config) Client() (*Client, error) {
 	slc := slclient.NewSoftLayerClient(c.Username, c.ApiKey)
+<<<<<<< HEAD
 	virtualGuestService, err := slc.GetSoftLayer_Virtual_Guest_Service()
 
 	if err != nil {
@@ -33,6 +43,8 @@ func (c *Config) Client() (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
+=======
+>>>>>>> feature/softlayer-dns
 
 	dnsDomainService, err := slc.GetSoftLayer_Dns_Domain_Service()
 
@@ -40,11 +52,17 @@ func (c *Config) Client() (*Client, error) {
 		return nil, err
 	}
 
+<<<<<<< HEAD
 	dnsDomainResourceRecordService, err := slc.GetSoftLayer_Dns_Domain_Record_Service()
 
 	client := &Client {
 		virtualGuestService:			virtualGuestService,
 		sshKeyService:            		sshKeyService,
+=======
+	dnsDomainResourceRecordService, err := slc.GetSoftLayer_Dns_Domain_Resource_Record_Service()
+
+	client := &Client {
+>>>>>>> feature/softlayer-dns
 		dnsDomainService :   		    dnsDomainService,
 		dnsDomainResourceRecordService: dnsDomainResourceRecordService,
 	}

@@ -6,9 +6,9 @@ terraform.tfplan
 terraform.tfstate
 bin/
 modules-dev/
-pkg/
-vendor/
+/pkg/
 website/.vagrant
+website/.bundle
 website/build
 website/node_modules
 .vagrant/
@@ -20,5 +20,12 @@ website/node_modules
 *~
 .*.swp
 .idea
+*.iml
 *.test
+<<<<<<< HEAD
 website/source/layouts/docs.erb
+=======
+*.iml
+
+website/vendor
+>>>>>>> feature/softlayer-dns
