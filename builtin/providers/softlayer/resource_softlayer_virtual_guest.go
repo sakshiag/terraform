@@ -1,17 +1,17 @@
 package softlayer
 
 import (
-	"fmt"
-	"log"
-	"strconv"
-	"time"
 	"encoding/base64"
+	"fmt"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	datatypes "github.com/maximilien/softlayer-go/data_types"
 	"github.com/maximilien/softlayer-go/softlayer"
+	"log"
 	"math"
+	"strconv"
 	"strings"
+	"time"
 )
 
 func resourceSoftLayerVirtualGuest() *schema.Resource {

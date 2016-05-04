@@ -1,13 +1,14 @@
 package softlayer
+
 import (
 	"fmt"
-	"strconv"
 	"log"
+	"strconv"
 
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/maximilien/softlayer-go/services"
 	softlayer "github.com/maximilien/softlayer-go/softlayer"
 	"strings"
-	"github.com/maximilien/softlayer-go/services"
 )
 
 const (
@@ -17,7 +18,7 @@ const (
 func resourceSoftLayerNetworkApplicationDeliveryController() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceSoftLayerNetworkApplicationDeliveryControllerCreate,
-		Read: resourceSoftLayerNetworkApplicationDeliveryControllerRead,
+		Read:   resourceSoftLayerNetworkApplicationDeliveryControllerRead,
 		Update: resourceSoftLayerNetworkApplicationDeliveryControllerUpdate,
 		Delete: resourceSoftLayerNetworkApplicationDeliveryControllerDelete,
 		Exists: resourceSoftLayerNetworkApplicationDeliveryControllerExists,
@@ -74,11 +75,11 @@ func resourceSoftLayerNetworkApplicationDeliveryControllerCreate(d *schema.Resou
 		return fmt.Errorf("[ERROR] Network application delivery controller type %s is not supported", nadcType)
 	case NETSCALER_VPX_TYPE:
 		// create Netscaler VPX
-		opts := softlayer.NetworkApplicationDeliveryControllerCreateOptions {
-			Speed: d.Get("speed").(int),
-			Version: d.Get("version").(string),
-			Plan: d.Get("plan").(string),
-			IpCount: d.Get("ip_count").(int),
+		opts := softlayer.NetworkApplicationDeliveryControllerCreateOptions{
+			Speed:    d.Get("speed").(int),
+			Version:  d.Get("version").(string),
+			Plan:     d.Get("plan").(string),
+			IpCount:  d.Get("ip_count").(int),
 			Location: d.Get("location").(string),
 		}
 
@@ -140,7 +141,7 @@ func getVersionSpeedPlanFromDescription(description string) (string, int, string
 }
 
 func resourceSoftLayerNetworkApplicationDeliveryControllerUpdate(d *schema.ResourceData, meta interface{}) error {
-//	client := meta.(*Client).networkApplicationDeliveryControllerService
+	//	client := meta.(*Client).networkApplicationDeliveryControllerService
 	return fmt.Errorf("Update is not supported yet")
 }
 

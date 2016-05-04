@@ -1,4 +1,5 @@
 package softlayer
+
 import (
 	"fmt"
 	"log"
@@ -10,7 +11,7 @@ import (
 func resourceSoftLayerNetworkLoadBalancerVirtualIpAddress() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceSoftLayerNetworkLoadBalancerVirtualIpAddressCreate,
-		Read: resourceSoftLayerNetworkLoadBalancerVirtualIpAddressRead,
+		Read:   resourceSoftLayerNetworkLoadBalancerVirtualIpAddressRead,
 		Delete: resourceSoftLayerNetworkLoadBalancerVirtualIpAddressDelete,
 		Exists: resourceSoftLayerNetworkLoadBalancerVirtualIpAddressExists,
 
@@ -63,7 +64,7 @@ func resourceSoftLayerNetworkLoadBalancerVirtualIpAddress() *schema.Resource {
 			},
 
 			"security_certificate_id": &schema.Schema{
-				Type: schema.TypeInt,
+				Type:     schema.TypeInt,
 				Optional: true,
 				ForceNew: true,
 			},
@@ -97,14 +98,14 @@ func resourceSoftLayerNetworkLoadBalancerVirtualIpAddressCreate(d *schema.Resour
 
 	nadcId := d.Get("nad_controller_id").(int)
 
-	template := datatypes.SoftLayer_Network_LoadBalancer_VirtualIpAddress_Template {
-		ConnectionLimit: d.Get("connection_limit").(int),
-		LoadBalancingMethod: d.Get("load_balancing_method").(string),
-		Name: d.Get("name").(string),
-		Notes: d.Get("notes").(string),
-		SourcePort: d.Get("source_port").(int),
-		Type: d.Get("type").(string),
-		VirtualIpAddress: d.Get("virtual_ip_address").(string),
+	template := datatypes.SoftLayer_Network_LoadBalancer_VirtualIpAddress_Template{
+		ConnectionLimit:       d.Get("connection_limit").(int),
+		LoadBalancingMethod:   d.Get("load_balancing_method").(string),
+		Name:                  d.Get("name").(string),
+		Notes:                 d.Get("notes").(string),
+		SourcePort:            d.Get("source_port").(int),
+		Type:                  d.Get("type").(string),
+		VirtualIpAddress:      d.Get("virtual_ip_address").(string),
 		SecurityCertificateId: d.Get("security_certificate_id").(int),
 	}
 
@@ -160,7 +161,7 @@ func resourceSoftLayerNetworkLoadBalancerVirtualIpAddressUpdate(d *schema.Resour
 	}
 
 	nadcId := d.Get("nad_controller_id").(int)
-	template := datatypes.SoftLayer_Network_LoadBalancer_VirtualIpAddress_Template {
+	template := datatypes.SoftLayer_Network_LoadBalancer_VirtualIpAddress_Template{
 		Name: d.Get("name").(string),
 	}
 
@@ -231,4 +232,3 @@ func resourceSoftLayerNetworkLoadBalancerVirtualIpAddressExists(d *schema.Resour
 
 	return vip.Name == vipName && err == nil, nil
 }
-

@@ -13,7 +13,7 @@ func resourceSoftLayerDnsDomainResourceRecord() *schema.Resource {
 	return &schema.Resource{
 		Exists: resourceSoftLayerDnsDomainResourceRecordExists,
 		Create: resourceSoftLayerDnsDomainResourceRecordCreate,
-		Read: resourceSoftLayerDnsDomainResourceRecordRead,
+		Read:   resourceSoftLayerDnsDomainResourceRecordRead,
 		Update: resourceSoftLayerDnsDomainResourceRecordUpdate,
 		Delete: resourceSoftLayerDnsDomainResourceRecordDelete,
 		Schema: map[string]*schema.Schema{
@@ -103,7 +103,6 @@ func resourceSoftLayerDnsDomainResourceRecord() *schema.Resource {
 	}
 }
 
-
 //  Creates DNS Domain Resource Record
 //  https://sldn.softlayer.com/reference/services/SoftLayer_Dns_Domain_ResourceRecord/createObject
 func resourceSoftLayerDnsDomainResourceRecordCreate(d *schema.ResourceData, meta interface{}) error {
@@ -114,22 +113,22 @@ func resourceSoftLayerDnsDomainResourceRecordCreate(d *schema.ResourceData, meta
 	}
 
 	opts := datatypes.SoftLayer_Dns_Domain_Resource_Record_Template{
-		Data: d.Get("record_data").(string),
-		DomainId: d.Get("domain_id").(int),
-		Expire: d.Get("expire").(int),
-		Host: d.Get("host").(string),
-		Minimum: d.Get("minimum_ttl").(int),
-		MxPriority: d.Get("mx_priority").(int),
-		Refresh: d.Get("refresh").(int),
+		Data:              d.Get("record_data").(string),
+		DomainId:          d.Get("domain_id").(int),
+		Expire:            d.Get("expire").(int),
+		Host:              d.Get("host").(string),
+		Minimum:           d.Get("minimum_ttl").(int),
+		MxPriority:        d.Get("mx_priority").(int),
+		Refresh:           d.Get("refresh").(int),
 		ResponsiblePerson: d.Get("contact_email").(string),
-		Retry: d.Get("retry").(int),
-		Ttl: d.Get("ttl").(int),
-		Type: d.Get("record_type").(string),
-		Service: d.Get("service").(string),
-		Protocol: d.Get("protocol").(string),
-		Priority: d.Get("priority").(int),
-		Weight: d.Get("weight").(int),
-		Port: d.Get("port").(int),
+		Retry:             d.Get("retry").(int),
+		Ttl:               d.Get("ttl").(int),
+		Type:              d.Get("record_type").(string),
+		Service:           d.Get("service").(string),
+		Protocol:          d.Get("protocol").(string),
+		Priority:          d.Get("priority").(int),
+		Weight:            d.Get("weight").(int),
+		Port:              d.Get("port").(int),
 	}
 
 	log.Printf("[INFO] Creating DNS Resource Record for '%d' dns domain", d.Get("id"))
@@ -185,7 +184,6 @@ func resourceSoftLayerDnsDomainResourceRecordRead(d *schema.ResourceData, meta i
 
 	return nil
 }
-
 
 //  Updates DNS Domain Resource Record in SL system
 //  https://sldn.softlayer.com/reference/services/SoftLayer_Dns_Domain_ResourceRecord/editObject
