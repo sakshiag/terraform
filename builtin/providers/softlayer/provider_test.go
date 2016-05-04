@@ -35,8 +35,4 @@ func testAccPreCheck(t *testing.T) {
 	if v := os.Getenv("SOFTLAYER_API_KEY"); v == "" {
 		t.Fatal("SOFTLAYER_API_KEY must be set for acceptance tests")
 	}
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> feature/softlayer-dns

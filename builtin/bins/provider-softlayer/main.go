@@ -9,8 +9,4 @@ func main() {
 	plugin.Serve(&plugin.ServeOpts{
 		ProviderFunc: softlayer.Provider,
 	})
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> feature/softlayer-dns
