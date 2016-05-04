@@ -160,17 +160,10 @@ func resourceSoftLayerDnsDomainCreate(d *schema.ResourceData, meta interface{}) 
 	return resourceSoftLayerDnsDomainRead(d, meta)
 }
 
-<<<<<<< HEAD
-func prepareRecords(raw_records []interface{}) []datatypes.SoftLayer_Dns_Domain_Record {
-	sl_records := make([]datatypes.SoftLayer_Dns_Domain_Record, 0)
-	for _, raw_record := range raw_records {
-		var sl_record datatypes.SoftLayer_Dns_Domain_Record
-=======
 func prepareRecords(raw_records []interface{}) []datatypes.SoftLayer_Dns_Domain_Resource_Record {
 	sl_records := make([]datatypes.SoftLayer_Dns_Domain_Resource_Record, 0)
 	for _, raw_record := range raw_records {
 		var sl_record datatypes.SoftLayer_Dns_Domain_Resource_Record
->>>>>>> feature/softlayer-dns
 		record := raw_record.(map[string]interface{})
 
 		sl_record.Data 		= record["record_data"].(string)
@@ -212,11 +205,7 @@ func resourceSoftLayerDnsDomainRead(d *schema.ResourceData, meta interface{}) er
 	return nil
 }
 
-<<<<<<< HEAD
-func read_resource_records(list []datatypes.SoftLayer_Dns_Domain_Record) []map[string]interface{} {
-=======
 func read_resource_records(list []datatypes.SoftLayer_Dns_Domain_Resource_Record) []map[string]interface{} {
->>>>>>> feature/softlayer-dns
 	records := make([]map[string]interface{}, 0, len(list))
 	for _,record := range list {
 		r := make(map[string]interface{})

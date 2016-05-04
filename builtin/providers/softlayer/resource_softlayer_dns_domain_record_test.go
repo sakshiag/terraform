@@ -12,11 +12,7 @@ import (
 
 func TestAccSoftLayerDnsDomainRecord_Basic(t *testing.T) {
 	var dns_domain datatypes.SoftLayer_Dns_Domain
-<<<<<<< HEAD
-	var dns_domain_record datatypes.SoftLayer_Dns_Domain_Record
-=======
 	var dns_domain_record datatypes.SoftLayer_Dns_Domain_Resource_Record
->>>>>>> feature/softlayer-dns
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -46,11 +42,7 @@ func TestAccSoftLayerDnsDomainRecord_Basic(t *testing.T) {
 
 func TestAccSoftLayerDnsDomainRecord_Types(t *testing.T) {
 	var dns_domain datatypes.SoftLayer_Dns_Domain
-<<<<<<< HEAD
-	var dns_domain_record datatypes.SoftLayer_Dns_Domain_Record
-=======
 	var dns_domain_record datatypes.SoftLayer_Dns_Domain_Resource_Record
->>>>>>> feature/softlayer-dns
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -69,10 +61,6 @@ func TestAccSoftLayerDnsDomainRecord_Types(t *testing.T) {
 					testAccCheckSoftLayerDnsDomainRecordExists("softlayer_dns_domain_record.recordSPF", &dns_domain_record),
 					testAccCheckSoftLayerDnsDomainRecordExists("softlayer_dns_domain_record.recordTXT", &dns_domain_record),
 					testAccCheckSoftLayerDnsDomainRecordExists("softlayer_dns_domain_record.recordSRV", &dns_domain_record),
-<<<<<<< HEAD
-					testAccCheckSoftLayerDnsDomainRecordExists("softlayer_dns_domain_record.recordPTR", &dns_domain_record),
-=======
->>>>>>> feature/softlayer-dns
 				),
 				Destroy: false,
 			},
@@ -80,11 +68,7 @@ func TestAccSoftLayerDnsDomainRecord_Types(t *testing.T) {
 	})
 }
 
-<<<<<<< HEAD
-func testAccCheckSoftLayerDnsDomainRecordExists(n string, dns_domain_record *datatypes.SoftLayer_Dns_Domain_Record) resource.TestCheckFunc {
-=======
 func testAccCheckSoftLayerDnsDomainRecordExists(n string, dns_domain_record *datatypes.SoftLayer_Dns_Domain_Resource_Record) resource.TestCheckFunc {
->>>>>>> feature/softlayer-dns
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 
@@ -215,16 +199,4 @@ resource "softlayer_dns_domain_record" "recordSRV" {
 	weight = 3
 	service = "_mail"
 }
-<<<<<<< HEAD
-
-resource "softlayer_dns_domain_record" "recordPTR" {
-    record_data = "ptr.domain.com"
-    domain_id = 1653916
-    host = "46"
-    contact_email = "user@softlaer.com"
-    ttl = 900
-    record_type = "ptr"
-}
-=======
->>>>>>> feature/softlayer-dns
 `

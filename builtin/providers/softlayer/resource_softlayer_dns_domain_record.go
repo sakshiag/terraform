@@ -113,11 +113,7 @@ func resourceSoftLayerDnsDomainResourceRecordCreate(d *schema.ResourceData, meta
 		return fmt.Errorf("The client was nil.")
 	}
 
-<<<<<<< HEAD
-	opts := datatypes.SoftLayer_Dns_Domain_Record_Template{
-=======
 	opts := datatypes.SoftLayer_Dns_Domain_Resource_Record_Template{
->>>>>>> feature/softlayer-dns
 		Data: d.Get("record_data").(string),
 		DomainId: d.Get("domain_id").(int),
 		Expire: d.Get("expire").(int),
