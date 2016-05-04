@@ -63,7 +63,7 @@ func testAccCheckSoftLayerSSHKeyDestroy(s *terraform.State) error {
 		_, err := client.GetObject(keyId)
 
 		if err == nil {
-			fmt.Errorf("SSH key still exists")
+			return fmt.Errorf("SSH key still exists")
 		}
 	}
 

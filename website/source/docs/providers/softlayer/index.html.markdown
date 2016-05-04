@@ -13,7 +13,7 @@ The SoftLayer provider is used to manage SoftLayer resources.
 Use the navigation to the left to read about the available resources.
 
 <div class="alert alert-block alert-info">
-<strong>Note:</strong> The SoftLayer provider is new as of Terraform 0.X.
+<strong>Note:</strong> The SoftLayer provider is new as of Terraform 0.6.16
 It is ready to be used but many features are still being added. If there
 is a SoftLayer feature missing, please report it in the GitHub repo.
 </div>
@@ -26,6 +26,7 @@ Here is an example that will setup the following:
 + A virtual server resource using an existing SSH key and a Terraform managed SSH key (created as "test_key_1" in the example below).
 
 (create this as sl.tf and run terraform commands from this directory):
+
 ```hcl
 provider "softlayer" {
     username = ""

@@ -15,12 +15,12 @@ func TestAccSoftLayerVirtualGuest_Basic(t *testing.T) {
 	var guest datatypes.SoftLayer_Virtual_Guest
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckSoftLayerVirtualGuestDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccCheckSoftLayerVirtualGuestConfig_basic,
+				Config:  testAccCheckSoftLayerVirtualGuestConfig_basic,
 				Destroy: false,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSoftLayerVirtualGuestExists("softlayer_virtual_guest.terraform-acceptance-test-1", &guest),
@@ -52,17 +52,17 @@ func TestAccSoftLayerVirtualGuest_Basic(t *testing.T) {
 						"softlayer_virtual_guest.terraform-acceptance-test-1", "local_disk", "false"),
 					resource.TestCheckResourceAttr(
 						"softlayer_virtual_guest.terraform-acceptance-test-1", "dedicated_acct_host_only", "true"),
-					// TODO: Will be changed in future, when the following issue is implemented: https://github.com/TheWeatherCompany/softlayer-go/issues/3.
-					// TODO: For now, as agreed in issue https://github.com/TheWeatherCompany/terraform/issues/5, use hardcoded values for VLANs.
-					resource.TestCheckResourceAttr(
-						"softlayer_virtual_guest.terraform-acceptance-test-1", "frontend_vlan_id", "1085155"),
-					resource.TestCheckResourceAttr(
-						"softlayer_virtual_guest.terraform-acceptance-test-1", "backend_vlan_id", "1085157"),
+
+					// TODO: As agreed, will be enabled when VLAN support is implemented: https://github.com/TheWeatherCompany/softlayer-go/issues/3
+					//					resource.TestCheckResourceAttr(
+					//						"softlayer_virtual_guest.terraform-acceptance-test-1", "frontend_vlan_id", "1085155"),
+					//					resource.TestCheckResourceAttr(
+					//						"softlayer_virtual_guest.terraform-acceptance-test-1", "backend_vlan_id", "1085157"),
 				),
 			},
 
 			resource.TestStep{
-				Config: testAccCheckSoftLayerVirtualGuestConfig_userDataUpdate,
+				Config:  testAccCheckSoftLayerVirtualGuestConfig_userDataUpdate,
 				Destroy: false,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSoftLayerVirtualGuestExists("softlayer_virtual_guest.terraform-acceptance-test-1", &guest),
@@ -82,15 +82,16 @@ func TestAccSoftLayerVirtualGuest_Basic(t *testing.T) {
 				),
 			},
 
-			// TODO: currently CPU upgrade test is disabled, due to unexpected behavior of field "dedicated_acct_host_only". For some reason it is reset by SoftLayer to "false". To be aligned with Daniel and Chris how to proceed with it.
-//			resource.TestStep{
-//				Config: testAccCheckSoftLayerVirtualGuestConfig_vmUpgradeCPUs,
-//				Check: resource.ComposeTestCheckFunc(
-//					testAccCheckSoftLayerVirtualGuestExists("softlayer_virtual_guest.terraform-acceptance-test-1", &guest),
-//					resource.TestCheckResourceAttr(
-//						"softlayer_virtual_guest.terraform-acceptance-test-1", "cpu", "2"),
-//				),
-//			},
+			// TODO: currently CPU upgrade test is disabled, due to unexpected behavior of field "dedicated_acct_host_only".
+			// TODO: For some reason it is reset by SoftLayer to "false". Daniel Bright reported corresponding issue to SoftLayer team.
+			//			resource.TestStep{
+			//				Config: testAccCheckSoftLayerVirtualGuestConfig_vmUpgradeCPUs,
+			//				Check: resource.ComposeTestCheckFunc(
+			//					testAccCheckSoftLayerVirtualGuestExists("softlayer_virtual_guest.terraform-acceptance-test-1", &guest),
+			//					resource.TestCheckResourceAttr(
+			//						"softlayer_virtual_guest.terraform-acceptance-test-1", "cpu", "2"),
+			//				),
+			//			},
 
 		},
 	})
@@ -100,8 +101,8 @@ func TestAccSoftLayerVirtualGuest_BlockDeviceTemplateGroup(t *testing.T) {
 	var guest datatypes.SoftLayer_Virtual_Guest
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckSoftLayerVirtualGuestDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
@@ -119,8 +120,8 @@ func TestAccSoftLayerVirtualGuest_postInstallScriptUri(t *testing.T) {
 	var guest datatypes.SoftLayer_Virtual_Guest
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckSoftLayerVirtualGuestDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
@@ -210,8 +211,6 @@ resource "softlayer_virtual_guest" "terraform-acceptance-test-1" {
     user_data = "{\"value\":\"newvalue\"}"
     dedicated_acct_host_only = true
     local_disk = false
-    frontend_vlan_id = 1085155
-	backend_vlan_id = 1085157
 }
 `
 
@@ -229,8 +228,6 @@ resource "softlayer_virtual_guest" "terraform-acceptance-test-1" {
     user_data = "updatedData"
     dedicated_acct_host_only = true
     local_disk = false
-    frontend_vlan_id = 1085155
-	backend_vlan_id = 1085157
 }
 `
 
@@ -248,8 +245,6 @@ resource "softlayer_virtual_guest" "terraform-acceptance-test-1" {
     user_data = "updatedData"
     dedicated_acct_host_only = true
     local_disk = false
-    frontend_vlan_id = 1085155
-	backend_vlan_id = 1085157
 }
 `
 
@@ -267,8 +262,6 @@ resource "softlayer_virtual_guest" "terraform-acceptance-test-1" {
     user_data = "updatedData"
     dedicated_acct_host_only = true
     local_disk = false
-    frontend_vlan_id = 1085155
-	backend_vlan_id = 1085157
 }
 `
 

@@ -41,9 +41,9 @@ func resourceSoftLayerSSHKey() *schema.Resource {
 			},
 
 			"notes": &schema.Schema{
-				Type: 		schema.TypeString,
-				Optional:	true,
-				Default:	nil,
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  nil,
 			},
 		},
 	}
@@ -55,7 +55,7 @@ func resourceSoftLayerSSHKeyCreate(d *schema.ResourceData, meta interface{}) err
 	// Build up our creation options
 	opts := datatypes.SoftLayer_Security_Ssh_Key{
 		Label: d.Get("name").(string),
-		Key: d.Get("public_key").(string),
+		Key:   d.Get("public_key").(string),
 	}
 
 	if notes, ok := d.GetOk("notes"); ok {
