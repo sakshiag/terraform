@@ -3,10 +3,10 @@ package softlayer
 import (
 	"encoding/base64"
 	"fmt"
+	datatypes "github.com/TheWeatherCompany/softlayer-go/data_types"
+	"github.com/TheWeatherCompany/softlayer-go/softlayer"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
-	datatypes "github.com/maximilien/softlayer-go/data_types"
-	"github.com/maximilien/softlayer-go/softlayer"
 	"log"
 	"math"
 	"strconv"

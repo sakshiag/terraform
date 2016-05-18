@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 
+	datatypes "github.com/TheWeatherCompany/softlayer-go/data_types"
 	"github.com/hashicorp/terraform/helper/schema"
-	datatypes "github.com/maximilien/softlayer-go/data_types"
 )
 
 func resourceSoftLayerNetworkLoadBalancerVirtualIpAddress() *schema.Resource {

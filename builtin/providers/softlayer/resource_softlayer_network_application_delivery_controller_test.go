@@ -5,13 +5,13 @@ import (
 	"strconv"
 	"testing"
 
+	datatypes "github.com/TheWeatherCompany/softlayer-go/data_types"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
-	datatypes "github.com/maximilien/softlayer-go/data_types"
 )
 
 func TestAccSoftLayerNetworkApplicationDeliveryController_Basic(t *testing.T) {
-	var nadc datatypes.SoftLayer_Network_Application_Delivery_Controller
+	var nappdc datatypes.SoftLayer_Network_Application_Delivery_Controller
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -21,21 +21,15 @@ func TestAccSoftLayerNetworkApplicationDeliveryController_Basic(t *testing.T) {
 			resource.TestStep{
 				Config: testAccCheckSoftLayerNetworkApplicationDeliveryControllerConfig_basic,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckSoftLayerNetworkApplicationDeliveryControllerExists("softlayer_network_application_delivery_controller.testacc_foobar_nadc", &nadc),
+					testAccCheckSoftLayerNetworkApplicationDeliveryControllerExists("softlayer_network_application_delivery_controller.testacc_foobar_nadc", &nappdc),
 					resource.TestCheckResourceAttr(
 						"softlayer_network_application_delivery_controller.testacc_foobar_nadc", "name", "nadc_test_name"),
 					resource.TestCheckResourceAttr(
 						"softlayer_network_application_delivery_controller.testacc_foobar_nadc", "type", "Netscaler VPX"),
 					resource.TestCheckResourceAttr(
-						"softlayer_network_application_delivery_controller.testacc_foobar_nadc", "location", "DALLAS06"),
+						"softlayer_network_application_delivery_controller.testacc_foobar_nadc", "datacenter", "DALLAS06"),
 					resource.TestCheckResourceAttr(
-						"softlayer_network_application_delivery_controller.testacc_foobar_nadc", "speed", "10"),
-					resource.TestCheckResourceAttr(
-						"softlayer_network_application_delivery_controller.testacc_foobar_nadc", "version", "10.1"),
-					resource.TestCheckResourceAttr(
-						"softlayer_network_application_delivery_controller.testacc_foobar_nadc", "plan", "Standard"),
-					resource.TestCheckResourceAttr(
-						"softlayer_network_application_delivery_controller.testacc_foobar_nadc", "ip_count", "2"),
+						"softlayer_network_application_delivery_controller.testacc_foobar_nadc", "virtualIpAddressCount", "2"),
 				),
 			},
 		},
@@ -88,19 +82,17 @@ func testAccCheckSoftLayerNetworkApplicationDeliveryControllerExists(n string, n
 			return fmt.Errorf("Record not found")
 		}
 
-		*nadc = found
+		*nappdc = found
 
 		return nil
 	}
 }
 
-var testAccCheckSoftLayerNetworkApplicationDeliveryControllerConfig_basic = `
+const testAccCheckSoftLayerNetworkApplicationDeliveryControllerConfig_basic = `
 resource "softlayer_network_application_delivery_controller" "testacc_foobar_nadc" {
     name = "nadc_test_name"
     type = "Netscaler VPX"
-    location = "DALLAS06"
-    speed = 10
-    version = "10.1"
+    datacenter = "DALLAS06"
     plan = "Standard"
-    ip_count = 2
+    virtualIpAddressCount = 2
 }`

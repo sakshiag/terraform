@@ -5,8 +5,8 @@ import (
 	"log"
 	"strconv"
 
+	datatypes "github.com/TheWeatherCompany/softlayer-go/data_types"
 	"github.com/hashicorp/terraform/helper/schema"
-	datatypes "github.com/maximilien/softlayer-go/data_types"
 )
 
 func resourceSoftLayerDnsDomain() *schema.Resource {
@@ -160,10 +160,10 @@ func resourceSoftLayerDnsDomainCreate(d *schema.ResourceData, meta interface{}) 
 	return resourceSoftLayerDnsDomainRead(d, meta)
 }
 
-func prepareRecords(raw_records []interface{}) []datatypes.SoftLayer_Dns_Domain_Resource_Record {
-	sl_records := make([]datatypes.SoftLayer_Dns_Domain_Resource_Record, 0)
+func prepareRecords(raw_records []interface{}) []datatypes.SoftLayer_Dns_Domain_ResourceRecord {
+	sl_records := make([]datatypes.SoftLayer_Dns_Domain_ResourceRecord, 0)
 	for _, raw_record := range raw_records {
-		var sl_record datatypes.SoftLayer_Dns_Domain_Resource_Record
+		var sl_record datatypes.SoftLayer_Dns_Domain_ResourceRecord
 		record := raw_record.(map[string]interface{})
 
 		sl_record.Data = record["record_data"].(string)
@@ -205,7 +205,7 @@ func resourceSoftLayerDnsDomainRead(d *schema.ResourceData, meta interface{}) er
 	return nil
 }
 
-func read_resource_records(list []datatypes.SoftLayer_Dns_Domain_Resource_Record) []map[string]interface{} {
+func read_resource_records(list []datatypes.SoftLayer_Dns_Domain_ResourceRecord) []map[string]interface{} {
 	records := make([]map[string]interface{}, 0, len(list))
 	for _, record := range list {
 		r := make(map[string]interface{})

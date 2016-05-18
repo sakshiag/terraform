@@ -1,7 +1,6 @@
 {
 	"ImportPath": "github.com/hashicorp/terraform",
 	"GoVersion": "go1.6",
-	"GodepVersion": "v62",
 	"Packages": [
 		"./..."
 	],
@@ -453,6 +452,11 @@
 		{
 			"ImportPath": "github.com/aws/aws-sdk-go/service/emr",
 			"Comment": "v1.1.15",
+			"Rev": "2cc71659118a868dc7544a7ef0808eb42d487011"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/service/emr/emriface",
+			"Comment": "v1.1.23",
 			"Rev": "2cc71659118a868dc7544a7ef0808eb42d487011"
 		},
 		{
@@ -936,27 +940,27 @@
 			"Rev": "56b76bdf51f7708750eac80fa38b952bb9f32639"
 		},
 		{
-			"ImportPath": "github.com/maximilien/softlayer-go/client",
+			"ImportPath": "github.com/TheWeatherCompany/softlayer-go/client",
 			"Comment": "v0.6.0",
 			"Rev": "85659debe44fab5792fc92cf755c04b115b9dc19"
 		},
 		{
-			"ImportPath": "github.com/maximilien/softlayer-go/common",
+			"ImportPath": "github.com/TheWeatherCompany/softlayer-go/common",
 			"Comment": "v0.6.0",
 			"Rev": "85659debe44fab5792fc92cf755c04b115b9dc19"
 		},
 		{
-			"ImportPath": "github.com/maximilien/softlayer-go/data_types",
+			"ImportPath": "github.com/TheWeatherCompany/softlayer-go/data_types",
 			"Comment": "v0.6.0",
 			"Rev": "85659debe44fab5792fc92cf755c04b115b9dc19"
 		},
 		{
-			"ImportPath": "github.com/maximilien/softlayer-go/services",
+			"ImportPath": "github.com/TheWeatherCompany/softlayer-go/services",
 			"Comment": "v0.6.0",
 			"Rev": "85659debe44fab5792fc92cf755c04b115b9dc19"
 		},
 		{
-			"ImportPath": "github.com/maximilien/softlayer-go/softlayer",
+			"ImportPath": "github.com/TheWeatherCompany/softlayer-go/softlayer",
 			"Comment": "v0.6.0",
 			"Rev": "85659debe44fab5792fc92cf755c04b115b9dc19"
 		},
