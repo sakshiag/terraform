@@ -7,7 +7,7 @@ import (
 
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
-	datatypes "github.com/maximilien/softlayer-go/data_types"
+	datatypes "github.com/TheWeatherCompany/softlayer-go/data_types"
 )
 
 func TestAccSoftLayerDnsDomain_Basic(t *testing.T) {
