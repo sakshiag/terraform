@@ -26,6 +26,7 @@ func resourceSoftLayerNetworkApplicationDeliveryController() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"name": &schema.Schema{
 				Type:     schema.TypeString,
+				Optional: true,
 				Computed: true,
 			},
 
@@ -34,7 +35,7 @@ func resourceSoftLayerNetworkApplicationDeliveryController() *schema.Resource {
 				Required: true,
 			},
 
-			"location": &schema.Schema{
+			"datacenter": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
 			},
@@ -80,7 +81,7 @@ func resourceSoftLayerNetworkApplicationDeliveryControllerCreate(d *schema.Resou
 			Version:  d.Get("version").(string),
 			Plan:     d.Get("plan").(string),
 			IpCount:  d.Get("ip_count").(int),
-			Location: d.Get("location").(string),
+			Location: d.Get("datacenter").(string),
 		}
 
 		log.Printf("[INFO] Creating network application delivery controller")

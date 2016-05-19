@@ -93,7 +93,6 @@ func testAccCheckSoftLayerVirtualIpAddressExists(n string, vip *datatypes.SoftLa
 		}
 
 		client := testAccProvider.Meta().(*Client).networkApplicationDeliveryControllerService
-
 		nadcId, _ := strconv.Atoi(rs.Primary.Meta["nad_controller_id"])
 		vipName, _ := rs.Primary.Meta["name"]
 

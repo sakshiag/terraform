@@ -333,7 +333,7 @@ func (slnadcs *softLayer_Network_Application_Delivery_Controller_Service) findVP
 		return datatypes.SoftLayer_Network_Application_Delivery_Controller{}, err
 	}
 
-	if len(vpxs) == 1 {
+	if len(vpxs) >= 1 {
 		return vpxs[0], nil
 	}
 
