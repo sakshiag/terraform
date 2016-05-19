@@ -48,14 +48,14 @@ func testAccCheckSoftLayerNetworkApplicationDeliveryControllerDestroy(s *terrafo
 		_, err := client.GetObject(id)
 
 		if err == nil {
-			fmt.Errorf("Application Delivery Controller still exists")
+			return fmt.Errorf("Application Delivery Controller still exists")
 		}
 	}
 
 	return nil
 }
 
-func testAccCheckSoftLayerNetworkApplicationDeliveryControllerExists(n string, nadc datatypes.SoftLayer_Network_Application_Delivery_Controller) resource.TestCheckFunc {
+func testAccCheckSoftLayerNetworkApplicationDeliveryControllerExists(n string, nadc *datatypes.SoftLayer_Network_Application_Delivery_Controller) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 
@@ -80,7 +80,7 @@ func testAccCheckSoftLayerNetworkApplicationDeliveryControllerExists(n string, n
 			return fmt.Errorf("Record not found")
 		}
 
-		*nappdc = found
+		*nadc = found
 
 		return nil
 	}

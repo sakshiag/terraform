@@ -51,14 +51,14 @@ func testAccCheckSoftLayerVirtualIpAddressDestroy(s *terraform.State) error {
 			continue
 		}
 
-		nadcId, _ := strconv.Atoi(rs.Primary.Meta["nad_controller_id"].(string))
-		vipName, _ := rs.Primary.Meta["name"].(string)
+		nadcId, _ := strconv.Atoi(rs.Primary.Meta["nad_controller_id"])
+		vipName, _ := rs.Primary.Meta["name"]
 
 		// Try to find the vip
 		_, err := client.GetVirtualIpAddress(nadcId, vipName)
 
 		if err == nil {
-			fmt.Errorf("Virtual ip address still exists")
+			return fmt.Errorf("Virtual ip address still exists")
 		}
 	}
 
@@ -93,8 +93,9 @@ func testAccCheckSoftLayerVirtualIpAddressExists(n string, vip *datatypes.SoftLa
 		}
 
 		client := testAccProvider.Meta().(*Client).networkApplicationDeliveryControllerService
-		nadcId, _ := strconv.Atoi(rs.Primary.Meta["nad_controller_id"].(string))
-		vipName, _ := rs.Primary.Meta["name"].(string)
+
+		nadcId, _ := strconv.Atoi(rs.Primary.Meta["nad_controller_id"])
+		vipName, _ := rs.Primary.Meta["name"]
 
 		foundVip, err := client.GetVirtualIpAddress(nadcId, vipName)
 
