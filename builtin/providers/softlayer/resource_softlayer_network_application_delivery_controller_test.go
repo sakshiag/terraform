@@ -25,9 +25,17 @@ func TestAccSoftLayerNetworkApplicationDeliveryController_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"softlayer_network_application_delivery_controller.testacc_foobar_nadc", "name", "nadc_test_name"),
 					resource.TestCheckResourceAttr(
+						"softlayer_network_application_delivery_controller.testacc_foobar_nadc", "type", "Netscaler VPX"),
+					resource.TestCheckResourceAttr(
 						"softlayer_network_application_delivery_controller.testacc_foobar_nadc", "datacenter", "DALLAS06"),
 					resource.TestCheckResourceAttr(
-						"softlayer_network_application_delivery_controller.testacc_foobar_nadc", "virtualIpAddressCount", "2"),
+						"softlayer_network_application_delivery_controller.testacc_foobar_nadc", "speed", "10"),
+					resource.TestCheckResourceAttr(
+						"softlayer_network_application_delivery_controller.testacc_foobar_nadc", "version", "10.1"),
+					resource.TestCheckResourceAttr(
+						"softlayer_network_application_delivery_controller.testacc_foobar_nadc", "plan", "Standard"),
+					resource.TestCheckResourceAttr(
+						"softlayer_network_application_delivery_controller.testacc_foobar_nadc", "ip_count", "2"),
 				),
 			},
 		},
@@ -89,6 +97,10 @@ func testAccCheckSoftLayerNetworkApplicationDeliveryControllerExists(n string, n
 const testAccCheckSoftLayerNetworkApplicationDeliveryControllerConfig_basic = `
 resource "softlayer_network_application_delivery_controller" "testacc_foobar_nadc" {
     name = "nadc_test_name"
+    type = "Netscaler VPX"
     datacenter = "DALLAS06"
-    virtualIpAddressCount = 2
+    speed = 10
+    version = "10.1"
+    plan = "Standard"
+    ip_count = 2
 }`
