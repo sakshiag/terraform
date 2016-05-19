@@ -11,7 +11,7 @@ import (
 )
 
 func TestAccSoftLayerNetworkApplicationDeliveryController_Basic(t *testing.T) {
-	var nappdc datatypes.SoftLayer_Network_Application_Delivery_Controller
+	var nadc datatypes.SoftLayer_Network_Application_Delivery_Controller
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -21,11 +21,9 @@ func TestAccSoftLayerNetworkApplicationDeliveryController_Basic(t *testing.T) {
 			resource.TestStep{
 				Config: testAccCheckSoftLayerNetworkApplicationDeliveryControllerConfig_basic,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckSoftLayerNetworkApplicationDeliveryControllerExists("softlayer_network_application_delivery_controller.testacc_foobar_nadc", &nappdc),
+					testAccCheckSoftLayerNetworkApplicationDeliveryControllerExists("softlayer_network_application_delivery_controller.testacc_foobar_nadc", &nadc),
 					resource.TestCheckResourceAttr(
 						"softlayer_network_application_delivery_controller.testacc_foobar_nadc", "name", "nadc_test_name"),
-					resource.TestCheckResourceAttr(
-						"softlayer_network_application_delivery_controller.testacc_foobar_nadc", "type", "Netscaler VPX"),
 					resource.TestCheckResourceAttr(
 						"softlayer_network_application_delivery_controller.testacc_foobar_nadc", "datacenter", "DALLAS06"),
 					resource.TestCheckResourceAttr(
@@ -91,8 +89,6 @@ func testAccCheckSoftLayerNetworkApplicationDeliveryControllerExists(n string, n
 const testAccCheckSoftLayerNetworkApplicationDeliveryControllerConfig_basic = `
 resource "softlayer_network_application_delivery_controller" "testacc_foobar_nadc" {
     name = "nadc_test_name"
-    type = "Netscaler VPX"
     datacenter = "DALLAS06"
-    plan = "Standard"
     virtualIpAddressCount = 2
 }`
