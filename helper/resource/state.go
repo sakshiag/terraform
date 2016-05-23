@@ -47,7 +47,6 @@ type StateChangeConf struct {
 // Otherwise, result the result of the first call to the Refresh function to
 // reach the target state.
 func (conf *StateChangeConf) WaitForState() (interface{}, error) {
-	fmt.Println("TESTTEST")
 	log.Printf("[DEBUG] Waiting for state to become: %s", conf.Target)
 
 	notfoundTick := 0
