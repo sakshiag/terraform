@@ -21,7 +21,7 @@ func TestAccSoftLayerVirtualIpAddress_Basic(t *testing.T) {
 			resource.TestStep{
 				Config: testAccCheckSoftLayerVirtualIpAddressConfig_basic,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckSoftLayerVirtualIpAddressExists("softlayer_vip.testacc_vip", &vip),
+					testAccCheckSoftLayerVirtualIpAddressExists("softlayer_network_loadbalancer_virtualipaddress.testacc_vip", &vip),
 					testAccCheckSoftLayerVirtualIpAddressAttributes(&vip),
 					resource.TestCheckResourceAttr(
 						"softlayer_network_loadbalancer_virtualipaddress.testacc_vip", "connection_limit", "2"),
@@ -51,13 +51,17 @@ func testAccCheckSoftLayerVirtualIpAddressDestroy(s *terraform.State) error {
 			continue
 		}
 
-		nadcId, _ := strconv.Atoi(rs.Primary.Meta["nad_controller_id"])
-		vipName, _ := rs.Primary.Meta["name"]
+		nadcId, _ := strconv.Atoi(rs.Primary.Attributes["nad_controller_id"])
+		vipName, _ := rs.Primary.Attributes["name"]
 
 		// Try to find the vip
-		_, err := client.GetVirtualIpAddress(nadcId, vipName)
+		result, err := client.GetVirtualIpAddress(nadcId, vipName)
 
-		if err == nil {
+		if err != nil {
+			return fmt.Errorf("Error fetching virtual ip")
+		}
+
+		if len(result.VirtualIpAddress) != 0 {
 			return fmt.Errorf("Virtual ip address still exists")
 		}
 	}
@@ -84,17 +88,17 @@ func testAccCheckSoftLayerVirtualIpAddressExists(n string, vip *datatypes.SoftLa
 			return fmt.Errorf("Not found: %s", n)
 		}
 
-		if rs.Primary.Meta["nad_controller_id"] == "" {
+		if rs.Primary.Attributes["nad_controller_id"] == "" {
 			return fmt.Errorf("No nadc ID is set")
 		}
 
-		if rs.Primary.Meta["name"] == "" {
+		if rs.Primary.Attributes["name"] == "" {
 			return fmt.Errorf("VIP name is not set")
 		}
 
 		client := testAccProvider.Meta().(*Client).networkApplicationDeliveryControllerService
-		nadcId, _ := strconv.Atoi(rs.Primary.Meta["nad_controller_id"])
-		vipName, _ := rs.Primary.Meta["name"]
+		nadcId, _ := strconv.Atoi(rs.Primary.Attributes["nad_controller_id"])
+		vipName, _ := rs.Primary.Attributes["name"]
 
 		foundVip, err := client.GetVirtualIpAddress(nadcId, vipName)
 
@@ -115,11 +119,11 @@ func testAccCheckSoftLayerVirtualIpAddressExists(n string, vip *datatypes.SoftLa
 var testAccCheckSoftLayerVirtualIpAddressConfig_basic = `
 resource "softlayer_network_loadbalancer_virtualipaddress" "testacc_vip" {
     name = "test_load_balancer_vip"
-    nad_controller_id = 15293
+    nad_controller_id = 18171
     connection_limit = 2
     load_balancing_method = "lc"
     notes = "test_notes"
     source_port = 80
     type = "HTTP"
-    virtual_ip_address = "123.123.123.123"
+    virtual_ip_address = "23.246.204.65"
 }`

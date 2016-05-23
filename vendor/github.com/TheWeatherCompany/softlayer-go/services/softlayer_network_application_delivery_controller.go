@@ -10,6 +10,8 @@ import (
 	softlayer "github.com/TheWeatherCompany/softlayer-go/softlayer"
 	"strconv"
 	"strings"
+	"time"
+	"github.com/hashicorp/terraform/helper/resource"
 )
 
 const (
@@ -272,19 +274,67 @@ func (slnadcs *softLayer_Network_Application_Delivery_Controller_Service) GetObj
 	return nadc, nil
 }
 
-func (slnadcs *softLayer_Network_Application_Delivery_Controller_Service) DeleteObject(id int) (bool, error) {
-	response, errorCode, err := slnadcs.client.GetHttpClient().DoRawHttpRequest(fmt.Sprintf("%s/%d.json", slnadcs.GetName(), id), "DELETE", new(bytes.Buffer))
+func (slnadcs *softLayer_Network_Application_Delivery_Controller_Service) GetBillingItem(volumeId int) (datatypes.SoftLayer_Billing_Item, error) {
+
+	response, errorCode, err := slnadcs.client.GetHttpClient().DoRawHttpRequest(fmt.Sprintf("%s/%d/getBillingItem.json", slnadcs.GetName(), volumeId), "GET", new(bytes.Buffer))
 	if err != nil {
-		errorMessage := fmt.Sprintf("softlayer-go: could not perform SoftLayer_Network_Application_Delivery_Controller#deleteObject, error message '%s'", err.Error())
-		return false, errors.New(errorMessage)
+		return datatypes.SoftLayer_Billing_Item{}, err
 	}
 
 	if common.IsHttpErrorCode(errorCode) {
-		errorMessage := fmt.Sprintf("softlayer-go: could not perform SoftLayer_Network_Application_Delivery_Controller#deleteObject, HTTP error code: '%d'", errorCode)
-		return false, errors.New(errorMessage)
+		errorMessage := fmt.Sprintf("softlayer-go: could not SoftLayer_NetWork_Storage#getBillingItem, HTTP error code: '%d'", errorCode)
+		return datatypes.SoftLayer_Billing_Item{}, errors.New(errorMessage)
 	}
-	if response_value := string(response[:]); response_value != "true" {
-		return false, fmt.Errorf("Failed to delete Application Delivery Controller with id '%d'. Got '%s' as response from the API", id, response_value)
+
+	billingItem := datatypes.SoftLayer_Billing_Item{}
+	err = json.Unmarshal(response, &billingItem)
+	if err != nil {
+		return datatypes.SoftLayer_Billing_Item{}, err
+	}
+
+	return billingItem, nil
+}
+
+func (slnadcs *softLayer_Network_Application_Delivery_Controller_Service) DeleteObject(id int) (bool, error) {
+	billingItem, err := slnadcs.GetBillingItem(id)
+	if err != nil {
+		return false, err
+	}
+
+	if billingItem.Id > 0 {
+		billingItemService, err := slnadcs.client.GetSoftLayer_Billing_Item_Service()
+		if err != nil {
+			return false, err
+		}
+
+		deleted, err := billingItemService.CancelService(billingItem.Id)
+		if err != nil {
+			return false, err
+		}
+
+		if deleted {
+			return false, nil
+		}
+	}
+
+	fmt.Errorf("softlayer-go: could not SoftLayer_Network_Storage_Service#deleteIscsiVolume with id: '%d'", id)
+
+	return true, err
+}
+
+func (slnadcs *softLayer_Network_Application_Delivery_Controller_Service) CancelService(billingId int) (bool, error) {
+	response, errorCode, err := slnadcs.client.GetHttpClient().DoRawHttpRequest(fmt.Sprintf("%s/%d/cancelService.json", slnadcs.GetName(), billingId), "GET", new(bytes.Buffer))
+	if err != nil {
+		return false, err
+	}
+
+	if res := string(response[:]); res != "true" {
+		return false, nil
+	}
+
+	if common.IsHttpErrorCode(errorCode) {
+		errorMessage := fmt.Sprintf("softlayer-go: could not SoftLayer_Billing_Item#CancelService, HTTP error code: '%d'", errorCode)
+		return false, errors.New(errorMessage)
 	}
 
 	return true, err
@@ -360,20 +410,44 @@ func (slnadcs *softLayer_Network_Application_Delivery_Controller_Service) checkC
 }
 
 func (slnadcs *softLayer_Network_Application_Delivery_Controller_Service) findVPXByOrderId(orderId int) (datatypes.SoftLayer_Network_Application_Delivery_Controller, error) {
-	ObjectFilter := string(`{"iscsiNetworkStorage":{"billingItem":{"orderItem":{"order":{"id":{"operation":` + strconv.Itoa(orderId) + `}}}}}}`)
+	ObjectFilter := string(`{"applicationDeliveryControllers":{"billingItem":{"orderItem":{"order":{"id":{"operation":` + strconv.Itoa(orderId) + `}}}}}}`)
 
-	accountService, err := slnadcs.client.GetSoftLayer_Account_Service()
+	stateConf := &resource.StateChangeConf{
+		Pending: []string{"pending"},
+		Target:  []string{"complete"},
+		Refresh: func() (interface{}, string, error) {
+			accountService, err := slnadcs.client.GetSoftLayer_Account_Service()
+			if err != nil {
+				return datatypes.SoftLayer_Network_Application_Delivery_Controller{}, "", err
+			}
+			vpxs, err := accountService.GetApplicationDeliveryControllersWithFilter(ObjectFilter)
+			if err != nil {
+				return datatypes.SoftLayer_Network_Application_Delivery_Controller{}, "", err
+			}
+
+			if len(vpxs) == 1 {
+				return vpxs[0], "complete", nil
+			} else if len(vpxs) == 0 {
+				return nil, "pending", nil
+			} else {
+				return nil, "", fmt.Errorf("Expected one VPX: %s", err)
+			}
+		},
+		Timeout:    5 * time.Minute,
+		Delay:      5 * time.Second,
+		MinTimeout: 3 * time.Second,
+	}
+
+	pendingResult, err := stateConf.WaitForState()
+
 	if err != nil {
 		return datatypes.SoftLayer_Network_Application_Delivery_Controller{}, err
 	}
 
-	vpxs, err := accountService.GetApplicationDeliveryControllersWithFilter(ObjectFilter)
-	if err != nil {
-		return datatypes.SoftLayer_Network_Application_Delivery_Controller{}, err
-	}
+	var result, ok = pendingResult.(datatypes.SoftLayer_Network_Application_Delivery_Controller)
 
-	if len(vpxs) >= 1 {
-		return vpxs[0], nil
+	if ok {
+		return result, nil
 	}
 
 	return datatypes.SoftLayer_Network_Application_Delivery_Controller{},
