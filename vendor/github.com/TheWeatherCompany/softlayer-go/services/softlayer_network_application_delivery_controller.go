@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"github.com/hashicorp/terraform/helper/resource"
 )
 
 const (
@@ -411,19 +412,42 @@ func (slnadcs *softLayer_Network_Application_Delivery_Controller_Service) checkC
 func (slnadcs *softLayer_Network_Application_Delivery_Controller_Service) findVPXByOrderId(orderId int) (datatypes.SoftLayer_Network_Application_Delivery_Controller, error) {
 	ObjectFilter := string(`{"applicationDeliveryControllers":{"billingItem":{"orderItem":{"order":{"id":{"operation":` + strconv.Itoa(orderId) + `}}}}}}`)
 
-	// TODO: NEED TO ADD LOGIC TO CHECK IF EXISTS...VPX NOT CREATED IMMEDIATELY (Sleep is temporary hack)
-	time.Sleep(30 * time.Second)
-	accountService, err := slnadcs.client.GetSoftLayer_Account_Service()
-	if err != nil {
-		return datatypes.SoftLayer_Network_Application_Delivery_Controller{}, err
+	stateConf := &resource.StateChangeConf{
+		Pending: []string{"pending"},
+		Target:  []string{"complete"},
+		Refresh: func() (interface{}, string, error) {
+			accountService, err := slnadcs.client.GetSoftLayer_Account_Service()
+			if err != nil {
+				return datatypes.SoftLayer_Network_Application_Delivery_Controller{}, "", err
+			}
+			vpxs, err := accountService.GetApplicationDeliveryControllersWithFilter(ObjectFilter)
+			if err != nil {
+				return datatypes.SoftLayer_Network_Application_Delivery_Controller{}, "", err
+			}
+
+			if len(vpxs) == 1 {
+				return vpxs[0], "complete", nil
+			} else if len(vpxs) == 0 {
+				return nil, "pending", nil
+			} else {
+				return nil, "", fmt.Errorf("Expected one VPX: %s", err)
+			}
+		},
+		Timeout:    5 * time.Minute,
+		Delay:      5 * time.Second,
+		MinTimeout: 3 * time.Second,
 	}
-	vpxs, err := accountService.GetApplicationDeliveryControllersWithFilter(ObjectFilter)
+
+	pendingResult, err := stateConf.WaitForState()
+
 	if err != nil {
 		return datatypes.SoftLayer_Network_Application_Delivery_Controller{}, err
 	}
 
-	if len(vpxs) == 1 {
-		return vpxs[0], nil
+	var result, ok = pendingResult.(datatypes.SoftLayer_Network_Application_Delivery_Controller)
+
+	if ok {
+		return result, nil
 	}
 
 	return datatypes.SoftLayer_Network_Application_Delivery_Controller{},
