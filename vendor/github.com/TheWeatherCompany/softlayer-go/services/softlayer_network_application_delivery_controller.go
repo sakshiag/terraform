@@ -300,7 +300,7 @@ func (slnadcs *softLayer_Network_Application_Delivery_Controller_Service) Delete
 	if err != nil {
 		return false, err
 	}
-	fmt.Println(billingItem.Id)
+
 	if billingItem.Id > 0 {
 		billingItemService, err := slnadcs.client.GetSoftLayer_Billing_Item_Service()
 		if err != nil {
