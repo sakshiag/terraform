@@ -5,7 +5,6 @@ import (
 	"log"
 	"strconv"
 
-//	"github.com/TheWeatherCompany/softlayer-go/services"
 	softlayer "github.com/TheWeatherCompany/softlayer-go/softlayer"
 	"github.com/hashicorp/terraform/helper/schema"
 	"strings"
