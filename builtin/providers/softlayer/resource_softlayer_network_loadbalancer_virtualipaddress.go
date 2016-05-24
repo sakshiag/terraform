@@ -99,6 +99,7 @@ func resourceSoftLayerNetworkLoadBalancerVirtualIpAddressCreate(d *schema.Resour
 	nadcId := d.Get("nad_controller_id").(int)
 
 	template := datatypes.SoftLayer_Network_LoadBalancer_VirtualIpAddress_Template{
+		ConnectionLimit:       d.Get("connection_limit").(int),
 		LoadBalancingMethod:   d.Get("load_balancing_method").(string),
 		Name:                  d.Get("name").(string),
 		Notes:                 d.Get("notes").(string),
