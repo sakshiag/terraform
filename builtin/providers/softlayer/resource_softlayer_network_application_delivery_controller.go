@@ -7,7 +7,6 @@ import (
 
 	softlayer "github.com/TheWeatherCompany/softlayer-go/softlayer"
 	"github.com/hashicorp/terraform/helper/schema"
-	"strings"
 )
 
 const (
@@ -25,7 +24,6 @@ func resourceSoftLayerNetworkApplicationDeliveryController() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"name": &schema.Schema{
 				Type:     schema.TypeString,
-				Optional: true,
 				Computed: true,
 			},
 
@@ -117,22 +115,6 @@ func resourceSoftLayerNetworkApplicationDeliveryControllerRead(d *schema.Resourc
 	}
 
 	return nil
-}
-
-// these parameters are not contained in the output object, so should be parsed from the
-// description string
-// example string to be parsed CITRIX_NETSCALER_VPX_10_1_10MBPS_STANDARD
-// 10_1 -> version 10.1
-// 10MBPS -> speed 10
-// STANDARD -> plan STANDARD
-func getVersionSpeedPlanFromDescription(description string) (string, int, string) {
-	strs := strings.Split(description, " ")
-	version := strings.Join([]string{strs[3], strs[4]}, ".")
-	speedString := strings.Trim(strs[4], "MBPS")
-	speed, _ := strconv.Atoi(speedString)
-	plan := strings.Trim(strs[5], "")
-
-	return version, speed, plan
 }
 
 func resourceSoftLayerNetworkApplicationDeliveryControllerUpdate(d *schema.ResourceData, meta interface{}) error {
