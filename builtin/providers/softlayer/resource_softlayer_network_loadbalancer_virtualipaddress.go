@@ -17,19 +17,13 @@ func resourceSoftLayerNetworkLoadBalancerVirtualIpAddress() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"id": &schema.Schema{
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Computed: true,
 			},
 
 			"nad_controller_id": &schema.Schema{
 				Type:     schema.TypeInt,
 				Required: true,
-				ForceNew: true,
-			},
-
-			"connection_limit": &schema.Schema{
-				Type:     schema.TypeInt,
-				Optional: true,
 				ForceNew: true,
 			},
 
@@ -54,12 +48,6 @@ func resourceSoftLayerNetworkLoadBalancerVirtualIpAddress() *schema.Resource {
 			"name": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
-			},
-
-			"notes": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
 				ForceNew: true,
 			},
 
@@ -99,10 +87,8 @@ func resourceSoftLayerNetworkLoadBalancerVirtualIpAddressCreate(d *schema.Resour
 	nadcId := d.Get("nad_controller_id").(int)
 
 	template := datatypes.SoftLayer_Network_LoadBalancer_VirtualIpAddress_Template{
-		ConnectionLimit:       d.Get("connection_limit").(int),
 		LoadBalancingMethod:   d.Get("load_balancing_method").(string),
 		Name:                  d.Get("name").(string),
-		Notes:                 d.Get("notes").(string),
 		SourcePort:            d.Get("source_port").(int),
 		Type:                  d.Get("type").(string),
 		VirtualIpAddress:      d.Get("virtual_ip_address").(string),
@@ -138,9 +124,8 @@ func resourceSoftLayerNetworkLoadBalancerVirtualIpAddressRead(d *schema.Resource
 		return fmt.Errorf("Error getting Virtual Ip Address: %s", err)
 	}
 
-	d.SetId(fmt.Sprintf("%d", vip.Id))
+	d.SetId(vip.Name)
 	d.Set("nad_controller_id", nadcId)
-	d.Set("connection_limit", vip.ConnectionLimit)
 	d.Set("load_balancing_method", vip.LoadBalancingMethod)
 	d.Set("load_labancing_method_name", vip.LoadBalancingMethodFullName)
 	d.Set("modify_date", vip.ModifyDate)
