@@ -140,11 +140,11 @@ func resourceSoftLayerNetworkLoadBalancerVirtualIpAddressRead(d *schema.Resource
 
 	d.SetId(vip.Name)
 	d.Set("nad_controller_id", nadcId)
-	d.Set("connection_limit", vip.ConnectionLimit)
 	d.Set("load_balancing_method", vip.LoadBalancingMethod)
 	d.Set("load_labancing_method_name", vip.LoadBalancingMethodFullName)
 	d.Set("modify_date", vip.ModifyDate)
 	d.Set("name", vip.Name)
+	d.Set("connection_limit", vip.ConnectionLimit)
 	d.Set("notes", vip.Notes)
 	d.Set("security_certificate_id", vip.SecurityCertificateId)
 	d.Set("source_port", vip.SourcePort)
