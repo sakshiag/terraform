@@ -50,7 +50,7 @@ resource "softlayer_virtual_guest" "terraform-acceptance-test-2" {
     region = "ams01"
     public_network_speed = 10
     hourly_billing = true
-	  private_network_only = false
+	private_network_only = false
     cpu = 1
     ram = 1024
     disks = [25, 10, 20]

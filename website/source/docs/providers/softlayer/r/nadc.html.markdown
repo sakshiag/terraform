@@ -18,7 +18,6 @@ You can also use this REST URL to get a listing of VPX choices along with versio
 https://{{userName}}:{{apiKey}}@api.softlayer.com/rest/v3/SoftLayer_Product_Package/192/getItems.json?objectMask=id;capacity;description;units;keyName;prices.id;prices.categories.id;prices.categories.name
 ```
 
-
 ## Example Usage | [SLDN](http://sldn.softlayer.com/reference/datatypes/SoftLayer_Network_Application_Delivery_Controller)
 
 ```
