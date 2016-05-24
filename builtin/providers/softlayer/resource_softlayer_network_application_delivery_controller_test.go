@@ -14,8 +14,8 @@ func TestAccSoftLayerNetworkApplicationDeliveryController_Basic(t *testing.T) {
 	var nadc datatypes.SoftLayer_Network_Application_Delivery_Controller
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: testAccCheckSoftLayerNetworkApplicationDeliveryControllerConfig_basic,
