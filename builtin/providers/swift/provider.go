@@ -1,0 +1,62 @@
+package swift
+
+import (
+	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform/terraform"
+	"github.com/ncw/swift"
+)
+
+func Provider() terraform.ResourceProvider {
+	return &schema.Provider{
+		Schema: map[string]*schema.Schema{
+			"username": &schema.Schema{
+				Type:        schema.TypeString,
+				Required:    true,
+				DefaultFunc: schema.EnvDefaultFunc("SWIFT_USERNAME", nil),
+				Description: "The user name to use for Swift API operations.",
+			},
+			"api_key": &schema.Schema{
+				Type:        schema.TypeString,
+				Required:    true,
+				DefaultFunc: schema.EnvDefaultFunc("SWIFT_API_KEY", nil),
+				Description: "The API key to use for Swift API operations.",
+			},
+			"auth_url": &schema.Schema{
+				Type:        schema.TypeString,
+				Required:    true,
+				DefaultFunc: schema.EnvDefaultFunc("SWIFT_AUTH_URL", nil),
+				Description: "The swifth object storage url to use for authentication.",
+			},
+			"storage_url": &schema.Schema{
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("SWIFT_STORAGE_URL", nil),
+				Description: "Alternate object storage url to access containers in (defaults to storage url returned by auth api)",
+			},
+		},
+
+		ResourcesMap: map[string]*schema.Resource{
+			"swift_container": resourceSwiftContainer(),
+			"swift_object":    resourceSwiftObject(),
+		},
+
+		ConfigureFunc: providerConfigure,
+	}
+}
+
+func resourceSwiftObject() *schema.Resource {
+	return &schema.Resource{}
+}
+
+func providerConfigure(d *schema.ResourceData) (interface{}, error) {
+	c := swift.Connection{
+		UserName:   d.Get("username").(string),
+		ApiKey:     d.Get("api_key").(string),
+		AuthUrl:    d.Get("auth_url").(string),
+		StorageUrl: d.Get("storage_url").(string),
+	}
+
+	err := c.Authenticate()
+
+	return &c, err
+}
