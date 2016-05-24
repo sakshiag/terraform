@@ -16,22 +16,17 @@ func TestAccSoftLayerNetworkApplicationDeliveryController_Basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckSoftLayerNetworkApplicationDeliveryControllerDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: testAccCheckSoftLayerNetworkApplicationDeliveryControllerConfig_basic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSoftLayerNetworkApplicationDeliveryControllerExists("softlayer_network_application_delivery_controller.testacc_foobar_nadc", &nadc),
 					resource.TestCheckResourceAttr(
-						"softlayer_network_application_delivery_controller.testacc_foobar_nadc", "name", "nadc_test_name"),
-					resource.TestCheckResourceAttr(
 						"softlayer_network_application_delivery_controller.testacc_foobar_nadc", "type", "Netscaler VPX"),
 					resource.TestCheckResourceAttr(
 						"softlayer_network_application_delivery_controller.testacc_foobar_nadc", "datacenter", "DALLAS06"),
 					resource.TestCheckResourceAttr(
 						"softlayer_network_application_delivery_controller.testacc_foobar_nadc", "speed", "10"),
-					resource.TestCheckResourceAttr(
-						"softlayer_network_application_delivery_controller.testacc_foobar_nadc", "version", "10.1"),
 					resource.TestCheckResourceAttr(
 						"softlayer_network_application_delivery_controller.testacc_foobar_nadc", "plan", "Standard"),
 					resource.TestCheckResourceAttr(
@@ -40,27 +35,6 @@ func TestAccSoftLayerNetworkApplicationDeliveryController_Basic(t *testing.T) {
 			},
 		},
 	})
-}
-
-func testAccCheckSoftLayerNetworkApplicationDeliveryControllerDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*Client).networkApplicationDeliveryControllerService
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "softlayer_network_application_delivery_controller" {
-			continue
-		}
-
-		id, _ := strconv.Atoi(rs.Primary.ID)
-
-		// Try to find the application delivery controller
-		_, err := client.GetObject(id)
-
-		if err == nil {
-			return fmt.Errorf("Application Delivery Controller still exists")
-		}
-	}
-
-	return nil
 }
 
 func testAccCheckSoftLayerNetworkApplicationDeliveryControllerExists(n string, nadc *datatypes.SoftLayer_Network_Application_Delivery_Controller) resource.TestCheckFunc {
@@ -96,7 +70,6 @@ func testAccCheckSoftLayerNetworkApplicationDeliveryControllerExists(n string, n
 
 const testAccCheckSoftLayerNetworkApplicationDeliveryControllerConfig_basic = `
 resource "softlayer_network_application_delivery_controller" "testacc_foobar_nadc" {
-    name = "nadc_test_name"
     type = "Netscaler VPX"
     datacenter = "DALLAS06"
     speed = 10
