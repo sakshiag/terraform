@@ -44,10 +44,6 @@ func Provider() terraform.ResourceProvider {
 	}
 }
 
-func resourceSwiftObject() *schema.Resource {
-	return &schema.Resource{}
-}
-
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	c := swift.Connection{
 		UserName:   d.Get("username").(string),
@@ -59,4 +55,13 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	err := c.Authenticate()
 
 	return &c, err
+}
+
+func obtainConnection(meta interface{}) *swift.Connection {
+	c := meta.(*swift.Connection)
+	if c == nil {
+		panic("swift container resource creation: The connection object was nil.")
+	}
+
+	return c
 }
