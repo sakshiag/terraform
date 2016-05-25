@@ -92,19 +92,34 @@ func (slnadcs *softLayer_Network_Application_Delivery_Controller_Service) Create
 		return false, fmt.Errorf("Network application delivery controller with id '%d' is not found: %s", nadcId, err)
 	}
 
-	response, errorCode, err := slnadcs.client.GetHttpClient().DoRawHttpRequest(fmt.Sprintf("%s/%d/%s.json", slnadcs.GetName(), nadcId, "createLiveLoadBalancer"), "POST", bytes.NewBuffer(requestBody))
+	stateConf := &resource.StateChangeConf{
+		Pending: []string{"{\"error\":\"Method has not been implemented for this object type.\",\"code\":\"SoftLayer_Exception\"}",
+			"{\"error\":\"Could not connect to host\",\"code\":\"HTTP\"}"},
+		Target:  []string{"complete"},
+		Refresh: func() (interface{}, string, error) {
+			response, errorCode, error := slnadcs.client.GetHttpClient().DoRawHttpRequest(fmt.Sprintf("%s/%d/%s.json", slnadcs.GetName(), nadcId, "createLiveLoadBalancer"), "POST", bytes.NewBuffer(requestBody))
+
+			if error != nil {
+				return false, "", err
+			} else if errorCode == 500 {
+				return nil, string(response), nil
+			} else {
+				return true, "complete", nil
+			}
+		},
+		Timeout:    5 * time.Minute,
+		Delay:      5 * time.Second,
+		MinTimeout: 3 * time.Second,
+	}
+
+	pendingResult, err := stateConf.WaitForState()
+
 	if err != nil {
-		errorMessage := fmt.Sprintf("softlayer-go: could not perform SoftLayer_Network_Application_Delivery_Controller#createVirtualIpAddress, error message '%s'", err.Error())
-		return false, errors.New(errorMessage)
+		return false, err
 	}
 
-	if common.IsHttpErrorCode(errorCode) {
-		errorMessage := fmt.Sprintf("softlayer-go: could not perform SoftLayer_Network_Application_Delivery_Controller#createVirtualIpAddress, HTTP error code: '%d'", errorCode)
-		return false, errors.New(errorMessage)
-	}
-
-	if response_value := string(response[:]); response_value != "true" {
-		return false, fmt.Errorf("Failed to create Virtual IP Address with '%s' name from network application delivery controller with '%d' id. Got '%s' as response from the API", template.Name, nadcId, response_value)
+	if !pendingResult {
+		return false, nil
 	}
 
 	return true, nil
