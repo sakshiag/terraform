@@ -30,7 +30,7 @@ func Provider() terraform.ResourceProvider {
 			"storage_url": &schema.Schema{
 				Type:        schema.TypeString,
 				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("SWIFT_STORAGE_URL", nil),
+				DefaultFunc: schema.EnvDefaultFunc("SWIFT_STORAGE_URL", ""),
 				Description: "Alternate object storage url to access containers in (defaults to storage url returned by auth api)",
 			},
 		},
@@ -46,10 +46,14 @@ func Provider() terraform.ResourceProvider {
 
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	c := swift.Connection{
-		UserName:   d.Get("username").(string),
-		ApiKey:     d.Get("api_key").(string),
-		AuthUrl:    d.Get("auth_url").(string),
-		StorageUrl: d.Get("storage_url").(string),
+		UserName: d.Get("username").(string),
+		ApiKey:   d.Get("api_key").(string),
+		AuthUrl:  d.Get("auth_url").(string),
+	}
+
+	storage_url := d.Get("storage_url").(string)
+	if storage_url != "" {
+		c.StorageUrl = storage_url
 	}
 
 	err := c.Authenticate()
