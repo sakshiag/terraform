@@ -86,15 +86,6 @@ func resourceSwiftContainerExists(d *schema.ResourceData, meta interface{}) (boo
 
 // Utility functions
 
-func obtainConnection(meta interface{}) *swift.Connection {
-	c := meta.(*swift.Connection)
-	if c == nil {
-		panic("swift container resource creation: The connection object was nil.")
-	}
-
-	return c
-}
-
 func containerCreateOrUpdate(create bool, d *schema.ResourceData, meta interface{}) error {
 	c := obtainConnection(meta)
 	action := "creation"

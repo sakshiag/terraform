@@ -25,9 +25,9 @@ func TestAccSwiftContainer_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"swift_container.terraform-acceptance-test-1", "name", "terraform-swift-test"),
 					resource.TestCheckResourceAttr(
-						"swift_container.terraform-acceptance-test-1", "read_access", "foo_user"),
+						"swift_container.terraform-acceptance-test-1", "read_access.0", "foo_user"),
 					resource.TestCheckResourceAttr(
-						"swift_container.terraform-acceptance-test-1", "write_access", "bar_user"),
+						"swift_container.terraform-acceptance-test-1", "write_access.0", "bar_user"),
 				),
 			},
 		},
