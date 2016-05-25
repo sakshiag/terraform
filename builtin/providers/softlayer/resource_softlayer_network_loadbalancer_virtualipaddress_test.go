@@ -61,11 +61,21 @@ func testAccCheckSoftLayerVirtualIpAddressDestroy(s *terraform.State) error {
 }
 
 var testAccCheckSoftLayerVirtualIpAddressConfig_basic = `
+resource "softlayer_network_application_delivery_controller" "testacc_foobar_nadc" {
+    type = "Netscaler VPX"
+    datacenter = "DALLAS06"
+    speed = 10
+    version = "10.1"
+    plan = "Standard"
+    ip_count = 2
+}
+
 resource "softlayer_network_loadbalancer_virtualipaddress" "testacc_vip" {
     name = "test_load_balancer_vip"
-    nad_controller_id = 18171
+    nad_controller_id = "${softlayer_network_application_delivery_controller.testacc_foobar_nadc.id}"
     load_balancing_method = "lc"
     source_port = 80
     type = "HTTP"
     virtual_ip_address = "23.246.204.65"
-}`
+}
+`
