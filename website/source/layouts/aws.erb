@@ -10,6 +10,15 @@
                     <a href="/docs/providers/aws/index.html">AWS Provider</a>
                 </li>
 
+                <li<%= sidebar_current(/^docs-aws-datasource/) %>
+                <a href="#">Data Sources</a>
+                    <ul class="nav nav-visible">
+                        <li<%= sidebar_current("docs-aws-datasource-availability-zones") %>>
+                            <a href="/docs/providers/aws/d/availability_zones.html">aws_availability_zones</a>
+                        </li>
+                    </ul>
+                </li>
+
                 <li<%= sidebar_current(/^docs-aws-resource-api-gateway/) %>>
                     <a href="#">API Gateway Resources</a>
                     <ul class="nav nav-visible">
@@ -569,6 +578,10 @@
 
                         <li<%= sidebar_current("docs-aws-resource-rds-cluster-instance") %>>
                             <a href="/docs/providers/aws/r/rds_cluster_instance.html">aws_rds_cluster_instance</a>
+                        </li>
+
+                        <li<%= sidebar_current("docs-aws-resource-rds-cluster-parameter-group") %>>
+                            <a href="/docs/providers/aws/r/rds_cluster_parameter_group.html">aws_rds_cluster_parameter_group</a>
                         </li>
 
                     </ul>

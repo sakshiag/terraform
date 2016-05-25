@@ -1,6 +1,8 @@
 package fastly
 
 import (
+	"crypto/sha1"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
@@ -19,6 +21,9 @@ func resourceServiceV1() *schema.Resource {
 		Read:   resourceServiceV1Read,
 		Update: resourceServiceV1Update,
 		Delete: resourceServiceV1Delete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"name": &schema.Schema{
@@ -189,6 +194,43 @@ func resourceServiceV1() *schema.Resource {
 			"force_destroy": &schema.Schema{
 				Type:     schema.TypeBool,
 				Optional: true,
+			},
+
+			"cache_setting": &schema.Schema{
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						// required fields
+						"name": &schema.Schema{
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "A name to refer to this Cache Setting",
+						},
+						"cache_condition": &schema.Schema{
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "Condition to check if this Cache Setting applies",
+						},
+						"action": &schema.Schema{
+							Type:        schema.TypeString,
+							Optional:    true,
+							Description: "Action to take",
+						},
+						// optional
+						"stale_ttl": &schema.Schema{
+							Type:        schema.TypeInt,
+							Optional:    true,
+							Description: "Max 'Time To Live' for stale (unreachable) objects.",
+							Default:     300,
+						},
+						"ttl": &schema.Schema{
+							Type:        schema.TypeInt,
+							Optional:    true,
+							Description: "The 'Time To Live' for the object",
+						},
+					},
+				},
 			},
 
 			"gzip": &schema.Schema{
@@ -469,11 +511,48 @@ func resourceServiceV1() *schema.Resource {
 					},
 				},
 			},
+			"vcl": &schema.Schema{
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": &schema.Schema{
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "A name to refer to this VCL configuration",
+						},
+						"content": &schema.Schema{
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "The contents of this VCL configuration",
+							StateFunc: func(v interface{}) string {
+								switch v.(type) {
+								case string:
+									hash := sha1.Sum([]byte(v.(string)))
+									return hex.EncodeToString(hash[:])
+								default:
+									return ""
+								}
+							},
+						},
+						"main": &schema.Schema{
+							Type:        schema.TypeBool,
+							Optional:    true,
+							Default:     false,
+							Description: "Should this VCL configuation be the main configuration",
+						},
+					},
+				},
+			},
 		},
 	}
 }
 
 func resourceServiceV1Create(d *schema.ResourceData, meta interface{}) error {
+	if err := validateVCLs(d); err != nil {
+		return err
+	}
+
 	conn := meta.(*FastlyClient).conn
 	service, err := conn.CreateService(&gofastly.CreateServiceInput{
 		Name:    d.Get("name").(string),
@@ -489,6 +568,10 @@ func resourceServiceV1Create(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceServiceV1Update(d *schema.ResourceData, meta interface{}) error {
+	if err := validateVCLs(d); err != nil {
+		return err
+	}
+
 	conn := meta.(*FastlyClient).conn
 
 	// Update Name. No new verions is required for this
@@ -517,6 +600,8 @@ func resourceServiceV1Update(d *schema.ResourceData, meta interface{}) error {
 		"s3logging",
 		"condition",
 		"request_setting",
+		"cache_setting",
+		"vcl",
 	} {
 		if d.HasChange(v) {
 			needsChange = true
@@ -977,6 +1062,122 @@ func resourceServiceV1Update(d *schema.ResourceData, meta interface{}) error {
 			}
 		}
 
+		// Find differences in VCLs
+		if d.HasChange("vcl") {
+			// Note: as above with Gzip and S3 logging, we don't utilize the PUT
+			// endpoint to update a VCL, we simply destroy it and create a new one.
+			oldVCLVal, newVCLVal := d.GetChange("vcl")
+			if oldVCLVal == nil {
+				oldVCLVal = new(schema.Set)
+			}
+			if newVCLVal == nil {
+				newVCLVal = new(schema.Set)
+			}
+
+			oldVCLSet := oldVCLVal.(*schema.Set)
+			newVCLSet := newVCLVal.(*schema.Set)
+
+			remove := oldVCLSet.Difference(newVCLSet).List()
+			add := newVCLSet.Difference(oldVCLSet).List()
+
+			// Delete removed VCL configurations
+			for _, dRaw := range remove {
+				df := dRaw.(map[string]interface{})
+				opts := gofastly.DeleteVCLInput{
+					Service: d.Id(),
+					Version: latestVersion,
+					Name:    df["name"].(string),
+				}
+
+				log.Printf("[DEBUG] Fastly VCL Removal opts: %#v", opts)
+				err := conn.DeleteVCL(&opts)
+				if err != nil {
+					return err
+				}
+			}
+			// POST new VCL configurations
+			for _, dRaw := range add {
+				df := dRaw.(map[string]interface{})
+				opts := gofastly.CreateVCLInput{
+					Service: d.Id(),
+					Version: latestVersion,
+					Name:    df["name"].(string),
+					Content: df["content"].(string),
+				}
+
+				log.Printf("[DEBUG] Fastly VCL Addition opts: %#v", opts)
+				_, err := conn.CreateVCL(&opts)
+				if err != nil {
+					return err
+				}
+
+				// if this new VCL is the main
+				if df["main"].(bool) {
+					opts := gofastly.ActivateVCLInput{
+						Service: d.Id(),
+						Version: latestVersion,
+						Name:    df["name"].(string),
+					}
+					log.Printf("[DEBUG] Fastly VCL activation opts: %#v", opts)
+					_, err := conn.ActivateVCL(&opts)
+					if err != nil {
+						return err
+					}
+
+				}
+			}
+		}
+
+		// Find differences in Cache Settings
+		if d.HasChange("cache_setting") {
+			oc, nc := d.GetChange("cache_setting")
+			if oc == nil {
+				oc = new(schema.Set)
+			}
+			if nc == nil {
+				nc = new(schema.Set)
+			}
+
+			ocs := oc.(*schema.Set)
+			ncs := nc.(*schema.Set)
+
+			remove := ocs.Difference(ncs).List()
+			add := ncs.Difference(ocs).List()
+
+			// Delete removed Cache Settings
+			for _, dRaw := range remove {
+				df := dRaw.(map[string]interface{})
+				opts := gofastly.DeleteCacheSettingInput{
+					Service: d.Id(),
+					Version: latestVersion,
+					Name:    df["name"].(string),
+				}
+
+				log.Printf("[DEBUG] Fastly Cache Settings removal opts: %#v", opts)
+				err := conn.DeleteCacheSetting(&opts)
+				if err != nil {
+					return err
+				}
+			}
+
+			// POST new Cache Settings
+			for _, dRaw := range add {
+				opts, err := buildCacheSetting(dRaw.(map[string]interface{}))
+				if err != nil {
+					log.Printf("[DEBUG] Error building Cache Setting: %s", err)
+					return err
+				}
+				opts.Service = d.Id()
+				opts.Version = latestVersion
+
+				log.Printf("[DEBUG] Fastly Cache Settings Addition opts: %#v", opts)
+				_, err = conn.CreateCacheSetting(opts)
+				if err != nil {
+					return err
+				}
+			}
+		}
+
 		// validate version
 		log.Printf("[DEBUG] Validating Fastly Service (%s), Version (%s)", d.Id(), latestVersion)
 		valid, msg, err := conn.ValidateVersion(&gofastly.ValidateVersionInput{
@@ -1172,6 +1373,38 @@ func resourceServiceV1Read(d *schema.ResourceData, meta interface{}) error {
 
 		if err := d.Set("request_setting", rl); err != nil {
 			log.Printf("[WARN] Error setting Request Settings for (%s): %s", d.Id(), err)
+		}
+
+		// refresh VCLs
+		log.Printf("[DEBUG] Refreshing VCLs for (%s)", d.Id())
+		vclList, err := conn.ListVCLs(&gofastly.ListVCLsInput{
+			Service: d.Id(),
+			Version: s.ActiveVersion.Number,
+		})
+		if err != nil {
+			return fmt.Errorf("[ERR] Error looking up VCLs for (%s), version (%s): %s", d.Id(), s.ActiveVersion.Number, err)
+		}
+
+		vl := flattenVCLs(vclList)
+
+		if err := d.Set("vcl", vl); err != nil {
+			log.Printf("[WARN] Error setting VCLs for (%s): %s", d.Id(), err)
+		}
+
+		// refresh Cache Settings
+		log.Printf("[DEBUG] Refreshing Cache Settings for (%s)", d.Id())
+		cslList, err := conn.ListCacheSettings(&gofastly.ListCacheSettingsInput{
+			Service: d.Id(),
+			Version: s.ActiveVersion.Number,
+		})
+		if err != nil {
+			return fmt.Errorf("[ERR] Error looking up Cache Settings for (%s), version (%s): %s", d.Id(), s.ActiveVersion.Number, err)
+		}
+
+		csl := flattenCacheSettings(cslList)
+
+		if err := d.Set("cache_setting", csl); err != nil {
+			log.Printf("[WARN] Error setting Cache Settings for (%s): %s", d.Id(), err)
 		}
 
 	} else {
@@ -1373,6 +1606,31 @@ func buildHeader(headerMap interface{}) (*gofastly.CreateHeaderInput, error) {
 	return &opts, nil
 }
 
+func buildCacheSetting(cacheMap interface{}) (*gofastly.CreateCacheSettingInput, error) {
+	df := cacheMap.(map[string]interface{})
+	opts := gofastly.CreateCacheSettingInput{
+		Name:           df["name"].(string),
+		StaleTTL:       uint(df["stale_ttl"].(int)),
+		CacheCondition: df["cache_condition"].(string),
+	}
+
+	if v, ok := df["ttl"]; ok {
+		opts.TTL = uint(v.(int))
+	}
+
+	act := strings.ToLower(df["action"].(string))
+	switch act {
+	case "cache":
+		opts.Action = gofastly.CacheSettingActionCache
+	case "pass":
+		opts.Action = gofastly.CacheSettingActionPass
+	case "restart":
+		opts.Action = gofastly.CacheSettingActionRestart
+	}
+
+	return &opts, nil
+}
+
 func flattenGzips(gzipsList []*gofastly.Gzip) []map[string]interface{} {
 	var gl []map[string]interface{}
 	for _, g := range gzipsList {
@@ -1537,4 +1795,78 @@ func buildRequestSetting(requestSettingMap interface{}) (*gofastly.CreateRequest
 	}
 
 	return &opts, nil
+}
+
+func flattenCacheSettings(csList []*gofastly.CacheSetting) []map[string]interface{} {
+	var csl []map[string]interface{}
+	for _, cl := range csList {
+		// Convert Cache Settings to a map for saving to state.
+		clMap := map[string]interface{}{
+			"name":            cl.Name,
+			"action":          cl.Action,
+			"cache_condition": cl.CacheCondition,
+			"stale_ttl":       cl.StaleTTL,
+			"ttl":             cl.TTL,
+		}
+
+		// prune any empty values that come from the default string value in structs
+		for k, v := range clMap {
+			if v == "" {
+				delete(clMap, k)
+			}
+		}
+
+		csl = append(csl, clMap)
+	}
+
+	return csl
+}
+
+func flattenVCLs(vclList []*gofastly.VCL) []map[string]interface{} {
+	var vl []map[string]interface{}
+	for _, vcl := range vclList {
+		// Convert VCLs to a map for saving to state.
+		vclMap := map[string]interface{}{
+			"name":    vcl.Name,
+			"content": vcl.Content,
+			"main":    vcl.Main,
+		}
+
+		// prune any empty values that come from the default string value in structs
+		for k, v := range vclMap {
+			if v == "" {
+				delete(vclMap, k)
+			}
+		}
+
+		vl = append(vl, vclMap)
+	}
+
+	return vl
+}
+
+func validateVCLs(d *schema.ResourceData) error {
+	// TODO: this would be nice to move into a resource/collection validation function, once that is available
+	// (see https://github.com/hashicorp/terraform/pull/4348 and https://github.com/hashicorp/terraform/pull/6508)
+	vcls, exists := d.GetOk("vcl")
+	if !exists {
+		return nil
+	}
+
+	numberOfMainVCLs, numberOfIncludeVCLs := 0, 0
+	for _, vclElem := range vcls.(*schema.Set).List() {
+		vcl := vclElem.(map[string]interface{})
+		if mainVal, hasMain := vcl["main"]; hasMain && mainVal.(bool) {
+			numberOfMainVCLs++
+		} else {
+			numberOfIncludeVCLs++
+		}
+	}
+	if numberOfMainVCLs == 0 && numberOfIncludeVCLs > 0 {
+		return fmt.Errorf("if you include VCL configurations, one of them should have main = true")
+	}
+	if numberOfMainVCLs > 1 {
+		return fmt.Errorf("you cannot have more than one VCL configuration with main = true")
+	}
+	return nil
 }
