@@ -18,6 +18,7 @@ func resourceSwiftContainer() *schema.Resource {
 			"name": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 
 			"read_access": &schema.Schema{
