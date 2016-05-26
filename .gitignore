@@ -22,6 +22,10 @@ website/node_modules
 .idea
 *.iml
 *.test
+<<<<<<< HEAD
+website/source/layouts/docs.erb
+=======
 *.iml
 
 website/vendor
+>>>>>>> feature/softlayer-dns
