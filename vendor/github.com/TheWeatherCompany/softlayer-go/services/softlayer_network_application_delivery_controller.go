@@ -19,6 +19,7 @@ const (
 	ORDER_TYPE_APPLICATION_DELIVERY_CONTROLLER   = "SoftLayer_Container_Product_Order_Network_Application_Delivery_Controller"
 	PACKAGE_ID_APPLICATION_DELIVERY_CONTROLLER   = 192
 	DELIMITER                                    = "_"
+	ID_DELIMITER 				     = ";"
 )
 
 type softLayer_Network_Application_Delivery_Controller_Service struct {
@@ -107,7 +108,7 @@ func (slnadcs *softLayer_Network_Application_Delivery_Controller_Service) Create
 				return true, "complete", nil
 			}
 		},
-		Timeout:    5 * time.Minute,
+		Timeout:    10 * time.Minute,
 		Delay:      5 * time.Second,
 		MinTimeout: 3 * time.Second,
 	}
@@ -118,9 +119,63 @@ func (slnadcs *softLayer_Network_Application_Delivery_Controller_Service) Create
 		return false, err
 	}
 
-	if !pendingResult {
+	if !bool(pendingResult.(bool)) {
 		return false, nil
 	}
+
+	return true, nil
+}
+
+func (slnadcs *softLayer_Network_Application_Delivery_Controller_Service) CreateLoadBalancerService(vipId string, nadcId int, template []datatypes.SoftLayer_Network_LoadBalancer_Service_Template) (bool, error) {
+	_, err := slnadcs.GetVirtualIpAddress(nadcId, vipId)
+
+	if err != nil {
+		return false, fmt.Errorf("Error fetching Virtual Ip Address: %s", err)
+	}
+
+	parameters := datatypes.SoftLayer_Network_LoadBalancer_Service_Parameters{
+		Parameters: []datatypes.SoftLayer_Network_LoadBalancer_Service_VipName_Services{{
+			VipName: vipId,
+			Services: template,
+		}},
+	}
+
+	requestBody, err := json.Marshal(parameters)
+	if err != nil {
+		return false, fmt.Errorf("Unable to create JSON: %s", err)
+	}
+
+	stateConf := &resource.StateChangeConf{
+		Pending: []string{"{\"error\":\"Method has not been implemented for this object type.\",\"code\":\"SoftLayer_Exception\"}",
+			"{\"error\":\"Could not connect to host\",\"code\":\"HTTP\"}"},
+		Target:  []string{"complete"},
+		Refresh: func() (interface{}, string, error) {
+			response, errorCode, error := slnadcs.client.GetHttpClient().DoRawHttpRequest(fmt.Sprintf("%s/%d/%s.json", slnadcs.GetName(), nadcId, "updateLiveLoadBalancer"), "POST", bytes.NewBuffer(requestBody))
+
+			if error != nil {
+				return false, "", err
+			} else if errorCode == 500 {
+				return nil, string(response), nil
+			} else {
+				return true, "complete", nil
+			}
+		},
+		Timeout:    10 * time.Minute,
+		Delay:      5 * time.Second,
+		MinTimeout: 3 * time.Second,
+	}
+
+	pendingResult, err := stateConf.WaitForState()
+
+	if err != nil {
+		return false, err
+	}
+
+	if !bool(pendingResult.(bool)) {
+		return false, nil
+	}
+
+	return true, nil
 
 	return true, nil
 }
@@ -238,6 +293,25 @@ func (slnadcs *softLayer_Network_Application_Delivery_Controller_Service) GetVir
 	}
 
 	return result, err
+}
+
+func (slnadcs *softLayer_Network_Application_Delivery_Controller_Service) GetLoadBalancerService(nadcId int, vipId string, serviceId string) (datatypes.SoftLayer_Network_LoadBalancer_Service, error) {
+	vip, err := slnadcs.GetVirtualIpAddress(nadcId, vipId)
+
+	var result datatypes.SoftLayer_Network_LoadBalancer_Service
+
+	if err != nil {
+		return result, fmt.Errorf("Error fetching Virtual Ip Address: %s", err)
+	}
+
+	for _, service := range vip.Services {
+		if service.Name == serviceId {
+			result = service
+			break
+		}
+	}
+
+	return result, nil
 }
 
 func (slnadcs *softLayer_Network_Application_Delivery_Controller_Service) GetObject(id int) (datatypes.SoftLayer_Network_Application_Delivery_Controller, error) {
@@ -448,9 +522,9 @@ func (slnadcs *softLayer_Network_Application_Delivery_Controller_Service) findVP
 				return nil, "", fmt.Errorf("Expected one VPX: %s", err)
 			}
 		},
-		Timeout:    5 * time.Minute,
-		Delay:      5 * time.Second,
-		MinTimeout: 3 * time.Second,
+		Timeout:    10 * time.Minute,
+		Delay:      5  * time.Second,
+		MinTimeout: 3  * time.Second,
 	}
 
 	pendingResult, err := stateConf.WaitForState()

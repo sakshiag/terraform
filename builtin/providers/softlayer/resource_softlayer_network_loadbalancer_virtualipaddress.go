@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"log"
 
+	"bytes"
 	datatypes "github.com/TheWeatherCompany/softlayer-go/data_types"
+	"github.com/TheWeatherCompany/softlayer-go/services"
 	"github.com/hashicorp/terraform/helper/schema"
+	"strconv"
 )
 
 func resourceSoftLayerNetworkLoadBalancerVirtualIpAddress() *schema.Resource {
@@ -16,11 +19,6 @@ func resourceSoftLayerNetworkLoadBalancerVirtualIpAddress() *schema.Resource {
 		Exists: resourceSoftLayerNetworkLoadBalancerVirtualIpAddressExists,
 
 		Schema: map[string]*schema.Schema{
-			"id": &schema.Schema{
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-
 			"nad_controller_id": &schema.Schema{
 				Type:     schema.TypeInt,
 				Required: true,
@@ -39,7 +37,7 @@ func resourceSoftLayerNetworkLoadBalancerVirtualIpAddress() *schema.Resource {
 				ForceNew: true,
 			},
 
-			"load_labancing_method_name": &schema.Schema{
+			"load_balancing_method_name": &schema.Schema{
 				Type:     schema.TypeInt,
 				Computed: true,
 			},
@@ -138,10 +136,15 @@ func resourceSoftLayerNetworkLoadBalancerVirtualIpAddressRead(d *schema.Resource
 		return fmt.Errorf("Error getting Virtual Ip Address: %s", err)
 	}
 
-	d.SetId(vip.Name)
+	var vipId bytes.Buffer
+	vipId.WriteString(vip.Name)
+	vipId.WriteString(services.ID_DELIMITER)
+	vipId.WriteString(strconv.Itoa(nadcId))
+
+	d.SetId(vipId.String())
 	d.Set("nad_controller_id", nadcId)
 	d.Set("load_balancing_method", vip.LoadBalancingMethod)
-	d.Set("load_labancing_method_name", vip.LoadBalancingMethodFullName)
+	d.Set("load_balancing_method_name", vip.LoadBalancingMethodFullName)
 	d.Set("modify_date", vip.ModifyDate)
 	d.Set("name", vip.Name)
 	d.Set("connection_limit", vip.ConnectionLimit)
