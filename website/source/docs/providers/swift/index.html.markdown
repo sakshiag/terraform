@@ -47,7 +47,7 @@ resource "swift_container" "test_container_1" {
 resource "swift_object" "test_object_1" {
     name = "foo.txt" # Object name
     container_name = "${swift_container.test_container_1.name}"
-    source_file = "foo.txt" # Where to read the contents of the new object from
+    contents = "${file("foo.txt")}" # Contents of the new object
 }
 ```
 
