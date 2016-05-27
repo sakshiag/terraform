@@ -22,7 +22,8 @@ resource "swift_object" "test_object" {
 ```
 
 ```
-# Create a new object in Swift with contents with contents specified as a variable, NOTE the path specified will automatically be created
+# Create a new object in Swift with contents specified as a variable.
+# NOTE: the path specified will automatically be created
 variable "secrets" {
     type = "string"
 }
