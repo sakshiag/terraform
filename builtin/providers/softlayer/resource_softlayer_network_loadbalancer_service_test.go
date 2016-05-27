@@ -13,17 +13,15 @@ func TestAccSoftLayerLoadBalancerService_Basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: testAccCheckSoftLayerLoadBalancerServiceConfig_basic,
-				Check:  resource.ComposeTestCheckFunc(
-				//resource.TestCheckResourceAttr(
-				//	"softlayer_network_loadbalancer_virtualipaddress.testacc_vip", "load_balancing_method", "lc"),
-				//resource.TestCheckResourceAttr(
-				//	"softlayer_network_loadbalancer_virtualipaddress.testacc_vip", "name", "test_load_balancer_vip"),
-				//resource.TestCheckResourceAttr(
-				//	"softlayer_network_loadbalancer_virtualipaddress.testacc_vip", "source_port", "80"),
-				//resource.TestCheckResourceAttr(
-				//	"softlayer_network_loadbalancer_virtualipaddress.testacc_vip", "type", "HTTP"),
-				//resource.TestCheckResourceAttr(
-				//	"softlayer_network_loadbalancer_virtualipaddress.testacc_vip", "virtual_ip_address", "23.246.204.65"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(
+						"softlayer_network_loadbalancer_service.testacc_service", "name", "test_load_balancer_service"),
+					resource.TestCheckResourceAttr(
+						"softlayer_network_loadbalancer_service.testacc_service", "destination_ip_address", "192.155.238.31"),
+					resource.TestCheckResourceAttr(
+						"softlayer_network_loadbalancer_service.testacc_service", "destination_port", "8000"),
+					resource.TestCheckResourceAttr(
+						"softlayer_network_loadbalancer_service.testacc_service", "weight", "55"),
 				),
 			},
 		},
