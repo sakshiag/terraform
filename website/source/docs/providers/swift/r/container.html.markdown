@@ -6,7 +6,7 @@ description: |-
   Manages Swift Object Storage containers.
 ---
 
-# swift\container
+# swift_container
 
 Creates an object container in a Swift object store.
 
