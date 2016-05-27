@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/hashicorp/terraform/helper/schema"
-	"os"
 )
 
 func resourceSwiftObject() *schema.Resource {
@@ -25,11 +24,6 @@ func resourceSwiftObject() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
-			},
-
-			"source_file": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
 			},
 
 			"contents": &schema.Schema{
@@ -92,23 +86,11 @@ func objectCreateOrUpdate(create bool, d *schema.ResourceData, meta interface{})
 
 	name := d.Get("name").(string)
 	containerName := d.Get("container_name").(string)
-	source := d.Get("source_file").(string)
 	contents := d.Get("contents").(string)
 	id := fmt.Sprintf("%s/%s", containerName, name)
 	data := make([]byte, 100)
 
-	// Read source file in first
-	if source != "" {
-		sourceFile, err := os.Open(source)
-		if err != nil {
-			return fmt.Errorf("swift object resource %s: Error opening file: %s", action, err.Error())
-		}
-
-		_, err = sourceFile.Read(data)
-		if err != nil {
-			return fmt.Errorf("swift object resource %s: Error reading file: %s", action, err.Error())
-		}
-	} else if contents != "" {
+	if contents != "" {
 		data = bytes.NewBufferString(contents).Bytes()
 	}
 

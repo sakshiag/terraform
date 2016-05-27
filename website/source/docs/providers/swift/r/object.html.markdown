@@ -17,7 +17,7 @@ Provides an object resource. Allows the creation of an object in a Swift object 
 resource "swift_object" "test_object" {
     name = "foo.txt" # Object name
     container_name = "${swift_container.test_container_1.name}"
-    source_file = "foo.txt" # Where to read the contents of the new object from
+    contents = "${file("foo.txt")}" # Contents of the new object
 }
 ```
 
@@ -45,11 +45,8 @@ The following arguments are supported:
 * `container_name` | *string*
 	* Name of the container to put this object in.
 	* **Required**
-* `source_file` | *string*
-	* The source file containing the desired contents of the object.
-	* **Optional**
 * `contents` | *string*
-	* The desired contents of the object. If *source_file* is specified, this argument will be ignored.
+	* The desired contents of the object.
 	* **Optional**
 
-If neither `source_file` nor `contents` are specified, an empty object will be created.
+If `contents` is not specified, an empty object will be created.
