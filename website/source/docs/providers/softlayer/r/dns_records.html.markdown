@@ -1,25 +1,14 @@
-
-
-  Provides a Softlayer's DNS Domain Records
 ---
+layout: "softlayer"
+page_title: "SoftLayer: softlayer_dns_domain_resourcerecord"
+sidebar_current: "docs-softlayer-resource-softlayer-dns-domain-resourcerecord"
+description: |-
+  Provides a Softlayer's DNS Domain Records
+-------------------------------------------
 
-# SoftLayer_Dns_Domain_ResourceRecord
+# softlayer_dns_domain_resourcerecord
 
-The _SoftLayer_Dns_Domain_ResourceRecord_ data type represents a single resource record entry in a SoftLayer hosted [`domain`](/docs/providers/softlayer/r/dns.html).
-Each resource record contains a _host_ and _data_ property, defining a resource's name and it's target data.
-Domains contain multiple types of resource records. The _type_ property separates out resource records by _type_.
-_Type_ can take one of the following values:
-
-* "a" for address records
-* "aaaa" for address records
-* "cname" for canonical name records
-* "mx" for mail exchanger records
-* "ns" for name server records
-* "ptr" for pointer records in reverse domains
-* "soa" for a domain's start of authority record
-* "spf" for sender policy framework records
-* "srv" for service records
-* "txt" for text records
+The `softlayer_dns_domain_resourcerecord` data type represents a single resource record entry in a [`softlayer_dns_domain`](/docs/providers/softlayer/r/dns.html). Each resource record contains a `host` and `record_data` property, defining a resource's name and it's target data. Domains may contain multiple types of resource records.
 
 As _SoftLayer_Dns_Domain_ResourceRecord_ objects are created and loaded, the API verifies the _type_ property and casts
 the object as the appropriate type.
@@ -27,30 +16,19 @@ the object as the appropriate type.
 ## Example Usage
 
 We are using [SoftLayer_Dns_Domain_ResourceRecord](https://sldn.softlayer.com/reference/datatypes/SoftLayer_Dns_Domain_ResourceRecord)
-SL’s object for most of CRUD operations. Only for SRV record type we are using [SoftLayer_Dns_Domain_ResourceRecord_SrvType](https://sldn.softlayer.com/reference/services/SoftLayer_Dns_Domain_ResourceRecord_SrvType) SL’s object.
+SLï¿½s object for most of CRUD operations. Only for SRV record type we are using [SoftLayer_Dns_Domain_ResourceRecord_SrvType](https://sldn.softlayer.com/reference/services/SoftLayer_Dns_Domain_ResourceRecord_SrvType) SLï¿½s object.
 
 Currently we can CRUD almost all record types except _SOA_ type which is initially created on DNS create action. 
 
-###Create example:
-
+### Create example:
+#### `A` Record
 ```
-provider "softlayer" {
-    username = "your_user_name"
-    api_key = "your_api_key"
+resource "softlayer_dns_domain" "main" {
+	name = "main.example.com"
 }
-```
 
-```
-# Create a DNS for records creation
-resource "softlayer_dns_domain" "test_dns_domain_records" {
-	name = "records.test.domain-3.com"
-}
-```
-
-```
-# Creates a record of A _type_ using DNS id created before
-resource "softlayer_dns_domain_record" "recordA" {
-    record_data = "127.0.0.1"
+resource "softlayer_dns_domain_record" "www" {
+    record_data = "$"
     domain_id = "${softlayer_dns_domain.test_dns_domain_records.id}"
     host = "hosta.com"
     contact_email = "user@softlaer.com"
@@ -58,9 +36,8 @@ resource "softlayer_dns_domain_record" "recordA" {
     record_type = "a"
 }
 ```
-
+#### `AAAA` Record
 ```
-# Creates a record of AAAA _type_ using DNS id created before
 resource "softlayer_dns_domain_record" "recordAAAA" {
     record_data = "FE80:0000:0000:0000:0202:B3FF:FE1E:8329"
     domain_id = "${softlayer_dns_domain.test_dns_domain_records.id}"
@@ -70,9 +47,8 @@ resource "softlayer_dns_domain_record" "recordAAAA" {
     record_type = "aaaa"
 }
 ```
-
+#### `CNAME` Record
 ```
-# Creates a record of CNAME _type_ using DNS id created before
 resource "softlayer_dns_domain_record" "recordCNAME" {
     record_data = "testcname.com"
     domain_id = "${softlayer_dns_domain.test_dns_domain_records.id}"
@@ -82,9 +58,8 @@ resource "softlayer_dns_domain_record" "recordCNAME" {
     record_type = "cname"
 }
 ```
-
+#### `MX` Record
 ```
-# Creates a record of MX _type_ using DNS id created before
 resource "softlayer_dns_domain_record" "recordMX" {
     record_data = "testmx.com"
     domain_id = "${softlayer_dns_domain.test_dns_domain_records.id}"
@@ -94,9 +69,8 @@ resource "softlayer_dns_domain_record" "recordMX" {
     record_type = "mx"
 }
 ```
-
+#### `NS` Record
 ```
-# Creates a record of NS _type_ using DNS id created before
 resource "softlayer_dns_domain_record" "recordNS" {
     record_data = "ns1.example.org"
     domain_id = "${softlayer_dns_domain.test_dns_domain_records.id}"
@@ -106,9 +80,8 @@ resource "softlayer_dns_domain_record" "recordNS" {
     record_type = "ns"
 }
 ```
-
+#### `SPF` Record
 ```
-# Creates a record of SPF _type_ using DNS id created before
 resource "softlayer_dns_domain_record" "recordSPF" {
     record_data = "v=spf1 mx:mail.example.org ~all"
     domain_id = "${softlayer_dns_domain.test_dns_domain_records.id}"
@@ -118,9 +91,8 @@ resource "softlayer_dns_domain_record" "recordSPF" {
     record_type = "spf"
 }  
 ```
-
+#### `TXT` Record
 ```
-# Creates a record of TXT _type_ using DNS id created before
 resource "softlayer_dns_domain_record" "recordTXT" {
     record_data = "127.0.0.1"
     domain_id = "${softlayer_dns_domain.test_dns_domain_records.id}"
@@ -130,9 +102,8 @@ resource "softlayer_dns_domain_record" "recordTXT" {
     record_type = "txt"
 }
 ```
-
+#### `SRV` Record
 ```
-# Creates a record of SRV _type_ using DNS id created before
 resource "softlayer_dns_domain_record" "recordSRV" {
     record_data = "ns1.example.org"
     domain_id = "${softlayer_dns_domain.test_dns_domain_records.id}"
@@ -148,14 +119,15 @@ resource "softlayer_dns_domain_record" "recordSRV" {
 }
 ```
 
-####Create for PTR record type example: 
+#### `PTR` Record
+#####  _A note on creating `PTR` records:_ 
 
 The issue we faced was to determine a _domainId_ to use on this type of record creation. If a user will use _domainId_ 
 which is not in any available subnets he get an error that record cannot be found. For tests we made following steps:
 Created a PTR record via UI (Network->DNS->Reverse Records) assigning IPAddress in the range of existing and available subnets (Network->IP Management->Subnets).
 This IPAddress we will use on PTR record creation via terraform. 
 Listed Subnets via curl, rest or python client to retrieve subnetId which we used at first step
-Get Subnet’s details (not python client as it doesn’t provide info about reverse records) via rest tool 
+Get Subnetï¿½s details (not python client as it doesnï¿½t provide info about reverse records) via rest tool 
 (endpoint: /rest/v3.1/SoftLayer_Network_Subnet/subnetId/getReverseDomainRecords).
 As a result we got: "resourceRecords": [{"data": "some.host.name.com.","domainId": 1653916,"expire": null,...} 
 
@@ -199,7 +171,17 @@ If a zone file has changed then the secondary DNS server will update it's copy o
  by a secondary name server failed before attempting to refresh a domain's zone with that secondary name server again.
 * `ttl` - (Required) The Time To Live value of a resource record, measured in seconds.
  TTL is used by a name server to determine how long to cache a resource record. An SOA record's TTL value defines the domain's overall TTL.
-* `record_type` - (Required) A domain resource record's type
+* `record_type` - (Required) A domain resource record's type, valid types are:
+    * `a` for address records
+    * `aaaa` for address records
+    * `cname` for canonical name records
+    * `mx` for mail exchanger records
+    * `ns` for name server records
+    * `ptr` for pointer records in reverse domains
+    * `soa` for a domain's start of authority record
+    * `spf` for sender policy framework records
+    * `srv` for service records
+* `txt` for text records
 * `service` - The symbolic name of the desired service
 * `protocol` - The protocol of the desired service; this is usually either TCP or UDP.
 * `port` - The TCP or UDP port on which the service is to be found.
