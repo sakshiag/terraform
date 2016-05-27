@@ -64,7 +64,7 @@ func testAccCheckSoftLayerVirtualIpAddressDestroy(s *terraform.State) error {
 var testAccCheckSoftLayerVirtualIpAddressConfig_basic = `
 resource "softlayer_network_application_delivery_controller" "testacc_foobar_nadc" {
     type = "Netscaler VPX"
-    datacenter = "DALLAS06"
+    datacenter = "DALLAS05"
     speed = 10
     version = "10.1"
     plan = "Standard"
