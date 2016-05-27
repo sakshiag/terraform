@@ -136,50 +136,6 @@ func resourceSoftLayerNetworkLoadBalancerServiceRead(d *schema.ResourceData, met
 	return nil
 }
 
-func resourceSoftLayerNetworkLoadBalancerServiceUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*Client).networkApplicationDeliveryControllerService
-	if client == nil {
-		return fmt.Errorf("The client is nil.")
-	}
-
-	nadcId := d.Get("nad_controller_id").(int)
-	template := datatypes.SoftLayer_Network_LoadBalancer_VirtualIpAddress_Template{
-		Name: d.Get("name").(string),
-	}
-
-	if d.HasChange("load_balancing_method") {
-		template.LoadBalancingMethod = d.Get("load_balancing_method").(string)
-	}
-
-	if d.HasChange("notes") {
-		template.Notes = d.Get("notes").(string)
-	}
-
-	if d.HasChange("security_certificate_id") {
-		template.SecurityCertificateId = d.Get("security_certificate_id").(int)
-	}
-
-	if d.HasChange("source_port") {
-		template.SourcePort = d.Get("source_port").(int)
-	}
-
-	if d.HasChange("type") {
-		template.Type = d.Get("type").(string)
-	}
-
-	if d.HasChange("virtual_ip_address") {
-		template.VirtualIpAddress = d.Get("virtual_ip_address").(string)
-	}
-
-	_, err := client.EditVirtualIpAddress(nadcId, template)
-
-	if err != nil {
-		return fmt.Errorf("Error updating Virtual Ip Address: %s", err)
-	}
-
-	return nil
-}
-
 func resourceSoftLayerNetworkLoadBalancerServiceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client).networkApplicationDeliveryControllerService
 	if client == nil {
