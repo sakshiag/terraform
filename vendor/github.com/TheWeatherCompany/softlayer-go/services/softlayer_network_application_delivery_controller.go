@@ -220,6 +220,47 @@ func (slnadcs *softLayer_Network_Application_Delivery_Controller_Service) Delete
 	return true, err
 }
 
+func (slnadcs *softLayer_Network_Application_Delivery_Controller_Service) DeleteLoadBalancerService(nadcId int, vipId string, serviceId string) (bool, error) {
+	vip, err := slnadcs.GetVirtualIpAddress(nadcId, vipId)
+	if err != nil {
+		return false, err
+	}
+	if vip.Name != vipId {
+		return false, fmt.Errorf("VIP with ID '%d' is not found", vipId)
+	}
+
+	parameters := datatypes.SoftLayer_Network_LoadBalancer_Service_Parameters_Delete{
+		Parameters: []datatypes.SoftLayer_Network_LoadBalancer_Service_VipName_Services_Delete{{
+			ServiceName: serviceId,
+			Vip: datatypes.SoftLayer_Network_LoadBalancer_Service_VipName{
+				VipName: vipId,
+			},
+		}},
+	}
+
+	requestBody, err := json.Marshal(parameters)
+	if err != nil {
+		return false, fmt.Errorf("Unable to create JSON: %s", err)
+	}
+
+	response, errorCode, err := slnadcs.client.GetHttpClient().DoRawHttpRequest(fmt.Sprintf("%s/%d/%s.json", slnadcs.GetName(), nadcId, "deleteLiveLoadBalancerService"), "POST", bytes.NewBuffer(requestBody))
+	if err != nil {
+		errorMessage := fmt.Sprintf("softlayer-go: could not perform SoftLayer_Network_Application_Delivery_Controller#deleteLiveLoadBalancerService, error message '%s'", err.Error())
+		return false, errors.New(errorMessage)
+	}
+
+	if common.IsHttpErrorCode(errorCode) {
+		errorMessage := fmt.Sprintf("softlayer-go: could not perform SoftLayer_Network_Application_Delivery_Controller#deleteLiveLoadBalancerService, HTTP error code: '%d'", errorCode)
+		return false, errors.New(errorMessage)
+	}
+
+	if response_value := string(response[:]); response_value != "true" {
+		return false, fmt.Errorf("Failed to delete LoadBalancerService with name '%s' from network application delivery controller with id '%d'. Got '%s' as response from the API", serviceId, nadcId, response_value)
+	}
+
+	return true, err
+}
+
 func (slnadcs *softLayer_Network_Application_Delivery_Controller_Service) EditVirtualIpAddress(nadcId int, template datatypes.SoftLayer_Network_LoadBalancer_VirtualIpAddress_Template) (bool, error) {
 	nadc, err := slnadcs.GetObject(nadcId)
 	if err != nil {

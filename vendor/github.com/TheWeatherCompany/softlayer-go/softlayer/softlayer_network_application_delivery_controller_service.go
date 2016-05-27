@@ -22,6 +22,7 @@ type SoftLayer_Network_Application_Delivery_Controller_Service interface {
 
 	DeleteVirtualIpAddress(nadcId int, name string) (bool, error)
 	DeleteObject(id int) (bool, error)
+	DeleteLoadBalancerService(nadcId int, vipId string, serviceId string) (bool, error)
 
 	EditVirtualIpAddress(nadcId int, template datatypes.SoftLayer_Network_LoadBalancer_VirtualIpAddress_Template) (bool, error)
 
