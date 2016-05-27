@@ -33,7 +33,7 @@ func TestAccSoftLayerLoadBalancerService_Basic(t *testing.T) {
 var testAccCheckSoftLayerLoadBalancerServiceConfig_basic = `
 resource "softlayer_network_application_delivery_controller" "testacc_foobar_nadc" {
     type = "Netscaler VPX"
-    datacenter = "DALLAS05"
+    datacenter = "DALLAS06"
     speed = 10
     version = "10.1"
     plan = "Standard"

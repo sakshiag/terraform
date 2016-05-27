@@ -186,32 +186,45 @@ func resourceSoftLayerNetworkLoadBalancerServiceDelete(d *schema.ResourceData, m
 		return fmt.Errorf("The client is nil.")
 	}
 
-	nadcId := d.Get("nad_controller_id").(int)
-	vipName := d.Get("name").(string)
+	vipUniqueId := d.Get("vip_id").(string)
 
-	_, err := client.DeleteVirtualIpAddress(nadcId, vipName)
+	vipId, nadcId, err := parseVipUniqueId(vipUniqueId)
+
 	if err != nil {
-		return fmt.Errorf("Error deleting Virtual Ip Address %s: %s", vipName, err)
+		return fmt.Errorf("Error parsing vip id: %s", err)
+	}
+
+	serviceId := d.Get("name").(string)
+
+	_, err = client.DeleteLoadBalancerService(nadcId, vipId, serviceId)
+	if err != nil {
+		return fmt.Errorf("Error deleting Load Balancer Service %s: %s", serviceId, err)
 	}
 
 	return nil
 }
 
 func resourceSoftLayerNetworkLoadBalancerServiceExists(d *schema.ResourceData, meta interface{}) (bool, error) {
-	return true, nil
-	//client := meta.(*Client).networkApplicationDeliveryControllerService
-	//if client == nil {
-	//	return false, fmt.Errorf("The client is nil.")
-	//}
-	//
-	//vipName := d.Get("name").(string)
-	//serviceName := d.Get()
-	//
-	//vip, err := client.GetLoadBalancerService(vipName, serviceName)
-	//
-	//if err != nil {
-	//	return false, fmt.Errorf("Error fetching Virtual Ip Address: %s", err)
-	//}
-	//
-	//return vip.Name == vipName && err == nil, nil
+	client := meta.(*Client).networkApplicationDeliveryControllerService
+	if client == nil {
+		return false, fmt.Errorf("The client is nil.")
+	}
+
+	vipUniqueId := d.Get("vip_id").(string)
+
+	vipId, nadcId, err := parseVipUniqueId(vipUniqueId)
+
+	if err != nil {
+		return false, fmt.Errorf("Error parsing vip id: %s", err)
+	}
+
+	serviceId := d.Get("name").(string)
+
+	service, err := client.GetLoadBalancerService(nadcId, vipId, serviceId)
+
+	if err != nil {
+		return false, fmt.Errorf("Error fetching Load Balancer Service: %s", err)
+	}
+
+	return service.Name == serviceId && err == nil, nil
 }
