@@ -22,7 +22,8 @@ resource "softlayer_dns_domain" "dns-domain-test" {
 ## Argument Reference
 The following arguments are supported:
 
-* `name` - (Required) A domain's name including top-level domain, for example "example.com". _Name_ is the only field that needs to be set for `softlayer_dns_domain`. During creation the `NS` and `SOA` resource records are created automatically.
+* `name` | *string*
+     * (Required) A domain's name including top-level domain, for example "example.com". _Name_ is the only field that needs to be set for `softlayer_dns_domain`. During creation the `NS` and `SOA` resource records are created automatically.
 
 ## Attributes Reference
 The following attributes are exported
