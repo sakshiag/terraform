@@ -13,13 +13,13 @@ func TestAccSoftLayerLoadBalancerService_Basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: testAccCheckSoftLayerLoadBalancerServiceConfig_basic,
-				Check:  resource.ComposeTestCheckFunc(
-				resource.TestCheckResourceAttr(
-					"softlayer_network_loadbalancer_service.testacc_service", "name", "test_load_balancer_service"),
-				resource.TestCheckResourceAttr(
-					"softlayer_network_loadbalancer_service.testacc_service", "destination_port", "89"),
-				resource.TestCheckResourceAttr(
-					"softlayer_network_loadbalancer_service.testacc_service", "weight", "55"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(
+						"softlayer_network_loadbalancer_service.testacc_service", "name", "test_load_balancer_service"),
+					resource.TestCheckResourceAttr(
+						"softlayer_network_loadbalancer_service.testacc_service", "destination_port", "89"),
+					resource.TestCheckResourceAttr(
+						"softlayer_network_loadbalancer_service.testacc_service", "weight", "55"),
 				),
 			},
 		},
