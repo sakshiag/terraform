@@ -61,6 +61,22 @@ func testAccCheckSoftLayerVirtualIpAddressDestroy(s *terraform.State) error {
 }
 
 var testAccCheckSoftLayerVirtualIpAddressConfig_basic = `
+resource "softlayer_virtual_guest" "terraform-acceptance-test-1" {
+    name = "terraform-test"
+    domain = "bar.example.com"
+    image = "DEBIAN_7_64"
+    region = "ams01"
+    public_network_speed = 10
+    hourly_billing = true
+    private_network_only = false
+    cpu = 1
+    ram = 1024
+    disks = [25, 10, 20]
+    user_data = "{\"value\":\"newvalue\"}"
+    dedicated_acct_host_only = true
+    local_disk = false
+}
+
 resource "softlayer_network_application_delivery_controller" "testacc_foobar_nadc" {
     type = "Netscaler VPX"
     datacenter = "DALLAS05"
@@ -76,6 +92,6 @@ resource "softlayer_network_loadbalancer_virtualipaddress" "testacc_vip" {
     load_balancing_method = "lc"
     source_port = 80
     type = "HTTP"
-    virtual_ip_address = "23.246.204.65"
+    virtual_ip_address = "${softlayer_virtual_guest.terraform-acceptance-test-1.ipv4_address}"
 }
 `
