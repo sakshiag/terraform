@@ -1,7 +1,7 @@
 {
 	"ImportPath": "github.com/hashicorp/terraform",
 	"GoVersion": "go1.6",
-	"GodepVersion": "v67",
+	"GodepVersion": "v71",
 	"Packages": [
 		"./..."
 	],
@@ -1064,6 +1064,10 @@
 			"Rev": "eecf4c70c626c7cfbb95c90195bc34d386c74ac6"
 		},
 		{
+			"ImportPath": "github.com/ncw/swift",
+			"Rev": "2e3a4f189d749f824f92d94fd4ac64d8e5f9503f"
+		},
+		{
 			"ImportPath": "github.com/nesv/go-dynect/dynect",
 			"Comment": "v0.2.0-8-g841842b",
 			"Rev": "841842b16b39cf2b5007278956976d7d909bd98b"
@@ -1096,6 +1100,10 @@
 			"ImportPath": "github.com/pkg/errors",
 			"Comment": "v0.3.0",
 			"Rev": "42fa80f2ac6ed17a977ce826074bd3009593fa9d"
+		},
+		{
+			"ImportPath": "github.com/pmezard/go-difflib/difflib",
+			"Rev": "792786c7400a136282c1664665ae0a8db921c6c2"
 		},
 		{
 			"ImportPath": "github.com/rackspace/gophercloud",
@@ -1297,6 +1305,11 @@
 			"Rev": "cb7f23ec59bec0d61b19c56cd88cee3d0cc1870c"
 		},
 		{
+			"ImportPath": "github.com/ryanuber/columnize",
+			"Comment": "v2.1.0",
+			"Rev": "983d3a5fab1bf04d1b412465d2d9f8430e2e917e"
+		},
+		{
 			"ImportPath": "github.com/satori/go.uuid",
 			"Rev": "d41af8bb6a7704f00bc3b7cba9355ae6a5a80048"
 		},
@@ -1312,6 +1325,11 @@
 		{
 			"ImportPath": "github.com/sthulb/mime/multipart",
 			"Rev": "698462dc9685d7743511c26da726c1b0c1cfb111"
+		},
+		{
+			"ImportPath": "github.com/stretchr/testify/assert",
+			"Comment": "v1.1.3-18-g8d64eb7",
+			"Rev": "8d64eb7173c7753d6419fd4a9caf057398611364"
 		},
 		{
 			"ImportPath": "github.com/tent/http-link-go",
@@ -1418,6 +1436,10 @@
 		},
 		{
 			"ImportPath": "github.com/zorkian/go-datadog-api",
+			"Rev": "af9919d4fd020eba6daada1cbba9310f5d7b44a8"
+		},
+		{
+			"ImportPath": "github.com/zorkian/go-datadog-api/integration",
 			"Rev": "af9919d4fd020eba6daada1cbba9310f5d7b44a8"
 		},
 		{
