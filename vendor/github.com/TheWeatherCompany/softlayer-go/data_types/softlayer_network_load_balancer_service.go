@@ -5,6 +5,8 @@ type SoftLayer_Network_LoadBalancer_Service struct {
 	DestinationIpAddress          string    `json:"destinationIpAddress"`
 	DestinationPort               int       `json:"destinationPort"`
 	Weight                        int       `json:"weight"`
+	HealthCheck                   string    `json:"healthCheck"`
+	ConnectionLimit               int       `json:"connectionLimit"`
 }
 
 type SoftLayer_Network_LoadBalancer_Service_Parameters struct {
@@ -34,4 +36,6 @@ type SoftLayer_Network_LoadBalancer_Service_Template struct {
 	DestinationIpAddress          string    `json:"destinationIpAddress"`
 	DestinationPort               int       `json:"destinationPort"`
 	Weight                        int       `json:"weight"`
+	HealthCheck                   string    `json:"healthCheck"`
+	ConnectionLimit               int       `json:"connectionLimit"`
 }

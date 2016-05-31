@@ -176,8 +176,6 @@ func (slnadcs *softLayer_Network_Application_Delivery_Controller_Service) Create
 	}
 
 	return true, nil
-
-	return true, nil
 }
 
 func (slnadcs *softLayer_Network_Application_Delivery_Controller_Service) DeleteVirtualIpAddress(nadcId int, name string) (bool, error) {
