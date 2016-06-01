@@ -70,7 +70,6 @@ func testAccCheckSoftLayerNetworkApplicationDeliveryControllerExists(n string, n
 
 const testAccCheckSoftLayerNetworkApplicationDeliveryControllerConfig_basic = `
 resource "softlayer_network_application_delivery_controller" "testacc_foobar_nadc" {
-    type = "Netscaler VPX"
     datacenter = "DALLAS06"
     speed = 10
     version = "10.1"
