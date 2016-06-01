@@ -79,7 +79,6 @@ resource "softlayer_virtual_guest" "terraform-acceptance-test-1" {
 }
 
 resource "softlayer_network_application_delivery_controller" "testacc_foobar_nadc" {
-    type = "Netscaler VPX"
     datacenter = "DALLAS05"
     speed = 10
     version = "10.1"
