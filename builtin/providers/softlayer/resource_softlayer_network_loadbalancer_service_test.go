@@ -34,7 +34,7 @@ resource "softlayer_virtual_guest" "terraform-acceptance-test-1" {
     region = "ams01"
     public_network_speed = 10
     hourly_billing = true
-	  private_network_only = false
+    private_network_only = false
     cpu = 1
     ram = 1024
     disks = [25, 10, 20]
@@ -60,7 +60,6 @@ resource "softlayer_virtual_guest" "terraform-acceptance-test-2" {
 }
 
 resource "softlayer_network_application_delivery_controller" "testacc_foobar_nadc" {
-    type = "Netscaler VPX"
     datacenter = "DALLAS06"
     speed = 10
     version = "10.1"
