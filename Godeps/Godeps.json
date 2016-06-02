@@ -991,28 +991,28 @@
 		},
 		{
 			"ImportPath": "github.com/TheWeatherCompany/softlayer-go/client",
-			"Comment": "v0.6.0",
-			"Rev": "85659debe44fab5792fc92cf755c04b115b9dc19"
+			"Comment": "v0.6.0-45-g8de3165",
+			"Rev": "8de3165ecc61e0839306796e5dc6cdeba94f13f7"
 		},
 		{
 			"ImportPath": "github.com/TheWeatherCompany/softlayer-go/common",
-			"Comment": "v0.6.0",
-			"Rev": "85659debe44fab5792fc92cf755c04b115b9dc19"
+			"Comment": "v0.6.0-45-g8de3165",
+			"Rev": "8de3165ecc61e0839306796e5dc6cdeba94f13f7"
 		},
 		{
 			"ImportPath": "github.com/TheWeatherCompany/softlayer-go/data_types",
-			"Comment": "v0.6.0",
-			"Rev": "85659debe44fab5792fc92cf755c04b115b9dc19"
+			"Comment": "v0.6.0-45-g8de3165",
+			"Rev": "8de3165ecc61e0839306796e5dc6cdeba94f13f7"
 		},
 		{
 			"ImportPath": "github.com/TheWeatherCompany/softlayer-go/services",
-			"Comment": "v0.6.0",
-			"Rev": "85659debe44fab5792fc92cf755c04b115b9dc19"
+			"Comment": "v0.6.0-45-g8de3165",
+			"Rev": "8de3165ecc61e0839306796e5dc6cdeba94f13f7"
 		},
 		{
 			"ImportPath": "github.com/TheWeatherCompany/softlayer-go/softlayer",
-			"Comment": "v0.6.0",
-			"Rev": "85659debe44fab5792fc92cf755c04b115b9dc19"
+			"Comment": "v0.6.0-45-g8de3165",
+			"Rev": "8de3165ecc61e0839306796e5dc6cdeba94f13f7"
 		},
 		{
 			"ImportPath": "github.com/mitchellh/cli",

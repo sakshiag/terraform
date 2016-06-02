@@ -15,7 +15,6 @@ type SoftLayer_Network_LoadBalancer_VirtualIpAddress struct {
 	SourcePort                  int    `json:"sourcePort"`
 	Type                        string `json:"type"`
 	VirtualIpAddress            string `json:"virtualIpAddress"`
-	Services []SoftLayer_Network_LoadBalancer_Service `json:"services"`
 }
 
 type SoftLayer_Network_LoadBalancer_VirtualIpAddress_Template_Parameters struct {
