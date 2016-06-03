@@ -31,11 +31,58 @@ func resourceSoftLayerSecurityCertificate() *schema.Resource {
 				StateFunc: normalizeCert,
 			},
 
+			"intermediate_certificate": &schema.Schema{
+				Type:      schema.TypeString,
+				Optional:  true,
+				ForceNew:  true,
+				StateFunc: normalizeCert,
+			},
+
 			"private_key": &schema.Schema{
 				Type:      schema.TypeString,
 				Required:  true,
 				ForceNew:  true,
 				StateFunc: normalizeCert,
+			},
+
+			"common_name": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+
+			"organization_name": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+
+			"validity_begin": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+
+			"validity_days": &schema.Schema{
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+
+			"validity_end": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+
+			"key_size": &schema.Schema{
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+
+			"create_date": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+
+			"modify_date": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 		},
 	}
@@ -49,8 +96,9 @@ func resourceSoftLayerSecurityCertificateCreate(d *schema.ResourceData, meta int
 	}
 
 	template := datatypes.SoftLayer_Security_Certificate_Template{
-		Certificate: d.Get("certificate").(string),
-		PrivateKey:  d.Get("private_key").(string),
+		Certificate:             d.Get("certificate").(string),
+		IntermediateCertificate: d.Get("intermediate_certificate").(string),
+		PrivateKey:              d.Get("private_key").(string),
 	}
 
 	log.Printf("[INFO] Creating Security Certificate")
@@ -85,7 +133,16 @@ func resourceSoftLayerSecurityCertificateRead(d *schema.ResourceData, meta inter
 
 	d.SetId(fmt.Sprintf("%d", cert.Id))
 	d.Set("certificate", cert.Certificate)
+	d.Set("intermediate_certificate", cert.IntermediateCertificate)
 	d.Set("private_key", cert.PrivateKey)
+	d.Set("common_name", cert.CommonName)
+	d.Set("organization_name", cert.OrganizationName)
+	d.Set("validity_begin", cert.ValidityBegin)
+	d.Set("validity_days", cert.ValidityDays)
+	d.Set("validity_end", cert.ValidityEnd)
+	d.Set("key_size", cert.KeySize)
+	d.Set("create_date", cert.CreateDate)
+	d.Set("modify_date", cert.ModifyDate)
 
 	return nil
 }

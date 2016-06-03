@@ -13,7 +13,12 @@ func TestAccSoftLayerSecurityCertififate_Basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: testAccCheckSoftLayerSecurityCertificateConfig_basic,
-				Check:  resource.ComposeTestCheckFunc(),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(
+						"softlayer_security_certificate.test-cert", "key_size", "2048"),
+					resource.TestCheckResourceAttr(
+						"softlayer_security_certificate.test-cert", "common_name", "*.weather.com"),
+				),
 			},
 		},
 	})
