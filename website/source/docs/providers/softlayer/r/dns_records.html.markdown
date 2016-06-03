@@ -4,7 +4,7 @@ page_title: "SoftLayer: softlayer_dns_domain_resourcerecord"
 sidebar_current: "docs-softlayer-resource-softlayer-dns-domain-resourcerecord"
 description: |-
   Provides a Softlayer's DNS Domain Records
--------------------------------------------
+---
 
 # softlayer_dns_domain_resourcerecord
 
@@ -12,7 +12,7 @@ The `softlayer_dns_domain_resourcerecord` data type represents a single resource
 ## Example Usage
 
 We are using [SoftLayer_Dns_Domain_ResourceRecord](https://sldn.softlayer.com/reference/datatypes/SoftLayer_Dns_Domain_ResourceRecord)
-SL�s object for most of CRUD operations. Only for SRV record type we are using [SoftLayer_Dns_Domain_ResourceRecord_SrvType](https://sldn.softlayer.com/reference/services/SoftLayer_Dns_Domain_ResourceRecord_SrvType) SL�s object.
+SL's object for most of CRUD operations. Only for SRV record type we are using [SoftLayer_Dns_Domain_ResourceRecord_SrvType](https://sldn.softlayer.com/reference/services/SoftLayer_Dns_Domain_ResourceRecord_SrvType) SL's object.
 
 Currently we can CRUD almost all record types except _SOA_ type which is initially created on DNS create action. 
 
