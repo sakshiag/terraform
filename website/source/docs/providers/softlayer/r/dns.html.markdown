@@ -6,7 +6,7 @@ description: |-
   Provides a Softlayer's DNS Domain.
 ---
 
-# SoftLayer_Dns_Domain
+# softlayer_dns_domain
 
 The `softLayer_dns_domain` data type represents a single DNS domain record hosted on the SoftLayer nameservers. Domains contain general information about the domain name such as name and serial. Individual records such as `A`, `AAAA`, `CTYPE`, and `MX` records are stored in the domain's associated resource records using the  [`softlayer_dns_domain_resourcerecord`](/docs/providers/softlayer/r/dns_records.html) resource.
 
