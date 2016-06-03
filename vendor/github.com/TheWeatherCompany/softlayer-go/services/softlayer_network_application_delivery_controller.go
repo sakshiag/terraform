@@ -8,10 +8,10 @@ import (
 	"github.com/TheWeatherCompany/softlayer-go/common"
 	datatypes "github.com/TheWeatherCompany/softlayer-go/data_types"
 	softlayer "github.com/TheWeatherCompany/softlayer-go/softlayer"
+	"github.com/hashicorp/terraform/helper/resource"
 	"strconv"
 	"strings"
 	"time"
-	"github.com/hashicorp/terraform/helper/resource"
 )
 
 const (
@@ -19,7 +19,7 @@ const (
 	ORDER_TYPE_APPLICATION_DELIVERY_CONTROLLER   = "SoftLayer_Container_Product_Order_Network_Application_Delivery_Controller"
 	PACKAGE_ID_APPLICATION_DELIVERY_CONTROLLER   = 192
 	DELIMITER                                    = "_"
-	ID_DELIMITER 				     = ";"
+	ID_DELIMITER                                 = ";"
 )
 
 type softLayer_Network_Application_Delivery_Controller_Service struct {
@@ -96,7 +96,7 @@ func (slnadcs *softLayer_Network_Application_Delivery_Controller_Service) Create
 	stateConf := &resource.StateChangeConf{
 		Pending: []string{"{\"error\":\"Method has not been implemented for this object type.\",\"code\":\"SoftLayer_Exception\"}",
 			"{\"error\":\"Could not connect to host\",\"code\":\"HTTP\"}"},
-		Target:  []string{"complete"},
+		Target: []string{"complete"},
 		Refresh: func() (interface{}, string, error) {
 			response, errorCode, error := slnadcs.client.GetHttpClient().DoRawHttpRequest(fmt.Sprintf("%s/%d/%s.json", slnadcs.GetName(), nadcId, "createLiveLoadBalancer"), "POST", bytes.NewBuffer(requestBody))
 
@@ -135,7 +135,7 @@ func (slnadcs *softLayer_Network_Application_Delivery_Controller_Service) Create
 
 	parameters := datatypes.SoftLayer_Network_LoadBalancer_Service_Parameters{
 		Parameters: []datatypes.SoftLayer_Network_LoadBalancer_Service_VipName_Services{{
-			VipName: vipId,
+			VipName:  vipId,
 			Services: template,
 		}},
 	}
@@ -148,7 +148,7 @@ func (slnadcs *softLayer_Network_Application_Delivery_Controller_Service) Create
 	stateConf := &resource.StateChangeConf{
 		Pending: []string{"{\"error\":\"Method has not been implemented for this object type.\",\"code\":\"SoftLayer_Exception\"}",
 			"{\"error\":\"Could not connect to host\",\"code\":\"HTTP\"}"},
-		Target:  []string{"complete"},
+		Target: []string{"complete"},
 		Refresh: func() (interface{}, string, error) {
 			response, errorCode, error := slnadcs.client.GetHttpClient().DoRawHttpRequest(fmt.Sprintf("%s/%d/%s.json", slnadcs.GetName(), nadcId, "updateLiveLoadBalancer"), "POST", bytes.NewBuffer(requestBody))
 
@@ -562,8 +562,8 @@ func (slnadcs *softLayer_Network_Application_Delivery_Controller_Service) findVP
 			}
 		},
 		Timeout:    10 * time.Minute,
-		Delay:      5  * time.Second,
-		MinTimeout: 3  * time.Second,
+		Delay:      5 * time.Second,
+		MinTimeout: 3 * time.Second,
 	}
 
 	pendingResult, err := stateConf.WaitForState()
