@@ -7,6 +7,7 @@ import (
 	datatypes "github.com/TheWeatherCompany/softlayer-go/data_types"
 	"github.com/hashicorp/terraform/helper/schema"
 	"strconv"
+	"strings"
 )
 
 func resourceSoftLayerSecurityCertificate() *schema.Resource {
@@ -24,15 +25,17 @@ func resourceSoftLayerSecurityCertificate() *schema.Resource {
 			},
 
 			"certificate": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:      schema.TypeString,
+				Required:  true,
+				ForceNew:  true,
+				StateFunc: normalizeCert,
 			},
 
 			"private_key": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:      schema.TypeString,
+				Required:  true,
+				ForceNew:  true,
+				StateFunc: normalizeCert,
 			},
 		},
 	}
@@ -118,4 +121,17 @@ func resourceSoftLayerSecurityCertificateExists(d *schema.ResourceData, meta int
 	}
 
 	return cert.Id == id && err == nil, nil
+}
+
+func normalizeCert(cert interface{}) string {
+	if cert == nil || cert == (*string)(nil) {
+		return ""
+	}
+
+	switch cert.(type) {
+	case string:
+		return strings.TrimSpace(cert.(string))
+	default:
+		return ""
+	}
 }
