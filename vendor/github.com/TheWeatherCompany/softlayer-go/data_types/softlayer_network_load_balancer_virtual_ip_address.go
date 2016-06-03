@@ -10,7 +10,6 @@ type SoftLayer_Network_LoadBalancer_VirtualIpAddress struct {
 	LoadBalancingMethodFullName string `json:"loadBalancingMethodFullName"`
 	ModifyDate                  string `json:"modifyDate"`
 	Name                        string `json:"name"`
-	Notes                       string `json:"notes"`
 	SecurityCertificateId       int    `json:"securityCertificateId"`
 	SourcePort                  int    `json:"sourcePort"`
 	Type                        string `json:"type"`
@@ -26,9 +25,7 @@ type SoftLayer_Network_LoadBalancer_VirtualIpAddress_Template struct {
 	Id                          int    `json:"id"`
 	ConnectionLimit             int    `json:"connectionLimit"`
 	LoadBalancingMethod         string `json:"loadBalancingMethod"`
-	LoadBalancingMethodFullName string `json:"loadBalancingMethodFullName"`
 	Name                        string `json:"name"`
-	Notes                       string `json:"notes"`
 	SecurityCertificateId       int    `json:"securityCertificateId"`
 	SourcePort                  int    `json:"sourcePort"`
 	Type                        string `json:"type"`
