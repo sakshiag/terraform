@@ -29,3 +29,5 @@ website/source/layouts/docs.erb
 
 website/vendor
 >>>>>>> feature/softlayer-dns
+
+vendor/github.com/TheWeatherCompany/
