@@ -105,7 +105,6 @@ func (slpo *softLayer_Product_Order_Service) PlaceContainerOrderApplicationDeliv
 	return slpo.placeOrder(parameters)
 }
 
-
 // Private methods
 
 func (slpo *softLayer_Product_Order_Service) placeOrder(parameters interface{}) (datatypes.SoftLayer_Container_Product_Order_Receipt, error) {

@@ -7,7 +7,6 @@ import (
 
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
-	datatypes "github.com/TheWeatherCompany/softlayer-go/data_types"
 )
 
 func TestAccSoftLayerVirtualIpAddress_Basic(t *testing.T) {

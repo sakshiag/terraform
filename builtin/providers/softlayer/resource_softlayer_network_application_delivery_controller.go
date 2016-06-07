@@ -5,10 +5,8 @@ import (
 	"log"
 	"strconv"
 
-	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/TheWeatherCompany/softlayer-go/services"
 	softlayer "github.com/TheWeatherCompany/softlayer-go/softlayer"
-	"strings"
+	"github.com/hashicorp/terraform/helper/schema"
 )
 
 const (
@@ -19,45 +17,48 @@ func resourceSoftLayerNetworkApplicationDeliveryController() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceSoftLayerNetworkApplicationDeliveryControllerCreate,
 		Read:   resourceSoftLayerNetworkApplicationDeliveryControllerRead,
-		Update: resourceSoftLayerNetworkApplicationDeliveryControllerUpdate,
 		Delete: resourceSoftLayerNetworkApplicationDeliveryControllerDelete,
 		Exists: resourceSoftLayerNetworkApplicationDeliveryControllerExists,
 
 		Schema: map[string]*schema.Schema{
 			"name": &schema.Schema{
 				Type:     schema.TypeString,
-				Optional: true,
 				Computed: true,
 			},
 
 			"type": &schema.Schema{
 				Type:     schema.TypeString,
-				Required: true,
+				Computed: true,
 			},
 
 			"datacenter": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 
 			"speed": &schema.Schema{
 				Type:     schema.TypeInt,
 				Required: true,
+				ForceNew: true,
 			},
 
 			"version": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 
 			"plan": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 
 			"ip_count": &schema.Schema{
 				Type:     schema.TypeInt,
 				Required: true,
+				ForceNew: true,
 			},
 		},
 	}
@@ -69,7 +70,7 @@ func resourceSoftLayerNetworkApplicationDeliveryControllerCreate(d *schema.Resou
 		return fmt.Errorf("The client is nil.")
 	}
 
-	nadcType := d.Get("type").(string)
+	nadcType := NETSCALER_VPX_TYPE
 
 	switch nadcType {
 	default:
@@ -106,44 +107,18 @@ func resourceSoftLayerNetworkApplicationDeliveryControllerRead(d *schema.Resourc
 	if err != nil {
 		return fmt.Errorf("Not a valid ID, must be an integer: %s", err)
 	}
-	result, err := client.GetObject(id)
+	getObjectResult, err := client.GetObject(id)
 	if err != nil {
 		return fmt.Errorf("Error retrieving network application delivery controller: %s", err)
 	}
 
-	d.Set("name", result.Name)
-	d.Set("type", result.Type)
-	if result.Datacenter != nil {
-		d.Set("location", result.Datacenter.Name)
+	d.Set("name", getObjectResult.Name)
+	d.Set("type", getObjectResult.Type)
+	if getObjectResult.Datacenter != nil {
+		d.Set("location", getObjectResult.Datacenter.Name)
 	}
 
-	version, speed, plan := getVersionSpeedPlanFromDescription(result.Description)
-	d.Set("speed", speed)
-	d.Set("version", version)
-	d.Set("plan", plan)
-
 	return nil
-}
-
-// these parameters are not contained in the output object, so should be parsed from the
-// description string
-// example string to be parsed CITRIX_NETSCALER_VPX_10_1_10MBPS_STANDARD
-// 10_1 -> version 10.1
-// 10MBPS -> speed 10
-// STANDARD -> plan STANDARD
-func getVersionSpeedPlanFromDescription(description string) (string, int, string) {
-	strs := strings.Split(description, services.DELIMITER)
-	version := strings.Join([]string{strs[3], strs[4]}, ".")
-	speedString := strings.Trim(strs[4], "MBPS")
-	speed, _ := strconv.Atoi(speedString)
-	plan := strings.Trim(strs[5], "")
-
-	return version, speed, plan
-}
-
-func resourceSoftLayerNetworkApplicationDeliveryControllerUpdate(d *schema.ResourceData, meta interface{}) error {
-	//	client := meta.(*Client).networkApplicationDeliveryControllerService
-	return fmt.Errorf("Update is not supported yet")
 }
 
 func resourceSoftLayerNetworkApplicationDeliveryControllerDelete(d *schema.ResourceData, meta interface{}) error {

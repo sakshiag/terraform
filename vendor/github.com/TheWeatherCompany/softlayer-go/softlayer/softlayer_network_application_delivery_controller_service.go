@@ -31,5 +31,5 @@ type SoftLayer_Network_Application_Delivery_Controller_Service interface {
 	GetVirtualIpAddress(nadcId int, vipName string) (datatypes.SoftLayer_Network_LoadBalancer_VirtualIpAddress, error)
 	GetLoadBalancerService(nadcId int, vipId string, serviceId string) (datatypes.SoftLayer_Network_LoadBalancer_Service, error)
 
-	FindCreatePriceItems(createOptions *NetworkApplicationDeliveryControllerCreateOptions) ([]datatypes.SoftLayer_Item_Price, error)
+	FindCreatePriceItems(createOptions *NetworkApplicationDeliveryControllerCreateOptions) ([]datatypes.SoftLayer_Product_Item_Price, error)
 }

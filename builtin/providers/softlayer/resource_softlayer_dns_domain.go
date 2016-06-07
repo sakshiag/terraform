@@ -2,48 +2,47 @@ package softlayer
 
 import (
 	"fmt"
-	"strconv"
 	"log"
+	"strconv"
 
-	"github.com/hashicorp/terraform/helper/schema"
 	datatypes "github.com/TheWeatherCompany/softlayer-go/data_types"
+	"github.com/hashicorp/terraform/helper/schema"
 )
 
 func resourceSoftLayerDnsDomain() *schema.Resource {
 	return &schema.Resource{
 		Exists: resourceSoftLayerDnsDomainExists,
 		Create: resourceSoftLayerDnsDomainCreate,
-		Read: resourceSoftLayerDnsDomainRead,
+		Read:   resourceSoftLayerDnsDomainRead,
 		Update: resourceSoftLayerDnsDomainUpdate,
 		Delete: resourceSoftLayerDnsDomainDelete,
-		Schema: map[string]*schema.Schema {
+		Schema: map[string]*schema.Schema{
 			"id": &schema.Schema{
-				Type: 		schema.TypeInt,
-				Computed: 	true,
+				Type:     schema.TypeInt,
+				Computed: true,
 			},
 
 			"name": &schema.Schema{
-				Type: 		schema.TypeString,
-				Required: 	true,
-				ForceNew:	true,
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
 			},
 
 			"serial": &schema.Schema{
-				Type: 		schema.TypeInt,
-				Optional:	true,
-				Computed:	true,
+				Type:     schema.TypeInt,
+				Computed: true,
 			},
 
 			"update_date": &schema.Schema{
-				Type:		schema.TypeString,
-				Computed:	true,
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 
 			"records": &schema.Schema{
-				Type:		schema.TypeList,
-				Computed:	true,
-				Optional:	true,
-				Elem:		&schema.Resource{
+				Type:     schema.TypeList,
+				Computed: true,
+				Optional: true,
+				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"record_data": &schema.Schema{
 							Type:     schema.TypeString,
@@ -161,23 +160,23 @@ func resourceSoftLayerDnsDomainCreate(d *schema.ResourceData, meta interface{}) 
 	return resourceSoftLayerDnsDomainRead(d, meta)
 }
 
-func prepareRecords(raw_records []interface{}) []datatypes.SoftLayer_Dns_Domain_Resource_Record {
-	sl_records := make([]datatypes.SoftLayer_Dns_Domain_Resource_Record, 0)
+func prepareRecords(raw_records []interface{}) []datatypes.SoftLayer_Dns_Domain_ResourceRecord {
+	sl_records := make([]datatypes.SoftLayer_Dns_Domain_ResourceRecord, 0)
 	for _, raw_record := range raw_records {
-		var sl_record datatypes.SoftLayer_Dns_Domain_Resource_Record
+		var sl_record datatypes.SoftLayer_Dns_Domain_ResourceRecord
 		record := raw_record.(map[string]interface{})
 
-		sl_record.Data 		= record["record_data"].(string)
-		sl_record.DomainId 	= record["domain_id"].(int)
-		sl_record.Expire 	= record["expire"].(int)
-		sl_record.Host 		= record["host"].(string)
-		sl_record.Minimum	= record["minimum_ttl"].(int)
-		sl_record.MxPriority= record["mx_priority"].(int)
-		sl_record.Refresh	= record["refresh"].(int)
+		sl_record.Data = record["record_data"].(string)
+		sl_record.DomainId = record["domain_id"].(int)
+		sl_record.Expire = record["expire"].(int)
+		sl_record.Host = record["host"].(string)
+		sl_record.Minimum = record["minimum_ttl"].(int)
+		sl_record.MxPriority = record["mx_priority"].(int)
+		sl_record.Refresh = record["refresh"].(int)
 		sl_record.ResponsiblePerson = record["contact_email"].(string)
-		sl_record.Retry		= record["retry"].(int)
-		sl_record.Ttl		= record["ttl"].(int)
-		sl_record.Type		= record["record_type"].(string)
+		sl_record.Retry = record["retry"].(int)
+		sl_record.Ttl = record["ttl"].(int)
+		sl_record.Type = record["record_type"].(string)
 
 		sl_records = append(sl_records, sl_record)
 	}
@@ -206,20 +205,20 @@ func resourceSoftLayerDnsDomainRead(d *schema.ResourceData, meta interface{}) er
 	return nil
 }
 
-func read_resource_records(list []datatypes.SoftLayer_Dns_Domain_Resource_Record) []map[string]interface{} {
+func read_resource_records(list []datatypes.SoftLayer_Dns_Domain_ResourceRecord) []map[string]interface{} {
 	records := make([]map[string]interface{}, 0, len(list))
-	for _,record := range list {
+	for _, record := range list {
 		r := make(map[string]interface{})
-		r["record_data"] =	record.Data
-		r["domain_id"] =	record.DomainId
-		r["expire"] = 		record.Expire
-		r["host"] = 		record.Host
-		r["minimum_ttl"] = 	record.Minimum
-		r["mx_priority"] =	record.MxPriority
-		r["refresh"] = 		record.Refresh
-		r["retry"] = 		record.Retry
-		r["ttl"] = 			record.Ttl
-		r["record_type"] =	record.Type
+		r["record_data"] = record.Data
+		r["domain_id"] = record.DomainId
+		r["expire"] = record.Expire
+		r["host"] = record.Host
+		r["minimum_ttl"] = record.Minimum
+		r["mx_priority"] = record.MxPriority
+		r["refresh"] = record.Refresh
+		r["retry"] = record.Retry
+		r["ttl"] = record.Ttl
+		r["record_type"] = record.Type
 		records = append(records, r)
 	}
 	return records
