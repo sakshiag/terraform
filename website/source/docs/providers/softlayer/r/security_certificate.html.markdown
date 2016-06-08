@@ -1,33 +1,59 @@
 ---
 layout: "softlayer"
-page_title: "SoftLayer: softlayer_dns_domain"
-sidebar_current: "docs-softlayer-resource-softlayer-dns-domain"
+page_title: "SoftLayer: softlayer_security_certificate"
+sidebar_current: "docs-softlayer-resource-softlayer-security-certificate"
 description: |-
-  Provides a Softlayer's DNS Domain.
+  Provides Softlayer's Security Certificate
 ---
 
-# SoftLayer_Dns_Domain
+# softlayer_security_certificate
 
-The `softLayer_dns_domain` data type represents a single DNS domain record hosted on the SoftLayer nameservers. Domains contain general information about the domain name such as name and serial. Individual records such as `A`, `AAAA`, `CTYPE`, and `MX` records are stored in the domain's associated resource records using the  [`softlayer_dns_domain_resourcerecord`](/docs/providers/softlayer/r/dns_records.html) resource.
+Create, update, and destroy SoftLayer Security Certificates. 
 
-## Example Usage
+## Example Usage | [SLDN](http://sldn.softlayer.com/reference/datatypes/SoftLayer_Security_Certificate)
+**Using certs on file:**
 
 ```
-resource "softlayer_dns_domain" "dns-domain-test" {
-	name = "dns-domain-test.com"
+resource "softlayer_security_certificate" "test_cert" {
+  certificate = "${file("cert.pem")}"
+  private_key = "${file("key.pem")}"
 }
 ```
 
+**Example with cert in-line:**
+
+```
+resource "softlayer_security_certificate" "test_cert" {
+    certificate = <<EOF
+[......] # cert contents
+-----END CERTIFICATE-----
+    EOF
+    
+    private_key = <<EOF
+-----BEGIN RSA PRIVATE KEY-----
+[......] # cert contents
+-----END RSA PRIVATE KEY-----
+    EOF
+}
+```
 
 ## Argument Reference
-The following arguments are supported:
 
-* `name` | *string*
-     * (Required) A domain's name including top-level domain, for example "example.com". _Name_ is the only field that needs to be set for `softlayer_dns_domain`. During creation the `NS` and `SOA` resource records are created automatically.
+* `certificate` | *string*
+    * (Required) The certificate provided publicly to clients requesting identity credentials.
+* `intermediate_certificate` | *string*
+    * (Optional) The intermediate certificate authorities certificate that completes the certificate chain for the issued certificate. Required when clients will only trust the root certificate.
+* `private_key` | *string*
+    * (Required) The private key in the key/certificate pair.
 
 ## Attributes Reference
-The following attributes are exported
 
-* `id` - A domain record's internal identifier.
-* `serial` - A unique number denoting the latest revision of a domain.
-* `update_date` - The date that this domain record was last updated.
+* `common_name` - The common name (usually a domain name) encoded within the certificate.
+* `create_date` - The date the certificate record was created.
+* `id` - The ID of the certificate record.
+* `key_size` - The size (number of bits) of the public key represented by the certificate.
+* `modify_date` - The date the certificate record was last modified.
+* `organization_name` - The organizational name encoded in the certificate.
+* `validity_begin` - The UTC timestamp representing the beginning of the certificate's validity.
+* `validity_days` - The number of days remaining in the validity period for the certificate.
+* `validity_end` - The UTC timestamp representing the end of the certificate's validity period.
