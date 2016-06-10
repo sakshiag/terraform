@@ -31,6 +31,7 @@ func Provider() terraform.ResourceProvider {
 			"softlayer_network_loadbalancer_virtualipaddress":   resourceSoftLayerNetworkLoadBalancerVirtualIpAddress(),
 			"softlayer_network_loadbalancer_service":            resourceSoftLayerNetworkLoadBalancerService(),
 			"softlayer_security_certificate":                    resourceSoftLayerSecurityCertificate(),
+			"softlayer_user":                                    resourceSoftLayerUserCustomer(),
 		},
 
 		ConfigureFunc: providerConfigure,

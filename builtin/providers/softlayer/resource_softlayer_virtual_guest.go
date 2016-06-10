@@ -346,6 +346,7 @@ func resourceSoftLayerVirtualGuestRead(d *schema.ResourceData, meta interface{})
 			d.Set("user_data", string(data))
 		}
 	}
+
 	return nil
 }
 
