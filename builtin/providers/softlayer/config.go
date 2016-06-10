@@ -28,34 +28,36 @@ func (c *Config) Client() (*Client, error) {
 	slc := slclient.NewSoftLayerClient(c.Username, c.ApiKey)
 
 	accountService, err := slc.GetSoftLayer_Account_Service()
+
 	if err != nil {
 		return nil, err
 	}
 
 	virtualGuestService, err := slc.GetSoftLayer_Virtual_Guest_Service()
+
 	if err != nil {
 		return nil, err
 	}
 
 	networkApplicationDeliveryControllerService, err := slc.GetSoftLayer_Network_Application_Delivery_Controller_Service()
+
 	if err != nil {
 		return nil, err
 	}
 
 	sshKeyService, err := slc.GetSoftLayer_Security_Ssh_Key_Service()
+
 	if err != nil {
 		return nil, err
 	}
 
 	productOrderService, err := slc.GetSoftLayer_Product_Order_Service()
+
 	if err != nil {
 		return nil, err
 	}
 
 	billingItemService, err := slc.GetSoftLayer_Billing_Item_Service()
-	if err != nil {
-		return nil, err
-	}
 
 	if err != nil {
 		return nil, err
