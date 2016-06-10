@@ -22,7 +22,7 @@ type Client struct {
 	dnsDomainService                            softlayer.SoftLayer_Dns_Domain_Service
 	networkApplicationDeliveryControllerService softlayer.SoftLayer_Network_Application_Delivery_Controller_Service
 	securityCertificateService                  softlayer.SoftLayer_Security_Certificate_Service
-	loadBalancerService softlayer.SoftLayer_Load_Balancer_Service
+	loadBalancerService                         softlayer.SoftLayer_Load_Balancer_Service
 }
 
 func (c *Config) Client() (*Client, error) {
