@@ -9,6 +9,11 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
+const (
+	LB_LARGE_150000_CONNECTIONS = 150000
+	LB_SMALL_15000_CONNECTIONS  = 15000
+)
+
 func resourceSoftLayerNetworkApplicationDeliveryControllerLoadBalancer() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceSoftLayerNetworkApplicationDeliveryControllerLoadBalancerCreate,
@@ -51,6 +56,8 @@ func resourceSoftLayerNetworkApplicationDeliveryControllerLoadBalancerCreate(d *
 	}
 
 	d.SetId(fmt.Sprintf("%d", loadBalancer.Id))
+	d.Set("connections", getConnectionLimit(loadBalancer.ConnectionLimit))
+	d.Set("location", loadBalancer.SoftlayerHardware[0].Datacenter.Name)
 
 	log.Printf("[INFO] Load Balancer ID: %s", d.Id())
 
@@ -69,14 +76,39 @@ func resourceSoftLayerNetworkApplicationDeliveryControllerLoadBalancerRead(d *sc
 	}
 
 	d.SetId(strconv.Itoa(getObjectResult.Id))
+	d.Set("connections", getConnectionLimit(getObjectResult.ConnectionLimit))
+	d.Set("location", getObjectResult.SoftlayerHardware[0].Datacenter.Name)
 
 	return nil
 }
 
 func resourceSoftLayerNetworkApplicationDeliveryControllerLoadBalancerDelete(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*Client).networkApplicationDeliveryControllerLoadBalancerService
+	id, err := strconv.Atoi(d.Id())
+	if err != nil {
+		return fmt.Errorf("Not a valid ID, must be an integer: %s", err)
+	}
+
+	_, err = client.DeleteObject(id)
+
+	if err != nil {
+		return fmt.Errorf("Error deleting network application delivery controller load balancer: %s", err)
+	}
+
 	return nil
 }
 
 func resourceSoftLayerNetworkApplicationDeliveryControllerLoadBalancerExists(d *schema.ResourceData, meta interface{}) (bool, error) {
 	return true, nil
+}
+
+func getConnectionLimit(connectionLimit int) int {
+	if connectionLimit >= LB_LARGE_150000_CONNECTIONS {
+		return LB_LARGE_150000_CONNECTIONS
+	} else if connectionLimit >= LB_SMALL_15000_CONNECTIONS &&
+		connectionLimit < LB_LARGE_150000_CONNECTIONS {
+		return LB_SMALL_15000_CONNECTIONS
+	} else {
+		return 0
+	}
 }
