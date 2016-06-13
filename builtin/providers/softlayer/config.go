@@ -40,8 +40,8 @@ func (c *Config) Client() (*Client, error) {
 	}
 
 	client := &Client{
-		virtualGuestService: 					 virtualGuestService,
-		sshKeyService:      				         sshKeyService,
+		virtualGuestService: virtualGuestService,
+		sshKeyService:       sshKeyService,
 		networkApplicationDeliveryControllerLoadBalancerService: networkApplicationDeliveryControllerLoadBalancerService,
 	}
 
