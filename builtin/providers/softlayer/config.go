@@ -88,7 +88,6 @@ func (c *Config) Client() (*Client, error) {
 		return nil, err
 	}
 
-
 	client := &Client{
 		accountService:                              accountService,
 		virtualGuestService:                         virtualGuestService,
