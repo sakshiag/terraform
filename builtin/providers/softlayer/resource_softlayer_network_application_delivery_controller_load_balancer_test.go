@@ -61,5 +61,5 @@ func testAccCheckSoftLayerNetworkApplicationDeliveryControllerLoadBalancerExists
 const testAccCheckSoftLayerNetworkApplicationDeliveryControllerLoadBalancerConfig_basic = `
 resource "softlayer_network_application_delivery_controller_load_balancer" "testacc_foobar_nadc" {
     connections = 15000
-    location    = "DALLAS05"
+    location    = "sng01"
 }`
