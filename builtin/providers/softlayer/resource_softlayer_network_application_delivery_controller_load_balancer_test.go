@@ -61,5 +61,22 @@ func testAccCheckSoftLayerNetworkApplicationDeliveryControllerLoadBalancerExists
 const testAccCheckSoftLayerNetworkApplicationDeliveryControllerLoadBalancerConfig_basic = `
 resource "softlayer_network_application_delivery_controller_load_balancer" "testacc_foobar_nadc" {
     connections = 15000
-    location    = "sng01"
+    location    = "tok02"
+
+    virtual_server {
+        port = 80
+        allocation = 100
+    	service_group {
+		port = 81
+		routing_method_id = 1
+		routing_type_id = 2
+		service {
+		    port = 81
+		    ip_address_id = 52
+		    health_check_type_id = 1
+		    weight = 20
+		    enabled = true
+		}
+    	}
+    }
 }`
