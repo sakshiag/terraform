@@ -125,6 +125,16 @@ func resourceSoftLayerVirtualGuest() *schema.Resource {
 				Computed: true,
 			},
 
+			"ip_address_id": &schema.Schema{
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+
+			"ip_address_id_private": &schema.Schema{
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+
 			"ssh_keys": &schema.Schema{
 				Type:     schema.TypeList,
 				Optional: true,
@@ -331,6 +341,8 @@ func resourceSoftLayerVirtualGuestRead(d *schema.ResourceData, meta interface{})
 	d.Set("has_public_ip", result.PrimaryIpAddress != "")
 	d.Set("ipv4_address", result.PrimaryIpAddress)
 	d.Set("ipv4_address_private", result.PrimaryBackendIpAddress)
+	d.Set("ip_address_id", result.PrimaryNetworkComponent.PrimaryIpAddressRecord.GuestNetworkComponentBinding.IpAddressId)
+	d.Set("ip_address_id_private", result.PrimaryBackendNetworkComponent.PrimaryIpAddressRecord.GuestNetworkComponentBinding.IpAddressId)
 	d.Set("private_network_only", result.PrivateNetworkOnlyFlag)
 	d.Set("hourly_billing", result.HourlyBillingFlag)
 	d.Set("local_disk", result.LocalDiskFlag)
