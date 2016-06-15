@@ -186,6 +186,36 @@
 			"revision": "0290933f5e8afd933f2823fce32bf2847e6ea603"
 		},
 		{
+			"checksumSHA1": "b9KtiHJfAVxdeuCPO01pnxerbEc=",
+			"path": "github.com/TheWeatherCompany/softlayer-go/client",
+			"revision": "5b6cf6b625d205ec36e16c7326fe7327f8b0149e",
+			"revisionTime": "2016-06-15T18:42:45Z"
+		},
+		{
+			"checksumSHA1": "YKbmwVbAebRVC0NGPAnb1q8Y0xs=",
+			"path": "github.com/TheWeatherCompany/softlayer-go/common",
+			"revision": "5b6cf6b625d205ec36e16c7326fe7327f8b0149e",
+			"revisionTime": "2016-06-15T18:42:45Z"
+		},
+		{
+			"checksumSHA1": "pzmvUhLWa+JDYJ/TuKSkuTlF9II=",
+			"path": "github.com/TheWeatherCompany/softlayer-go/data_types",
+			"revision": "5b6cf6b625d205ec36e16c7326fe7327f8b0149e",
+			"revisionTime": "2016-06-15T18:42:45Z"
+		},
+		{
+			"checksumSHA1": "FKAIsSqN43vdI7jRk9Boz+jiSUE=",
+			"path": "github.com/TheWeatherCompany/softlayer-go/services",
+			"revision": "5b6cf6b625d205ec36e16c7326fe7327f8b0149e",
+			"revisionTime": "2016-06-15T18:42:45Z"
+		},
+		{
+			"checksumSHA1": "++GBb30Bi5w0gyZfLAleQ6BRD/U=",
+			"path": "github.com/TheWeatherCompany/softlayer-go/softlayer",
+			"revision": "5b6cf6b625d205ec36e16c7326fe7327f8b0149e",
+			"revisionTime": "2016-06-15T18:42:45Z"
+		},
+		{
 			"path": "github.com/Unknwon/com",
 			"revision": "28b053d5a2923b87ce8c5a08f3af779894a72758"
 		},
