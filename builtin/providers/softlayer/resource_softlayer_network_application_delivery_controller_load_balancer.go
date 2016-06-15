@@ -203,6 +203,9 @@ func resourceSoftLayerNetworkApplicationDeliveryControllerLoadBalancerRead(d *sc
 	d.Set("subnet_id", getObjectResult.IpAddress.SubnetId)
 	d.Set("virtual_server", flattenVirtualServers(getObjectResult.VirtualServers))
 
+	log.Println("[TRACE] VIRTUAL_SERVER_RESULTS")
+	log.Println("[TRACE] %s", flattenVirtualServers(getObjectResult.VirtualServers))
+
 	return nil
 }
 
@@ -352,29 +355,26 @@ func btoi(b bool) int {
 func resourceVirtualServerHash(v interface{}) int {
 	var buf bytes.Buffer
 	m := v.(map[string]interface{})
-	buf.WriteString(fmt.Sprintf("%d-", m["name"].(int)))
 	buf.WriteString(fmt.Sprintf("%d-", m["allocation"].(int)))
 	buf.WriteString(fmt.Sprintf("%d-", m["port"].(int)))
 
-	if v, ok := m["service_group"]; ok {
-		vs := v.(*schema.Set).List()
-		for _, rawServiceGroup := range vs {
-			buf.WriteString(fmt.Sprintf("%d-", rawServiceGroup.(map[string]interface{})["name"].(int)))
-			buf.WriteString(fmt.Sprintf("%d-", rawServiceGroup.(map[string]interface{})["routing_method_id"].(int)))
-			buf.WriteString(fmt.Sprintf("%d-", rawServiceGroup.(map[string]interface{})["routing_type_id"].(int)))
-			if v1, ok := rawServiceGroup.(map[string]interface{})["service"]; ok {
-				vs1 := v1.(*schema.Set).List()
-				for _, rawService := range vs1 {
-					buf.WriteString(fmt.Sprintf("%d-", rawService.(map[string]interface{})["name"].(int)))
-					buf.WriteString(fmt.Sprintf("%d-", rawService.(map[string]interface{})["ip_address_id"].(int)))
-					buf.WriteString(fmt.Sprintf("%d-", rawService.(map[string]interface{})["port"].(int)))
-					buf.WriteString(fmt.Sprintf("%d-", rawService.(map[string]interface{})["health_check_type_id"].(int)))
-					buf.WriteString(fmt.Sprintf("%d-", rawService.(map[string]interface{})["weight"].(int)))
-					buf.WriteString(fmt.Sprintf("%t-", rawService.(map[string]interface{})["enabled"].(bool)))
-				}
-			}
-		}
-	}
+	//if v, ok := m["service_group"]; ok {
+	//	vs := v.(*schema.Set).List()
+	//	for _, rawServiceGroup := range vs {
+	//		buf.WriteString(fmt.Sprintf("%d-", rawServiceGroup.(map[string]interface{})["routing_method_id"].(int)))
+	//		buf.WriteString(fmt.Sprintf("%d-", rawServiceGroup.(map[string]interface{})["routing_type_id"].(int)))
+	//		if v1, ok := rawServiceGroup.(map[string]interface{})["service"]; ok {
+	//			vs1 := v1.(*schema.Set).List()
+	//			for _, rawService := range vs1 {
+	//				buf.WriteString(fmt.Sprintf("%d-", rawService.(map[string]interface{})["ip_address_id"].(int)))
+	//				buf.WriteString(fmt.Sprintf("%d-", rawService.(map[string]interface{})["port"].(int)))
+	//				buf.WriteString(fmt.Sprintf("%d-", rawService.(map[string]interface{})["health_check_type_id"].(int)))
+	//				buf.WriteString(fmt.Sprintf("%d-", rawService.(map[string]interface{})["weight"].(int)))
+	//				buf.WriteString(fmt.Sprintf("%t-", rawService.(map[string]interface{})["enabled"].(bool)))
+	//			}
+	//		}
+	//	}
+	//}
 
 	return hashcode.String(buf.String())
 }
@@ -382,21 +382,19 @@ func resourceVirtualServerHash(v interface{}) int {
 func resourceServiceGroupHash(v interface{}) int {
 	var buf bytes.Buffer
 	m := v.(map[string]interface{})
-	buf.WriteString(fmt.Sprintf("%d-", m["name"].(int)))
 	buf.WriteString(fmt.Sprintf("%d-", m["routing_method_id"].(int)))
 	buf.WriteString(fmt.Sprintf("%d-", m["routing_type_id"].(int)))
 
-	if v, ok := m["service"]; ok {
-		vs := v.(*schema.Set).List()
-		for _, rawService := range vs {
-			buf.WriteString(fmt.Sprintf("%d-", rawService.(map[string]interface{})["name"].(int)))
-			buf.WriteString(fmt.Sprintf("%d-", rawService.(map[string]interface{})["ip_address_id"].(int)))
-			buf.WriteString(fmt.Sprintf("%d-", rawService.(map[string]interface{})["port"].(int)))
-			buf.WriteString(fmt.Sprintf("%d-", rawService.(map[string]interface{})["health_check_type_id"].(int)))
-			buf.WriteString(fmt.Sprintf("%d-", rawService.(map[string]interface{})["weight"].(int)))
-			buf.WriteString(fmt.Sprintf("%t-", rawService.(map[string]interface{})["enabled"].(bool)))
-		}
-	}
+	//if v, ok := m["service"]; ok {
+	//	vs := v.(*schema.Set).List()
+	//	for _, rawService := range vs {
+	//		buf.WriteString(fmt.Sprintf("%d-", rawService.(map[string]interface{})["ip_address_id"].(int)))
+	//		buf.WriteString(fmt.Sprintf("%d-", rawService.(map[string]interface{})["port"].(int)))
+	//		buf.WriteString(fmt.Sprintf("%d-", rawService.(map[string]interface{})["health_check_type_id"].(int)))
+	//		buf.WriteString(fmt.Sprintf("%d-", rawService.(map[string]interface{})["weight"].(int)))
+	//		buf.WriteString(fmt.Sprintf("%t-", rawService.(map[string]interface{})["enabled"].(bool)))
+	//	}
+	//}
 
 	return hashcode.String(buf.String())
 }
@@ -404,7 +402,6 @@ func resourceServiceGroupHash(v interface{}) int {
 func resourceServiceHash(v interface{}) int {
 	var buf bytes.Buffer
 	m := v.(map[string]interface{})
-	buf.WriteString(fmt.Sprintf("%d-", m["name"].(int)))
 	buf.WriteString(fmt.Sprintf("%d-", m["ip_address_id"].(int)))
 	buf.WriteString(fmt.Sprintf("%d-", m["port"].(int)))
 	buf.WriteString(fmt.Sprintf("%d-", m["health_check_type_id"].(int)))
