@@ -5,6 +5,7 @@ import (
 	"log"
 	"strconv"
 
+	datatypes "github.com/TheWeatherCompany/softlayer-go/data_types"
 	softlayer "github.com/TheWeatherCompany/softlayer-go/softlayer"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -18,6 +19,7 @@ func resourceSoftLayerLoadBalancer() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceSoftLayerLoadBalancerCreate,
 		Read:   resourceSoftLayerLoadBalancerRead,
+		Update: resourceSoftLayerLoadBalancerUpdate,
 		Delete: resourceSoftLayerLoadBalancerDelete,
 		Exists: resourceSoftLayerLoadBalancerExists,
 
@@ -36,6 +38,10 @@ func resourceSoftLayerLoadBalancer() *schema.Resource {
 				Type:     schema.TypeBool,
 				Required: true,
 				ForceNew: true,
+			},
+			"security_certificate_id": &schema.Schema{
+				Type:     schema.TypeInt,
+				Optional: true,
 			},
 			"ip_address": &schema.Schema{
 				Type:     schema.TypeString,
@@ -78,6 +84,32 @@ func resourceSoftLayerLoadBalancerCreate(d *schema.ResourceData, meta interface{
 
 	log.Printf("[INFO] Load Balancer ID: %s", d.Id())
 
+	return resourceSoftLayerLoadBalancerUpdate(d, meta)
+}
+
+func intToPointer(test int) *int {
+	return &test
+}
+
+func resourceSoftLayerLoadBalancerUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*Client).loadBalancerService
+	id, err := strconv.Atoi(d.Id())
+	if err != nil {
+		return fmt.Errorf("Not a valid ID, must be an integer: %s", err)
+	}
+
+	success, err := client.UpdateLoadBalancer(id, &datatypes.SoftLayer_Load_Balancer_Update{
+		SecurityCertificateId: intToPointer(d.Get("security_certificate_id").(int)),
+	})
+
+	if err != nil {
+		return fmt.Errorf("Update load balancer failed: %s", err)
+	}
+
+	if !success {
+		return fmt.Errorf("Update load balancer failed: %s", err)
+	}
+
 	return resourceSoftLayerLoadBalancerRead(d, meta)
 }
 
@@ -98,6 +130,7 @@ func resourceSoftLayerLoadBalancerRead(d *schema.ResourceData, meta interface{})
 	d.Set("ip_address", getObjectResult.IpAddress.IpAddress)
 	d.Set("subnet_id", getObjectResult.IpAddress.SubnetId)
 	d.Set("ha_enabled", getObjectResult.HaEnabled)
+	d.Set("security_certificate_id", getObjectResult.SecurityCertificateId)
 
 	return nil
 }
