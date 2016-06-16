@@ -22,7 +22,7 @@ type Client struct {
 	dnsDomainService                            softlayer.SoftLayer_Dns_Domain_Service
 	networkApplicationDeliveryControllerService softlayer.SoftLayer_Network_Application_Delivery_Controller_Service
 	securityCertificateService                  softlayer.SoftLayer_Security_Certificate_Service
-	networkApplicationDeliveryControllerLoadBalancerService softlayer.SoftLayer_Network_Application_Delivery_Controller_Load_Balancer_Service
+	loadBalancerService softlayer.SoftLayer_Load_Balancer_Service
 }
 
 func (c *Config) Client() (*Client, error) {
@@ -82,7 +82,7 @@ func (c *Config) Client() (*Client, error) {
 		return nil, err
 	}
 
-	networkApplicationDeliveryControllerLoadBalancerService, err := slc.GetSoftLayer_Network_Application_Delivery_Controller_Load_Balancer_Service()
+	loadBalancerService, err := slc.GetSoftLayer_Load_Balancer_Service()
 
 	if err != nil {
 		return nil, err
@@ -98,7 +98,7 @@ func (c *Config) Client() (*Client, error) {
 		dnsDomainResourceRecordService:              dnsDomainResourceRecordService,
 		networkApplicationDeliveryControllerService: networkApplicationDeliveryControllerService,
 		securityCertificateService:                  securityCertificateService,
-		networkApplicationDeliveryControllerLoadBalancerService: networkApplicationDeliveryControllerLoadBalancerService,
+		loadBalancerService:                         loadBalancerService,
 	}
 
 	log.Println("[INFO] Created SoftLayer client")
