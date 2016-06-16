@@ -186,34 +186,34 @@
 			"revision": "0290933f5e8afd933f2823fce32bf2847e6ea603"
 		},
 		{
-			"checksumSHA1": "b9KtiHJfAVxdeuCPO01pnxerbEc=",
+			"checksumSHA1": "jtc9iTL9hEr+KIPvWNbvBUrE3M4=",
 			"path": "github.com/TheWeatherCompany/softlayer-go/client",
-			"revision": "5b6cf6b625d205ec36e16c7326fe7327f8b0149e",
-			"revisionTime": "2016-06-15T18:42:45Z"
+			"revision": "bef86e0cdb9a40b28a9fdf8ef1f40528c0afafb4",
+			"revisionTime": "2016-06-16T14:21:43Z"
 		},
 		{
 			"checksumSHA1": "YKbmwVbAebRVC0NGPAnb1q8Y0xs=",
 			"path": "github.com/TheWeatherCompany/softlayer-go/common",
-			"revision": "5b6cf6b625d205ec36e16c7326fe7327f8b0149e",
-			"revisionTime": "2016-06-15T18:42:45Z"
+			"revision": "bef86e0cdb9a40b28a9fdf8ef1f40528c0afafb4",
+			"revisionTime": "2016-06-16T14:21:43Z"
 		},
 		{
-			"checksumSHA1": "pzmvUhLWa+JDYJ/TuKSkuTlF9II=",
+			"checksumSHA1": "08/D0/T6QlBrBYtDy43ONKR2YFc=",
 			"path": "github.com/TheWeatherCompany/softlayer-go/data_types",
-			"revision": "5b6cf6b625d205ec36e16c7326fe7327f8b0149e",
-			"revisionTime": "2016-06-15T18:42:45Z"
+			"revision": "bef86e0cdb9a40b28a9fdf8ef1f40528c0afafb4",
+			"revisionTime": "2016-06-16T14:21:43Z"
 		},
 		{
-			"checksumSHA1": "FKAIsSqN43vdI7jRk9Boz+jiSUE=",
+			"checksumSHA1": "OTehAFPo7rJi2Ok9pzNdKuC98go=",
 			"path": "github.com/TheWeatherCompany/softlayer-go/services",
-			"revision": "5b6cf6b625d205ec36e16c7326fe7327f8b0149e",
-			"revisionTime": "2016-06-15T18:42:45Z"
+			"revision": "bef86e0cdb9a40b28a9fdf8ef1f40528c0afafb4",
+			"revisionTime": "2016-06-16T14:21:43Z"
 		},
 		{
-			"checksumSHA1": "++GBb30Bi5w0gyZfLAleQ6BRD/U=",
+			"checksumSHA1": "xhZxVPc6Yl2Ui9BAkNQKFgW7qn4=",
 			"path": "github.com/TheWeatherCompany/softlayer-go/softlayer",
-			"revision": "5b6cf6b625d205ec36e16c7326fe7327f8b0149e",
-			"revisionTime": "2016-06-15T18:42:45Z"
+			"revision": "bef86e0cdb9a40b28a9fdf8ef1f40528c0afafb4",
+			"revisionTime": "2016-06-16T14:21:43Z"
 		},
 		{
 			"path": "github.com/Unknwon/com",
@@ -885,6 +885,66 @@
 			"comment": "v0.7.0-12-ge4ec8cc",
 			"path": "github.com/hashicorp/serf/coordinate",
 			"revision": "e4ec8cc423bbe20d26584b96efbeb9102e16d05f"
+		},
+		{
+			"checksumSHA1": "Ib2KxaQ9OSu+2Cmyh1iRJIDFhM0=",
+			"path": "github.com/hashicorp/terraform/config",
+			"revision": "24bcac42be0e2fbac621baf8f753ef2e6c1eb68d",
+			"revisionTime": "2016-06-16T15:03:16Z"
+		},
+		{
+			"checksumSHA1": "g7eaxQ091tdIuaplzbESmFkEuMs=",
+			"path": "github.com/hashicorp/terraform/config/module",
+			"revision": "24bcac42be0e2fbac621baf8f753ef2e6c1eb68d",
+			"revisionTime": "2016-06-16T15:03:16Z"
+		},
+		{
+			"checksumSHA1": "Dr8CXGM6I/evRrA1E9NyHwJmOlU=",
+			"path": "github.com/hashicorp/terraform/dag",
+			"revision": "24bcac42be0e2fbac621baf8f753ef2e6c1eb68d",
+			"revisionTime": "2016-06-16T15:03:16Z"
+		},
+		{
+			"checksumSHA1": "TxqBBTRqbLW9f21FvjWKJlfzQFw=",
+			"path": "github.com/hashicorp/terraform/dot",
+			"revision": "24bcac42be0e2fbac621baf8f753ef2e6c1eb68d",
+			"revisionTime": "2016-06-16T15:03:16Z"
+		},
+		{
+			"checksumSHA1": "0Q17QX0jzIL2Bg+XThUuOetCwU0=",
+			"path": "github.com/hashicorp/terraform/flatmap",
+			"revision": "24bcac42be0e2fbac621baf8f753ef2e6c1eb68d",
+			"revisionTime": "2016-06-16T15:03:16Z"
+		},
+		{
+			"checksumSHA1": "uT6Q9RdSRAkDjyUgQlJ2XKJRab4=",
+			"path": "github.com/hashicorp/terraform/helper/config",
+			"revision": "24bcac42be0e2fbac621baf8f753ef2e6c1eb68d",
+			"revisionTime": "2016-06-16T15:03:16Z"
+		},
+		{
+			"checksumSHA1": "B267stWNQd0/pBTXHfI/tJsxzfc=",
+			"path": "github.com/hashicorp/terraform/helper/hilmapstructure",
+			"revision": "24bcac42be0e2fbac621baf8f753ef2e6c1eb68d",
+			"revisionTime": "2016-06-16T15:03:16Z"
+		},
+		{
+			"checksumSHA1": "Mew+XXnUAAr3GpTtNUolvJhSs7Q=",
+			"path": "github.com/hashicorp/terraform/helper/logging",
+			"revision": "24bcac42be0e2fbac621baf8f753ef2e6c1eb68d",
+			"revisionTime": "2016-06-16T15:03:16Z"
+		},
+		{
+			"checksumSHA1": "Dg0AAsMEpGfqjbyA50dSUabkohM=",
+			"path": "github.com/hashicorp/terraform/helper/resource",
+			"revision": "24bcac42be0e2fbac621baf8f753ef2e6c1eb68d",
+			"revisionTime": "2016-06-16T15:03:16Z"
+		},
+		{
+			"checksumSHA1": "kQ+4TarDex2wG60My9N97AEfWVg=",
+			"path": "github.com/hashicorp/terraform/terraform",
+			"revision": "24bcac42be0e2fbac621baf8f753ef2e6c1eb68d",
+			"revisionTime": "2016-06-16T15:03:16Z"
 		},
 		{
 			"path": "github.com/hashicorp/yamux",
