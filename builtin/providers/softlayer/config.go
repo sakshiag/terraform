@@ -13,10 +13,10 @@ type Config struct {
 }
 
 type Client struct {
-	virtualGuestService                                     softlayer.SoftLayer_Virtual_Guest_Service
-	sshKeyService                                           softlayer.SoftLayer_Security_Ssh_Key_Service
-	productOrderService                                     softlayer.SoftLayer_Product_Order_Service
-	networkApplicationDeliveryControllerLoadBalancerService softlayer.SoftLayer_Network_Application_Delivery_Controller_Load_Balancer_Service
+	virtualGuestService softlayer.SoftLayer_Virtual_Guest_Service
+	sshKeyService       softlayer.SoftLayer_Security_Ssh_Key_Service
+	productOrderService softlayer.SoftLayer_Product_Order_Service
+	loadBalancerService softlayer.SoftLayer_Load_Balancer_Service
 }
 
 func (c *Config) Client() (*Client, error) {
@@ -33,7 +33,7 @@ func (c *Config) Client() (*Client, error) {
 		return nil, err
 	}
 
-	networkApplicationDeliveryControllerLoadBalancerService, err := slc.GetSoftLayer_Network_Application_Delivery_Controller_Load_Balancer_Service()
+	loadBalancerService, err := slc.GetSoftLayer_Load_Balancer_Service()
 
 	if err != nil {
 		return nil, err
@@ -42,7 +42,7 @@ func (c *Config) Client() (*Client, error) {
 	client := &Client{
 		virtualGuestService: virtualGuestService,
 		sshKeyService:       sshKeyService,
-		networkApplicationDeliveryControllerLoadBalancerService: networkApplicationDeliveryControllerLoadBalancerService,
+		loadBalancerService: loadBalancerService,
 	}
 
 	log.Println("[INFO] Created SoftLayer client")
