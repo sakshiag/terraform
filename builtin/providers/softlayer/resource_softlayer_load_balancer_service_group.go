@@ -6,6 +6,7 @@ import (
 
 	softlayer "github.com/TheWeatherCompany/softlayer-go/softlayer"
 	"github.com/hashicorp/terraform/helper/schema"
+	"strconv"
 )
 
 func resourceSoftLayerLoadBalancerServiceGroup() *schema.Resource {
@@ -28,6 +29,7 @@ func resourceSoftLayerLoadBalancerServiceGroup() *schema.Resource {
 			"load_balancer_id": &schema.Schema{
 				Type:     schema.TypeInt,
 				Required: true,
+				ForceNew: true,
 			},
 			"allocation": &schema.Schema{
 				Type:     schema.TypeInt,
@@ -80,22 +82,69 @@ func resourceSoftLayerLoadBalancerServiceGroupCreate(d *schema.ResourceData, met
 		return fmt.Errorf("Error creating load balancer service group")
 	}
 
-	//d.SetId(fmt.Sprintf("%d", loadBalancerServiceGroup.ServiceGroups[0].Id))
+	loadBalancer, err = client.GetObject(d.Get("load_balancer_id").(int))
+
+	if err != nil {
+		return fmt.Errorf("Error retrieving load balancer: %s", err)
+	}
+
+	for _, virtualServer := range loadBalancer.VirtualServers {
+		if virtualServer.Port == d.Get("port").(int) {
+			d.SetId(fmt.Sprintf("%d", virtualServer.ServiceGroups[0].Id))
+		}
+	}
 
 	log.Printf("[INFO] Load Balancer Service Group ID: %s", d.Id())
 
-	return resourceSoftLayerLoadBalancerRead(d, meta)
+	return resourceSoftLayerLoadBalancerServiceGroupRead(d, meta)
 }
 
 func resourceSoftLayerLoadBalancerServiceGroupUpdate(d *schema.ResourceData, meta interface{}) error {
-	return resourceSoftLayerLoadBalancerRead(d, meta)
+	return resourceSoftLayerLoadBalancerServiceGroupRead(d, meta)
 }
 
 func resourceSoftLayerLoadBalancerServiceGroupRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*Client).loadBalancerService
+	id, err := strconv.Atoi(d.Id())
+	if err != nil {
+		return fmt.Errorf("Not a valid ID, must be an integer: %s", err)
+	}
+	loadBalancer, err := client.GetObject(d.Get("load_balancer_id").(int))
+	if err != nil {
+		return fmt.Errorf("Error retrieving load balancer: %s", err)
+	}
+
+	for _, virtualServer := range loadBalancer.VirtualServers {
+		serviceGroup := virtualServer.ServiceGroups[0]
+		if serviceGroup.Id == id {
+			d.Set("virtual_server_id", virtualServer.Id)
+			d.Set("service_group_id", id)
+			d.Set("allocation", virtualServer.Allocation)
+			d.Set("port", virtualServer.Port)
+			d.Set("routing_method_id", serviceGroup.RoutingMethodId)
+			d.Set("routing_type_id", serviceGroup.RoutingTypeId)
+		}
+	}
+
 	return nil
 }
 
 func resourceSoftLayerLoadBalancerServiceGroupDelete(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*Client).loadBalancerService
+	if client == nil {
+		return fmt.Errorf("The client is nil.")
+	}
+
+	success, err := client.DeleteLoadBalancerVirtualServer(d.Get("virtual_server_id").(int))
+
+	if err != nil {
+		return fmt.Errorf("Error deleting service group: %s", err)
+	}
+
+	if !success {
+		return fmt.Errorf("Error deleting service group")
+	}
+
 	return nil
 }
 
