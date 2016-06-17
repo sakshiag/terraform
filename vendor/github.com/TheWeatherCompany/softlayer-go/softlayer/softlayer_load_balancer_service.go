@@ -25,10 +25,9 @@ type SoftLayer_Load_Balancer_Service interface {
 
 	CreateLoadBalancerVirtualServer(lbId int, createOptions *SoftLayer_Load_Balancer_Service_Group_CreateOptions) (bool, error)
 
-        GetObject(id int) (datatypes.SoftLayer_Load_Balancer, error)
-	GetLoadBalancerVirtualServer(lbId int, vsId int) (datatypes.Softlayer_Load_Balancer_Virtual_Server, error)
+	GetObject(id int) (datatypes.SoftLayer_Load_Balancer, error)
 
-        DeleteObject(id int) (bool, error)
+	DeleteObject(id int) (bool, error)
 
 	FindCreatePriceItems(createOptions *SoftLayer_Load_Balancer_CreateOptions) ([]datatypes.SoftLayer_Product_Item_Price, error)
 }
