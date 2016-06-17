@@ -23,9 +23,10 @@ func Provider() terraform.ResourceProvider {
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
-			"softlayer_virtual_guest": resourceSoftLayerVirtualGuest(),
-			"softlayer_ssh_key":       resourceSoftLayerSSHKey(),
-			"softlayer_load_balancer": resourceSoftLayerLoadBalancer(),
+			"softlayer_virtual_guest":               resourceSoftLayerVirtualGuest(),
+			"softlayer_ssh_key":                     resourceSoftLayerSSHKey(),
+			"softlayer_load_balancer":               resourceSoftLayerLoadBalancer(),
+			"softlayer_load_balancer_service_group": resourceSoftLayerLoadBalancerServiceGroup(),
 		},
 
 		ConfigureFunc: providerConfigure,
