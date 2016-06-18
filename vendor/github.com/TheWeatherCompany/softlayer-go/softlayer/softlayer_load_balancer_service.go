@@ -26,6 +26,16 @@ type SoftLayer_Load_Balancer_Service_CreateOptions struct {
 	Weight          int
 }
 
+type SoftLayer_Load_Balancer_Service_CreateOptions struct {
+	VirtualServerId int
+	ServiceGroupId  int
+	Allocation      int
+	Port            int
+	RoutingMethodId int
+	RoutingTypeId   int
+	Service         *datatypes.Softlayer_Service
+}
+
 type SoftLayer_Load_Balancer_Service interface {
 	Service
 
@@ -37,6 +47,8 @@ type SoftLayer_Load_Balancer_Service interface {
 
 	CreateLoadBalancerService(lbId int, createOptions *SoftLayer_Load_Balancer_Service_CreateOptions) (bool, error)
 	UpdateLoadBalancerService(lbId int, sgId int, sId int, updateOptions *SoftLayer_Load_Balancer_Service_CreateOptions) (bool, error)
+
+	CreateLoadBalancerService(lbId int, createOptions *SoftLayer_Load_Balancer_Service_CreateOptions) (bool, error)
 
 	GetObject(id int) (datatypes.SoftLayer_Load_Balancer, error)
 

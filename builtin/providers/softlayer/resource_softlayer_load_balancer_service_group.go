@@ -210,3 +210,23 @@ func GetServiceGroupId(id string) int {
 
 	return lbId
 }
+
+func getLbId(id string) int {
+	lbId, err := strconv.Atoi(strings.Split(id, "|")[0])
+
+	if err != nil {
+		return -1
+	}
+
+	return lbId
+}
+
+func getServiceGroupId(id string) int {
+	lbId, err := strconv.Atoi(strings.Split(id, "|")[1])
+
+	if err != nil {
+		return -1
+	}
+
+	return lbId
+}
