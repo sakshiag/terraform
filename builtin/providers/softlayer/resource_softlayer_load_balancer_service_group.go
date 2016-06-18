@@ -7,6 +7,7 @@ import (
 	softlayer "github.com/TheWeatherCompany/softlayer-go/softlayer"
 	"github.com/hashicorp/terraform/helper/schema"
 	"strconv"
+	"strings"
 )
 
 func resourceSoftLayerLoadBalancerServiceGroup() *schema.Resource {
@@ -19,10 +20,6 @@ func resourceSoftLayerLoadBalancerServiceGroup() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"virtual_server_id": &schema.Schema{
-				Type:     schema.TypeInt,
-				Computed: true,
-			},
-			"service_group_id": &schema.Schema{
 				Type:     schema.TypeInt,
 				Computed: true,
 			},
@@ -90,7 +87,7 @@ func resourceSoftLayerLoadBalancerServiceGroupCreate(d *schema.ResourceData, met
 
 	for _, virtualServer := range loadBalancer.VirtualServers {
 		if virtualServer.Port == d.Get("port").(int) {
-			d.SetId(fmt.Sprintf("%d", virtualServer.ServiceGroups[0].Id))
+			d.SetId(fmt.Sprintf("%d|%d", loadBalancer.Id, virtualServer.ServiceGroups[0].Id))
 		}
 	}
 
@@ -105,7 +102,7 @@ func resourceSoftLayerLoadBalancerServiceGroupUpdate(d *schema.ResourceData, met
 
 func resourceSoftLayerLoadBalancerServiceGroupRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client).loadBalancerService
-	id, err := strconv.Atoi(d.Id())
+	id, err := strconv.Atoi(strings.Split(d.Id(), "|")[1])
 	if err != nil {
 		return fmt.Errorf("Not a valid ID, must be an integer: %s", err)
 	}
@@ -118,7 +115,6 @@ func resourceSoftLayerLoadBalancerServiceGroupRead(d *schema.ResourceData, meta 
 		serviceGroup := virtualServer.ServiceGroups[0]
 		if serviceGroup.Id == id {
 			d.Set("virtual_server_id", virtualServer.Id)
-			d.Set("service_group_id", id)
 			d.Set("allocation", virtualServer.Allocation)
 			d.Set("port", virtualServer.Port)
 			d.Set("routing_method_id", serviceGroup.RoutingMethodId)
@@ -150,4 +146,24 @@ func resourceSoftLayerLoadBalancerServiceGroupDelete(d *schema.ResourceData, met
 
 func resourceSoftLayerLoadBalancerServiceGroupExists(d *schema.ResourceData, meta interface{}) (bool, error) {
 	return true, nil
+}
+
+func getLbId(id string) int {
+	lbId, err := strconv.Atoi(strings.Split(id, "|")[0])
+
+	if err != nil {
+		return -1
+	}
+
+	return lbId
+}
+
+func getServiceGroupId(id string) int {
+	lbId, err := strconv.Atoi(strings.Split(id, "|")[1])
+
+	if err != nil {
+		return -1
+	}
+
+	return lbId
 }

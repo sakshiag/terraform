@@ -19,6 +19,7 @@ const (
 	ORDER_TYPE_APPLICATION_DELIVERY_CONTROLLER_LOAD_BALANCER   = "SoftLayer_Container_Product_Order_Network_LoadBalancer"
 	PACKAGE_ID_APPLICATION_DELIVERY_CONTROLLER_LOAD_BALANCER   = 194
 	LOAD_BALANCER_VIRTUAL_SERVER_NAME                          = "SoftLayer_Network_Application_Delivery_Controller_LoadBalancer_VirtualServer"
+	LOAD_BALANCER_SERVICE_NAME                                 = "SoftLayer_Network_Application_Delivery_Controller_LoadBalancer_Service"
 	BILLING_ITEM_TYPE_NAME                                     = "SoftLayer_Billing_Item"
 	OBJECT_MASK                                                = "?objectMask=mask[id,connectionLimit,ipAddressId,securityCertificateId,highAvailabilityFlag,sslEnabledFlag,loadBalancerHardware[datacenter[name]],ipAddress[ipAddress,subnet[networkVlan]],virtualServers[serviceGroups[services[healthChecks,groupReferences]]]]"
 )
@@ -86,6 +87,50 @@ func (slnadclbs *softLayer_Load_Balancer) CreateLoadBalancerVirtualServer(lbId i
 				ServiceGroups: []*datatypes.Softlayer_Service_Group{{
 					RoutingMethodId: createOptions.RoutingMethodId,
 					RoutingTypeId:   createOptions.RoutingTypeId,
+				}},
+			}},
+		}},
+	}
+
+	requestBody, err := json.Marshal(parameters)
+	if err != nil {
+		return false, fmt.Errorf("Load balancer with id '%d' is not found: %s", lbId, err)
+	}
+
+	response, errorCode, error := slnadclbs.client.GetHttpClient().DoRawHttpRequest(fmt.Sprintf("%s/%d/%s.json", slnadclbs.GetName(), lbId, "editObject"), "POST", bytes.NewBuffer(requestBody))
+
+	if error != nil {
+		return false, error
+	} else if errorCode != 200 {
+		return false, fmt.Errorf(string(response))
+	}
+
+	return true, nil
+}
+
+func (slnadclbs *softLayer_Load_Balancer) CreateLoadBalancerService(lbId int, createOptions *softlayer.SoftLayer_Load_Balancer_Service_CreateOptions) (bool, error) {
+
+	parameters := datatypes.SoftLayer_Load_Balancer_Virtual_Server_Update_Parameters{
+		Parameters: []datatypes.Softlayer_Load_Balancer_Virtual_Server_Parameters{{
+			VirtualServers: []*datatypes.Softlayer_Load_Balancer_Virtual_Server{{
+				Id:         createOptions.VirtualServerId,
+				Allocation: createOptions.Allocation,
+				Port:       createOptions.Port,
+				ServiceGroups: []*datatypes.Softlayer_Service_Group{{
+					Id:              createOptions.ServiceGroupId,
+					RoutingMethodId: createOptions.RoutingMethodId,
+					RoutingTypeId:   createOptions.RoutingTypeId,
+					Services:        []*datatypes.Softlayer_Service{{
+						Enabled:         createOptions.Service.Enabled,
+						Port:            createOptions.Service.Port,
+						IpAddressId:     createOptions.Service.IpAddressId,
+						HealthChecks:    []*datatypes.Softlayer_Health_Check{{
+							HealthCheckTypeId: createOptions.Service.HealthChecks[0].HealthCheckTypeId,
+						}},
+						GroupReferences: []*datatypes.Softlayer_Group_Reference{{
+							Weight: createOptions.Service.GroupReferences[0].Weight,
+						}},
+					}},
 				}},
 			}},
 		}},
@@ -229,6 +274,22 @@ func (slnadclbs *softLayer_Load_Balancer) DeleteLoadBalancerVirtualServer(id int
 
 	if common.IsHttpErrorCode(errorCode) {
 		errorMessage := fmt.Sprintf("softlayer-go: could not perform SoftLayer_Network_Application_Delivery_Controller_LoadBalancer_VirtualServer#deleteObject, HTTP error code: '%d'", errorCode)
+		return false, errors.New(errorMessage)
+	}
+
+	return true, nil
+}
+
+func (slnadclbs *softLayer_Load_Balancer) DeleteLoadBalancerService(id int) (bool, error) {
+	_, errorCode, err := slnadclbs.client.GetHttpClient().DoRawHttpRequest(fmt.Sprintf("%s/%d/deleteObject.json", LOAD_BALANCER_SERVICE_NAME, id), "GET", new(bytes.Buffer))
+
+	if err != nil {
+		errorMessage := fmt.Sprintf("softlayer-go: could not perform SoftLayer_Network_Application_Delivery_Controller_LoadBalancer_Service#deleteObject, error message '%s'", err.Error())
+		return false, errors.New(errorMessage)
+	}
+
+	if common.IsHttpErrorCode(errorCode) {
+		errorMessage := fmt.Sprintf("softlayer-go: could not perform SoftLayer_Network_Application_Delivery_Controller_LoadBalancer_Service#deleteObject, HTTP error code: '%d'", errorCode)
 		return false, errors.New(errorMessage)
 	}
 
