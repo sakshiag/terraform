@@ -27,6 +27,7 @@ func Provider() terraform.ResourceProvider {
 			"softlayer_ssh_key":                     resourceSoftLayerSSHKey(),
 			"softlayer_load_balancer":               resourceSoftLayerLoadBalancer(),
 			"softlayer_load_balancer_service_group": resourceSoftLayerLoadBalancerServiceGroup(),
+			"softlayer_load_balancer_service":       resourceSoftLayerLoadBalancerService(),
 		},
 
 		ConfigureFunc: providerConfigure,
