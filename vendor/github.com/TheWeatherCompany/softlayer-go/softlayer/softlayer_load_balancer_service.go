@@ -11,20 +11,19 @@ type SoftLayer_Load_Balancer_CreateOptions struct {
 }
 
 type SoftLayer_Load_Balancer_Service_Group_CreateOptions struct {
-	Allocation      int
-	Port            int
-	RoutingMethodId int
-	RoutingTypeId   int
+	Allocation    int
+	Port          int
+	RoutingMethod string
+	RoutingType   string
 }
 
 type SoftLayer_Load_Balancer_Service_CreateOptions struct {
-	VirtualServerId int
 	ServiceGroupId  int
-	Allocation      int
+	Enabled         int
 	Port            int
-	RoutingMethodId int
-	RoutingTypeId   int
-	Service         *datatypes.Softlayer_Service
+	IpAddressId     int
+	HealthCheckType string
+	Weight          int
 }
 
 type SoftLayer_Load_Balancer_Service interface {
@@ -34,6 +33,7 @@ type SoftLayer_Load_Balancer_Service interface {
 	UpdateLoadBalancer(lbId int, lb *datatypes.SoftLayer_Load_Balancer_Update) (bool, error)
 
 	CreateLoadBalancerVirtualServer(lbId int, createOptions *SoftLayer_Load_Balancer_Service_Group_CreateOptions) (bool, error)
+	UpdateLoadBalancerVirtualServer(lbId int, sgId int, updateOptions *SoftLayer_Load_Balancer_Service_Group_CreateOptions) (bool, error)
 
 	CreateLoadBalancerService(lbId int, createOptions *SoftLayer_Load_Balancer_Service_CreateOptions) (bool, error)
 

@@ -31,17 +31,18 @@ func resourceSoftLayerLoadBalancerServiceGroup() *schema.Resource {
 			"allocation": &schema.Schema{
 				Type:     schema.TypeInt,
 				Required: true,
+				ForceNew: true,
 			},
 			"port": &schema.Schema{
 				Type:     schema.TypeInt,
 				Required: true,
 			},
-			"routing_method_id": &schema.Schema{
-				Type:     schema.TypeInt,
+			"routing_method": &schema.Schema{
+				Type:     schema.TypeString,
 				Required: true,
 			},
-			"routing_type_id": &schema.Schema{
-				Type:     schema.TypeInt,
+			"routing_type": &schema.Schema{
+				Type:     schema.TypeString,
 				Required: true,
 			},
 		},
@@ -61,10 +62,10 @@ func resourceSoftLayerLoadBalancerServiceGroupCreate(d *schema.ResourceData, met
 	}
 
 	opts := softlayer.SoftLayer_Load_Balancer_Service_Group_CreateOptions{
-		Allocation:      d.Get("allocation").(int),
-		Port:            d.Get("port").(int),
-		RoutingMethodId: d.Get("routing_method_id").(int),
-		RoutingTypeId:   d.Get("routing_type_id").(int),
+		Allocation:    d.Get("allocation").(int),
+		Port:          d.Get("port").(int),
+		RoutingMethod: d.Get("routing_method").(string),
+		RoutingType:   d.Get("routing_type").(string),
 	}
 
 	log.Printf("[INFO] Creating load balancer service group")
@@ -97,6 +98,36 @@ func resourceSoftLayerLoadBalancerServiceGroupCreate(d *schema.ResourceData, met
 }
 
 func resourceSoftLayerLoadBalancerServiceGroupUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*Client).loadBalancerService
+	if client == nil {
+		return fmt.Errorf("The client is nil.")
+	}
+
+	loadBalancer, err := client.GetObject(getLbId(d.Id()))
+
+	if err != nil {
+		return fmt.Errorf("Error retrieving load balancer: %s", err)
+	}
+
+	opts := softlayer.SoftLayer_Load_Balancer_Service_Group_CreateOptions{
+		Allocation:    d.Get("allocation").(int),
+		Port:          d.Get("port").(int),
+		RoutingMethod: d.Get("routing_method").(string),
+		RoutingType:   d.Get("routing_type").(string),
+	}
+
+	log.Printf("[INFO] Updating load balancer service group")
+
+	success, err := client.UpdateLoadBalancerVirtualServer(loadBalancer.Id, getServiceGroupId(d.Id()), &opts)
+
+	if err != nil {
+		return fmt.Errorf("Error updating load balancer service group: %s", err)
+	}
+
+	if !success {
+		return fmt.Errorf("Error updating load balancer service group")
+	}
+
 	return resourceSoftLayerLoadBalancerServiceGroupRead(d, meta)
 }
 

@@ -78,6 +78,17 @@ func (slnadclbs *softLayer_Load_Balancer) CreateLoadBalancer(createOptions *soft
 }
 
 func (slnadclbs *softLayer_Load_Balancer) CreateLoadBalancerVirtualServer(lbId int, createOptions *softlayer.SoftLayer_Load_Balancer_Service_Group_CreateOptions) (bool, error) {
+	routingMethodId, err := common.GetRoutingMethodByName(slnadclbs.client, createOptions.RoutingMethod)
+
+	if err != nil {
+		return false, err
+	}
+
+	routingTypeId, err := common.GetRoutingTypeByName(slnadclbs.client, createOptions.RoutingType)
+
+	if err != nil {
+		return false, err
+	}
 
 	parameters := datatypes.SoftLayer_Load_Balancer_Virtual_Server_Update_Parameters{
 		Parameters: []datatypes.Softlayer_Load_Balancer_Virtual_Server_Parameters{{
@@ -85,8 +96,8 @@ func (slnadclbs *softLayer_Load_Balancer) CreateLoadBalancerVirtualServer(lbId i
 				Allocation: createOptions.Allocation,
 				Port:       createOptions.Port,
 				ServiceGroups: []*datatypes.Softlayer_Service_Group{{
-					RoutingMethodId: createOptions.RoutingMethodId,
-					RoutingTypeId:   createOptions.RoutingTypeId,
+					RoutingMethodId: routingMethodId,
+					RoutingTypeId:   routingTypeId,
 				}},
 			}},
 		}},
@@ -108,27 +119,104 @@ func (slnadclbs *softLayer_Load_Balancer) CreateLoadBalancerVirtualServer(lbId i
 	return true, nil
 }
 
-func (slnadclbs *softLayer_Load_Balancer) CreateLoadBalancerService(lbId int, createOptions *softlayer.SoftLayer_Load_Balancer_Service_CreateOptions) (bool, error) {
+func (slnadclbs *softLayer_Load_Balancer) UpdateLoadBalancerVirtualServer(lbId int, sgId int, updateOptions *softlayer.SoftLayer_Load_Balancer_Service_Group_CreateOptions) (bool, error) {
+	loadBalancer, err := slnadclbs.GetObject(lbId)
+
+	if err != nil {
+		return false, fmt.Errorf("Load balancer with id '%d' is not found: %s", lbId, err)
+	}
+
+	routingMethodId, err := common.GetRoutingMethodByName(slnadclbs.client, updateOptions.RoutingMethod)
+
+	if err != nil {
+		return false, err
+	}
+
+	routingTypeId, err := common.GetRoutingTypeByName(slnadclbs.client, updateOptions.RoutingType)
+
+	if err != nil {
+		return false, err
+	}
+
+	virtualServer, err := getVsFromSgId(sgId, loadBalancer.VirtualServers)
+
+	if err != nil {
+		return false, err
+	}
 
 	parameters := datatypes.SoftLayer_Load_Balancer_Virtual_Server_Update_Parameters{
 		Parameters: []datatypes.Softlayer_Load_Balancer_Virtual_Server_Parameters{{
 			VirtualServers: []*datatypes.Softlayer_Load_Balancer_Virtual_Server{{
-				Id:         createOptions.VirtualServerId,
-				Allocation: createOptions.Allocation,
-				Port:       createOptions.Port,
+				Id:         virtualServer.Id,
+				Allocation: updateOptions.Allocation,
+				Port:       updateOptions.Port,
+				ServiceGroups: []*datatypes.Softlayer_Service_Group{{
+					Id:              sgId,
+					RoutingMethodId: routingMethodId,
+					RoutingTypeId:   routingTypeId,
+					Services:        []*datatypes.Softlayer_Service{},
+				}},
+			}},
+		}},
+	}
+
+	requestBody, err := json.Marshal(parameters)
+
+	response, errorCode, error := slnadclbs.client.GetHttpClient().DoRawHttpRequest(fmt.Sprintf("%s/%d/%s.json", slnadclbs.GetName(), lbId, "editObject"), "POST", bytes.NewBuffer(requestBody))
+
+	if error != nil {
+		return false, error
+	} else if errorCode != 200 {
+		return false, fmt.Errorf(string(response))
+	}
+
+	return true, nil
+}
+
+func (slnadclbs *softLayer_Load_Balancer) CreateLoadBalancerService(lbId int, createOptions *softlayer.SoftLayer_Load_Balancer_Service_CreateOptions) (bool, error) {
+	loadBalancer, err := slnadclbs.GetObject(lbId)
+
+	if err != nil {
+		return false, fmt.Errorf("Load balancer with id '%d' is not found: %s", lbId, err)
+	}
+
+	virtualServer := new(datatypes.Softlayer_Load_Balancer_Virtual_Server)
+
+	for _, vs := range loadBalancer.VirtualServers {
+		if vs.ServiceGroups[0].Id == createOptions.ServiceGroupId {
+			virtualServer = vs
+		}
+	}
+
+	if virtualServer == nil {
+		return false, fmt.Errorf("Service group with id '%d' is not found", createOptions.ServiceGroupId)
+	}
+
+	healthCheckType, err := common.GetHealthCheckTypeByName(slnadclbs.client, createOptions.HealthCheckType)
+
+	if err != nil {
+		return false, err
+	}
+
+	parameters := datatypes.SoftLayer_Load_Balancer_Virtual_Server_Update_Parameters{
+		Parameters: []datatypes.Softlayer_Load_Balancer_Virtual_Server_Parameters{{
+			VirtualServers: []*datatypes.Softlayer_Load_Balancer_Virtual_Server{{
+				Id:         virtualServer.Id,
+				Allocation: virtualServer.Allocation,
+				Port:       virtualServer.Port,
 				ServiceGroups: []*datatypes.Softlayer_Service_Group{{
 					Id:              createOptions.ServiceGroupId,
-					RoutingMethodId: createOptions.RoutingMethodId,
-					RoutingTypeId:   createOptions.RoutingTypeId,
-					Services:        []*datatypes.Softlayer_Service{{
-						Enabled:         createOptions.Service.Enabled,
-						Port:            createOptions.Service.Port,
-						IpAddressId:     createOptions.Service.IpAddressId,
-						HealthChecks:    []*datatypes.Softlayer_Health_Check{{
-							HealthCheckTypeId: createOptions.Service.HealthChecks[0].HealthCheckTypeId,
+					RoutingMethodId: virtualServer.ServiceGroups[0].RoutingMethodId,
+					RoutingTypeId:   virtualServer.ServiceGroups[0].RoutingTypeId,
+					Services: []*datatypes.Softlayer_Service{{
+						Enabled:     createOptions.Enabled,
+						Port:        createOptions.Port,
+						IpAddressId: createOptions.IpAddressId,
+						HealthChecks: []*datatypes.Softlayer_Health_Check{{
+							HealthCheckTypeId: healthCheckType,
 						}},
 						GroupReferences: []*datatypes.Softlayer_Group_Reference{{
-							Weight: createOptions.Service.GroupReferences[0].Weight,
+							Weight: createOptions.Weight,
 						}},
 					}},
 				}},
@@ -412,4 +500,20 @@ func (slnadclbs *softLayer_Load_Balancer) GetBillingItem(id int) (datatypes.Soft
 	}
 
 	return billingItem, nil
+}
+
+func getVsFromSgId(sgId int, virtualServers []*datatypes.Softlayer_Load_Balancer_Virtual_Server) (datatypes.Softlayer_Load_Balancer_Virtual_Server, error) {
+	virtualServer := new(datatypes.Softlayer_Load_Balancer_Virtual_Server)
+
+	for _, vs := range virtualServers {
+		if vs.ServiceGroups[0].Id == sgId {
+			virtualServer = vs
+		}
+	}
+
+	if virtualServer == nil {
+		return datatypes.Softlayer_Load_Balancer_Virtual_Server{}, fmt.Errorf("Virtual server with id '%d' is not found", sgId)
+	}
+
+	return *virtualServer, nil
 }
