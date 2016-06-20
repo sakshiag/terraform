@@ -2,7 +2,6 @@ package softlayer
 
 import (
 	"fmt"
-	datatypes "github.com/TheWeatherCompany/softlayer-go/data_types"
 	"github.com/TheWeatherCompany/softlayer-go/softlayer"
 	"github.com/hashicorp/terraform/helper/schema"
 	"log"
@@ -22,6 +21,7 @@ func resourceSoftLayerLoadBalancerService() *schema.Resource {
 			"service_group_id": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 			"ip_address_id": &schema.Schema{
 				Type:     schema.TypeInt,
@@ -35,8 +35,8 @@ func resourceSoftLayerLoadBalancerService() *schema.Resource {
 				Type:     schema.TypeBool,
 				Required: true,
 			},
-			"health_check_type_id": &schema.Schema{
-				Type:     schema.TypeInt,
+			"health_check_type": &schema.Schema{
+				Type:     schema.TypeString,
 				Required: true,
 			},
 			"weight": &schema.Schema{
@@ -59,32 +59,13 @@ func resourceSoftLayerLoadBalancerServiceCreate(d *schema.ResourceData, meta int
 		return fmt.Errorf("Error retrieving load balancer: %s", err)
 	}
 
-	virtualServer := datatypes.Softlayer_Load_Balancer_Virtual_Server{}
-
-	for _, vs := range loadBalancer.VirtualServers {
-		if vs.ServiceGroups[0].Id == getServiceGroupId(d.Get("service_group_id").(string)) {
-			virtualServer = *vs
-		}
-	}
-
 	opts := softlayer.SoftLayer_Load_Balancer_Service_CreateOptions{
-		VirtualServerId: virtualServer.Id,
-		ServiceGroupId:  virtualServer.ServiceGroups[0].Id,
-		Allocation:      virtualServer.Allocation,
-		Port:            virtualServer.Port,
-		RoutingMethodId: virtualServer.ServiceGroups[0].RoutingMethodId,
-		RoutingTypeId:   virtualServer.ServiceGroups[0].RoutingTypeId,
-		Service: &datatypes.Softlayer_Service{
-			Enabled:     1,
-			Port:        d.Get("port").(int),
-			IpAddressId: d.Get("ip_address_id").(int),
-			HealthChecks: []*datatypes.Softlayer_Health_Check{{
-				HealthCheckTypeId: d.Get("health_check_type_id").(int),
-			}},
-			GroupReferences: []*datatypes.Softlayer_Group_Reference{{
-				Weight: d.Get("weight").(int),
-			}},
-		},
+		ServiceGroupId:  getServiceGroupId(d.Get("service_group_id").(string)),
+		Enabled:         1,
+		Port:            d.Get("port").(int),
+		IpAddressId:     d.Get("ip_address_id").(int),
+		HealthCheckType: d.Get("health_check_type").(string),
+		Weight:          d.Get("weight").(int),
 	}
 
 	log.Printf("[INFO] Creating load balancer service")
