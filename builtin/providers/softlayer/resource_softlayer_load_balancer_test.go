@@ -20,7 +20,13 @@ func TestAccSoftLayerLoadBalancer_Basic(t *testing.T) {
 			resource.TestStep{
 				Config: testAccCheckSoftLayerLoadBalancerConfig_basic,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckSoftLayerLoadBalancerExists("softlayer_load_balancer.testacc_foobar_nadc", &lb),
+					testAccCheckSoftLayerLoadBalancerExists("softlayer_ssh_key.testacc_foobar", &lb),
+					resource.TestCheckResourceAttr(
+						"softlayer_load_balancer.testacc_foobar_lb", "connections", 15000),
+					resource.TestCheckResourceAttr(
+						"softlayer_load_balancer.testacc_foobar_lb", "location", "tok02"),
+					resource.TestCheckResourceAttr(
+						"softlayer_load_balancer.testacc_foobar_lb", "ha_enabled", false),
 				),
 			},
 		},

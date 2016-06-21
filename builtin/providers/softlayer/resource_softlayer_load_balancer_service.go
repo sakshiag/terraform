@@ -53,14 +53,14 @@ func resourceSoftLayerLoadBalancerServiceCreate(d *schema.ResourceData, meta int
 		return fmt.Errorf("The client is nil.")
 	}
 
-	loadBalancer, err := client.GetObject(getLbId(d.Get("service_group_id").(string)))
+	loadBalancer, err := client.GetObject(GetLbId(d.Get("service_group_id").(string)))
 
 	if err != nil {
 		return fmt.Errorf("Error retrieving load balancer: %s", err)
 	}
 
 	opts := softlayer.SoftLayer_Load_Balancer_Service_CreateOptions{
-		ServiceGroupId:  getServiceGroupId(d.Get("service_group_id").(string)),
+		ServiceGroupId:  GetServiceGroupId(d.Get("service_group_id").(string)),
 		Enabled:         1,
 		Port:            d.Get("port").(int),
 		IpAddressId:     d.Get("ip_address_id").(int),
@@ -80,7 +80,7 @@ func resourceSoftLayerLoadBalancerServiceCreate(d *schema.ResourceData, meta int
 		return fmt.Errorf("Error creating load balancer service")
 	}
 
-	loadBalancer, err = client.GetObject(getLbId(d.Get("service_group_id").(string)))
+	loadBalancer, err = client.GetObject(GetLbId(d.Get("service_group_id").(string)))
 
 	if err != nil {
 		return fmt.Errorf("Error retrieving load balancer: %s", err)
@@ -103,24 +103,56 @@ func resourceSoftLayerLoadBalancerServiceCreate(d *schema.ResourceData, meta int
 }
 
 func resourceSoftLayerLoadBalancerServiceUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*Client).loadBalancerService
+	if client == nil {
+		return fmt.Errorf("The client is nil.")
+	}
+
+	loadBalancer, err := client.GetObject(GetLbId(d.Id()))
+
+	if err != nil {
+		return fmt.Errorf("Error retrieving load balancer: %s", err)
+	}
+
+	opts := softlayer.SoftLayer_Load_Balancer_Service_CreateOptions{
+		ServiceGroupId:  GetServiceGroupId(d.Id()),
+		Enabled:         1,
+		Port:            d.Get("port").(int),
+		IpAddressId:     d.Get("ip_address_id").(int),
+		HealthCheckType: d.Get("health_check_type").(string),
+		Weight:          d.Get("weight").(int),
+	}
+
+	log.Printf("[INFO] Updating load balancer service")
+
+	success, err := client.UpdateLoadBalancerService(loadBalancer.Id, GetServiceGroupId(d.Id()), getServiceId(d.Id()), &opts)
+
+	if err != nil {
+		return fmt.Errorf("Error updating load balancer service: %s", err)
+	}
+
+	if !success {
+		return fmt.Errorf("Error updating load balancer service")
+	}
+
 	return resourceSoftLayerLoadBalancerServiceRead(d, meta)
 }
 
 func resourceSoftLayerLoadBalancerServiceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client).loadBalancerService
-	loadBalancer, err := client.GetObject(getLbId(d.Id()))
+	loadBalancer, err := client.GetObject(GetLbId(d.Id()))
 	if err != nil {
 		return fmt.Errorf("Error retrieving load balancer: %s", err)
 	}
 
 	for _, virtualServer := range loadBalancer.VirtualServers {
 		serviceGroup := virtualServer.ServiceGroups[0]
-		if serviceGroup.Id == getServiceGroupId(d.Id()) {
+		if serviceGroup.Id == GetServiceGroupId(d.Id()) {
 			for _, service := range serviceGroup.Services {
 				if service.Id == getServiceId(d.Id()) {
 					d.Set("ip_address_id", service.IpAddressId)
 					d.Set("port", service.Port)
-					d.Set("health_check_type_id", service.HealthChecks[0].HealthCheckTypeId)
+					d.Set("health_check_type", service.HealthChecks[0].HealthCheckType)
 					d.Set("weight", service.GroupReferences[0].Weight)
 				}
 			}
@@ -150,7 +182,23 @@ func resourceSoftLayerLoadBalancerServiceDelete(d *schema.ResourceData, meta int
 }
 
 func resourceSoftLayerLoadBalancerServiceExists(d *schema.ResourceData, meta interface{}) (bool, error) {
-	return true, nil
+	client := meta.(*Client).loadBalancerService
+	lb, err := client.GetObject(GetLbId(d.Id()))
+	if err != nil {
+		return false, err
+	}
+
+	for _, virtualServer := range lb.VirtualServers {
+		if virtualServer.ServiceGroups[0].Id == GetServiceGroupId(d.Id()) {
+			for _, service := range virtualServer.ServiceGroups[0].Services {
+				if service.Id == getServiceId(d.Id()) {
+					return true, nil
+				}
+			}
+		}
+	}
+
+	return false, nil
 }
 
 func getServiceId(id string) int {
