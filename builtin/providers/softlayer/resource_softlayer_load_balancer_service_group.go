@@ -103,7 +103,7 @@ func resourceSoftLayerLoadBalancerServiceGroupUpdate(d *schema.ResourceData, met
 		return fmt.Errorf("The client is nil.")
 	}
 
-	loadBalancer, err := client.GetObject(getLbId(d.Id()))
+	loadBalancer, err := client.GetObject(GetLbId(d.Id()))
 
 	if err != nil {
 		return fmt.Errorf("Error retrieving load balancer: %s", err)
@@ -118,7 +118,7 @@ func resourceSoftLayerLoadBalancerServiceGroupUpdate(d *schema.ResourceData, met
 
 	log.Printf("[INFO] Updating load balancer service group")
 
-	success, err := client.UpdateLoadBalancerVirtualServer(loadBalancer.Id, getServiceGroupId(d.Id()), &opts)
+	success, err := client.UpdateLoadBalancerVirtualServer(loadBalancer.Id, GetServiceGroupId(d.Id()), &opts)
 
 	if err != nil {
 		return fmt.Errorf("Error updating load balancer service group: %s", err)
@@ -148,8 +148,8 @@ func resourceSoftLayerLoadBalancerServiceGroupRead(d *schema.ResourceData, meta 
 			d.Set("virtual_server_id", virtualServer.Id)
 			d.Set("allocation", virtualServer.Allocation)
 			d.Set("port", virtualServer.Port)
-			d.Set("routing_method_id", serviceGroup.RoutingMethodId)
-			d.Set("routing_type_id", serviceGroup.RoutingTypeId)
+			d.Set("routing_method", serviceGroup.RoutingMethod)
+			d.Set("routing_type", serviceGroup.RoutingType)
 		}
 	}
 
@@ -176,10 +176,22 @@ func resourceSoftLayerLoadBalancerServiceGroupDelete(d *schema.ResourceData, met
 }
 
 func resourceSoftLayerLoadBalancerServiceGroupExists(d *schema.ResourceData, meta interface{}) (bool, error) {
-	return true, nil
+	client := meta.(*Client).loadBalancerService
+	lb, err := client.GetObject(GetLbId(d.Id()))
+	if err != nil {
+		return false, err
+	}
+
+	for _, virtualServer := range lb.VirtualServers {
+		if virtualServer.ServiceGroups[0].Id == GetServiceGroupId(d.Id()) {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
-func getLbId(id string) int {
+func GetLbId(id string) int {
 	lbId, err := strconv.Atoi(strings.Split(id, "|")[0])
 
 	if err != nil {
@@ -189,7 +201,7 @@ func getLbId(id string) int {
 	return lbId
 }
 
-func getServiceGroupId(id string) int {
+func GetServiceGroupId(id string) int {
 	lbId, err := strconv.Atoi(strings.Split(id, "|")[1])
 
 	if err != nil {

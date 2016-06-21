@@ -119,18 +119,18 @@ func resourceSoftLayerLoadBalancerRead(d *schema.ResourceData, meta interface{})
 	if err != nil {
 		return fmt.Errorf("Not a valid ID, must be an integer: %s", err)
 	}
-	getObjectResult, err := client.GetObject(id)
+	lb, err := client.GetObject(id)
 	if err != nil {
 		return fmt.Errorf("Error retrieving load balancer: %s", err)
 	}
 
-	d.SetId(strconv.Itoa(getObjectResult.Id))
-	d.Set("connections", getConnectionLimit(getObjectResult.ConnectionLimit))
-	d.Set("location", getObjectResult.SoftlayerHardware[0].Datacenter.Name)
-	d.Set("ip_address", getObjectResult.IpAddress.IpAddress)
-	d.Set("subnet_id", getObjectResult.IpAddress.SubnetId)
-	d.Set("ha_enabled", getObjectResult.HaEnabled)
-	d.Set("security_certificate_id", getObjectResult.SecurityCertificateId)
+	d.SetId(strconv.Itoa(lb.Id))
+	d.Set("connections", getConnectionLimit(lb.ConnectionLimit))
+	d.Set("location", lb.SoftlayerHardware[0].Datacenter.Name)
+	d.Set("ip_address", lb.IpAddress.IpAddress)
+	d.Set("subnet_id", lb.IpAddress.SubnetId)
+	d.Set("ha_enabled", lb.HaEnabled)
+	d.Set("security_certificate_id", lb.SecurityCertificateId)
 
 	return nil
 }
@@ -152,7 +152,19 @@ func resourceSoftLayerLoadBalancerDelete(d *schema.ResourceData, meta interface{
 }
 
 func resourceSoftLayerLoadBalancerExists(d *schema.ResourceData, meta interface{}) (bool, error) {
-	return true, nil
+	client := meta.(*Client).loadBalancerService
+	id, err := strconv.Atoi(d.Id())
+	if err != nil {
+		return false, err
+	}
+
+	lb, err := client.GetObject(id)
+
+	if err != nil {
+		return false, err
+	}
+
+	return lb.Id == id, nil
 }
 
 /* When requesting 15000 SL creates between 15000 and 150000. When requesting 150000 SL creates >= 150000 */
