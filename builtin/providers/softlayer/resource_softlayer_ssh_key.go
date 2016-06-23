@@ -61,7 +61,7 @@ func resourceSoftLayerSSHKeyCreate(d *schema.ResourceData, meta interface{}) err
 	if notes, ok := d.GetOk("notes"); ok {
 		opts.Notes = notes.(string)
 	}
-	
+
 	res, err := client.CreateObject(opts)
 	if err != nil {
 		return fmt.Errorf("Error creating SSH Key: %s", err)
