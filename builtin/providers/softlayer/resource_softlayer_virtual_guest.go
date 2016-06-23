@@ -21,7 +21,6 @@ func resourceSoftLayerVirtualGuest() *schema.Resource {
 		Update: resourceSoftLayerVirtualGuestUpdate,
 		Delete: resourceSoftLayerVirtualGuestDelete,
 		Exists: resourceSoftLayerVirtualGuestExists,
-
 		Schema: map[string]*schema.Schema{
 			"name": &schema.Schema{
 				Type:     schema.TypeString,
@@ -240,7 +239,7 @@ func resourceSoftLayerVirtualGuestCreate(d *schema.ResourceData, meta interface{
 			return fmt.Errorf("Not a valid frontend ID, must be an integer: %s", err)
 		}
 		opts.PrimaryNetworkComponent = &datatypes.PrimaryNetworkComponent{
-			NetworkVlan: datatypes.NetworkVlan{int(frontendVlanId)},
+			NetworkVlan: datatypes.NetworkVlan{Id: frontendVlanId},
 		}
 	}
 
@@ -251,7 +250,7 @@ func resourceSoftLayerVirtualGuestCreate(d *schema.ResourceData, meta interface{
 			return fmt.Errorf("Not a valid backend ID, must be an integer: %s", err)
 		}
 		opts.PrimaryBackendNetworkComponent = &datatypes.PrimaryBackendNetworkComponent{
-			NetworkVlan: datatypes.NetworkVlan{int(backendVlanId)},
+			NetworkVlan: datatypes.NetworkVlan{Id: backendVlanId},
 		}
 	}
 
@@ -347,7 +346,6 @@ func resourceSoftLayerVirtualGuestRead(d *schema.ResourceData, meta interface{})
 			d.Set("user_data", string(data))
 		}
 	}
-
 	return nil
 }
 
@@ -374,12 +372,10 @@ func resourceSoftLayerVirtualGuestUpdate(d *schema.ResourceData, meta interface{
 			return fmt.Errorf("Couldn't update virtual guest: %s", err)
 		}
 	}
-
 	// Set user data if provided and not empty
 	if d.HasChange("user_data") {
 		client.SetMetadata(id, d.Get("user_data").(string))
 	}
-
 	// Upgrade "cpu", "ram" and "nic_speed" if provided and changed
 	upgradeOptions := softlayer.UpgradeOptions{}
 	if d.HasChange("cpu") {
@@ -445,7 +441,7 @@ func WaitForUpgradeTransactionsToAppear(d *schema.ResourceData, meta interface{}
 
 	stateConf := &resource.StateChangeConf{
 		Pending: []string{"pending_upgrade"},
-		Target:  "upgrade_started",
+		Target:  []string{"upgrade_started"},
 		Refresh: func() (interface{}, string, error) {
 			client := meta.(*Client).virtualGuestService
 			transactions, err := client.GetActiveTransactions(id)
@@ -472,7 +468,7 @@ func WaitForPublicIpAvailable(d *schema.ResourceData, meta interface{}) (interfa
 
 	stateConf := &resource.StateChangeConf{
 		Pending: []string{"", "unavailable"},
-		Target:  "available",
+		Target:  []string{"available"},
 		Refresh: func() (interface{}, string, error) {
 			fmt.Println("Refreshing server state...")
 			client := meta.(*Client).virtualGuestService
@@ -507,7 +503,7 @@ func WaitForNoActiveTransactions(d *schema.ResourceData, meta interface{}) (inte
 
 	stateConf := &resource.StateChangeConf{
 		Pending: []string{"", "active"},
-		Target:  "idle",
+		Target:  []string{"idle"},
 		Refresh: func() (interface{}, string, error) {
 			client := meta.(*Client).virtualGuestService
 			transactions, err := client.GetActiveTransactions(id)
