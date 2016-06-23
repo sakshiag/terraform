@@ -30,6 +30,7 @@ func Provider() terraform.ResourceProvider {
 			"softlayer_network_application_delivery_controller": resourceSoftLayerNetworkApplicationDeliveryController(),
 			"softlayer_network_loadbalancer_virtualipaddress":   resourceSoftLayerNetworkLoadBalancerVirtualIpAddress(),
 			"softlayer_network_loadbalancer_service":            resourceSoftLayerNetworkLoadBalancerService(),
+			"softlayer_scale_group":                             resourceSoftLayerScaleGroup(),
 		},
 
 		ConfigureFunc: providerConfigure,

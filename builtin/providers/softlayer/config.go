@@ -19,6 +19,7 @@ type Client struct {
 	dnsDomainResourceRecordService              softlayer.SoftLayer_Dns_Domain_ResourceRecord_Service
 	dnsDomainService                            softlayer.SoftLayer_Dns_Domain_Service
 	networkApplicationDeliveryControllerService softlayer.SoftLayer_Network_Application_Delivery_Controller_Service
+	scaleGroupService                           softlayer.SoftLayer_Scale_Group_Service
 }
 
 func (c *Config) Client() (*Client, error) {
@@ -53,12 +54,19 @@ func (c *Config) Client() (*Client, error) {
 		return nil, err
 	}
 
+	scaleGroupService, err := slc.GetSoftLayer_Scale_Group_Service()
+
+	if err != nil {
+		return nil, err
+	}
+
 	client := &Client{
 		virtualGuestService:                         virtualGuestService,
 		sshKeyService:                               sshKeyService,
 		dnsDomainService:                            dnsDomainService,
 		dnsDomainResourceRecordService:              dnsDomainResourceRecordService,
 		networkApplicationDeliveryControllerService: networkApplicationDeliveryControllerService,
+		scaleGroupService:                           scaleGroupService,
 	}
 
 	log.Println("[INFO] Created SoftLayer client")
