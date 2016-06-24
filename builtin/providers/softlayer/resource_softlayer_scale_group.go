@@ -124,8 +124,6 @@ func resourceSoftLayerScaleGroupCreate(d *schema.ResourceData, meta interface{})
 	// Create an empty ResourceData instance for a SoftLayer_Virtual_Guest resource
 	vGuestResourceData := resourceSoftLayerVirtualGuest().Data(nil)
 
-	virtualGuestTemplateOpts, _ := GetVirtualGuestTemplateFromResourceData(vGuestResourceData)
-
 	// For each item in the map, call Set on the ResourceData.  This handles
 	// validation and yields a completed ResourceData object
 	for k, v := range vGuestMap {
@@ -135,6 +133,9 @@ func resourceSoftLayerScaleGroupCreate(d *schema.ResourceData, meta interface{})
 			return fmt.Errorf("Error while parsing virtual_guest_member_template values: %s", err)
 		}
 	}
+
+	// Get the virtual guest creation template from the completed resource data object
+	virtualGuestTemplateOpts, _ := GetVirtualGuestTemplateFromResourceData(vGuestResourceData)
 
 	// Build up our creation options
 	opts := datatypes.SoftLayer_Scale_Group{
