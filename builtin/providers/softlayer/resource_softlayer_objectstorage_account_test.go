@@ -52,7 +52,7 @@ func testAccCheckSoftLayerObjectStorageAccountExists(n string, accountName *stri
 func testAccCheckSoftLayerObjectStorageAccountAttributes(accountName *string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 
-		if accountName == "" {
+		if *accountName == "" {
 			return fmt.Errorf("No object storage account name")
 		}
 
