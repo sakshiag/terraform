@@ -5,29 +5,29 @@ import (
 	"testing"
 )
 
-func TestAccSoftLayerLoadBalancerService_Basic(t *testing.T) {
+func TestAccSoftLayerLoadBalancerLocalService_Basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccCheckSoftLayerLoadBalancerServiceConfig_basic,
+				Config: testAccCheckSoftLayerLoadBalancerLocalServiceConfig_basic,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(
-						"softlayer_load_balancer_service.test_service", "port", "80"),
+						"softlayer_lb_local_service.test_service", "port", "80"),
 					resource.TestCheckResourceAttr(
-						"softlayer_load_balancer_service.test_service", "enabled", "true"),
+						"softlayer_lb_local_service.test_service", "enabled", "true"),
 					resource.TestCheckResourceAttr(
-						"softlayer_load_balancer_service.test_service", "weight", "1"),
+						"softlayer_lb_local_service.test_service", "weight", "1"),
 					resource.TestCheckResourceAttr(
-						"softlayer_load_balancer_service.test_service", "health_check_type", "DNS"),
+						"softlayer_lb_local_service.test_service", "health_check_type", "DNS"),
 				),
 			},
 		},
 	})
 }
 
-const testAccCheckSoftLayerLoadBalancerServiceConfig_basic = `
+const testAccCheckSoftLayerLoadBalancerLocalServiceConfig_basic = `
 resource "softlayer_virtual_guest" "test_server_1" {
     name = "terraform-test"
     domain = "bar.example.com"
@@ -44,24 +44,24 @@ resource "softlayer_virtual_guest" "test_server_1" {
     local_disk = false
 }
 
-resource "softlayer_load_balancer" "testacc_foobar_lb" {
+resource "softlayer_lb_local" "testacc_foobar_lb" {
     connections = 15000
     location    = "tok02"
     ha_enabled  = false
 }
 
-resource "softlayer_load_balancer_service_group" "test_service_group" {
+resource "softlayer_lb_local_service_group" "test_service_group" {
     port = 82
     routing_method = "CONSISTENT_HASH_IP"
     routing_type = "HTTP"
-    load_balancer_id = "${softlayer_load_balancer.testacc_foobar_lb.id}"
+    load_balancer_id = "${softlayer_lb_local.testacc_foobar_lb.id}"
     allocation = 100
 }
 
-resource "softlayer_load_balancer_service" "test_service" {
+resource "softlayer_lb_local_service" "test_service" {
     port = 80
     enabled = true
-    service_group_id = "${softlayer_load_balancer_service_group.test_service_group.id}"
+    service_group_id = "${softlayer_lb_local_service_group.test_service_group.id}"
     weight = 1
     health_check_type = "DNS"
     ip_address_id = "${softlayer_virtual_guest.test_server_1.ip_address_id}"
