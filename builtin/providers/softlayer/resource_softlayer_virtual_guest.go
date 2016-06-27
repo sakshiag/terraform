@@ -189,12 +189,7 @@ func getBlockDevices(d *schema.ResourceData) []datatypes.BlockDevice {
 	}
 }
 
-func resourceSoftLayerVirtualGuestCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*Client).virtualGuestService
-	if client == nil {
-		return fmt.Errorf("The client was nil.")
-	}
-
+func GetVirtualGuestTemplateFromResourceData(d *schema.ResourceData) (datatypes.SoftLayer_Virtual_Guest_Template, error) {
 	dc := datatypes.Datacenter{
 		Name: d.Get("region").(string),
 	}
@@ -203,12 +198,11 @@ func resourceSoftLayerVirtualGuestCreate(d *schema.ResourceData, meta interface{
 		MaxSpeed: d.Get("public_network_speed").(int),
 	}
 
-	privateNetworkOnly := d.Get("private_network_only").(bool)
 	opts := datatypes.SoftLayer_Virtual_Guest_Template{
 		Hostname:               d.Get("name").(string),
 		Domain:                 d.Get("domain").(string),
 		HourlyBillingFlag:      d.Get("hourly_billing").(bool),
-		PrivateNetworkOnlyFlag: privateNetworkOnly,
+		PrivateNetworkOnlyFlag: d.Get("private_network_only").(bool),
 		Datacenter:             dc,
 		StartCpus:              d.Get("cpu").(int),
 		MaxMemory:              d.Get("ram").(int),
@@ -236,7 +230,7 @@ func resourceSoftLayerVirtualGuestCreate(d *schema.ResourceData, meta interface{
 	if param, ok := d.GetOk("frontend_vlan_id"); ok {
 		frontendVlanId, err := strconv.Atoi(param.(string))
 		if err != nil {
-			return fmt.Errorf("Not a valid frontend ID, must be an integer: %s", err)
+			return opts, fmt.Errorf("Not a valid frontend ID, must be an integer: %s", err)
 		}
 		opts.PrimaryNetworkComponent = &datatypes.PrimaryNetworkComponent{
 			NetworkVlan: datatypes.NetworkVlan{Id: (frontendVlanId)},
@@ -247,7 +241,7 @@ func resourceSoftLayerVirtualGuestCreate(d *schema.ResourceData, meta interface{
 	if param, ok := d.GetOk("backend_vlan_id"); ok {
 		backendVlanId, err := strconv.Atoi(param.(string))
 		if err != nil {
-			return fmt.Errorf("Not a valid backend ID, must be an integer: %s", err)
+			return opts, fmt.Errorf("Not a valid backend ID, must be an integer: %s", err)
 		}
 		opts.PrimaryBackendNetworkComponent = &datatypes.PrimaryBackendNetworkComponent{
 			NetworkVlan: datatypes.NetworkVlan{Id: (backendVlanId)},
@@ -276,6 +270,21 @@ func resourceSoftLayerVirtualGuestCreate(d *schema.ResourceData, meta interface{
 		}
 	}
 
+	return opts, nil
+}
+
+func resourceSoftLayerVirtualGuestCreate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*Client).virtualGuestService
+	if client == nil {
+		return fmt.Errorf("The client was nil.")
+	}
+
+	opts, err := GetVirtualGuestTemplateFromResourceData(d)
+
+	if err != nil {
+		return err
+	}
+
 	log.Printf("[INFO] Creating virtual machine")
 
 	guest, err := client.CreateObject(opts)
@@ -296,6 +305,7 @@ func resourceSoftLayerVirtualGuestCreate(d *schema.ResourceData, meta interface{
 			"Error waiting for virtual machine (%s) to become ready: %s", d.Id(), err)
 	}
 
+	privateNetworkOnly := d.Get("private_network_only").(bool)
 	if !privateNetworkOnly {
 		_, err = WaitForPublicIpAvailable(d, meta)
 		if err != nil {
@@ -309,6 +319,7 @@ func resourceSoftLayerVirtualGuestCreate(d *schema.ResourceData, meta interface{
 
 func resourceSoftLayerVirtualGuestRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client).virtualGuestService
+
 	id, err := strconv.Atoi(d.Id())
 	if err != nil {
 		return fmt.Errorf("Not a valid ID, must be an integer: %s", err)
@@ -346,11 +357,13 @@ func resourceSoftLayerVirtualGuestRead(d *schema.ResourceData, meta interface{})
 			d.Set("user_data", string(data))
 		}
 	}
+
 	return nil
 }
 
 func resourceSoftLayerVirtualGuestUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client).virtualGuestService
+
 	id, err := strconv.Atoi(d.Id())
 	if err != nil {
 		return fmt.Errorf("Not a valid ID, must be an integer: %s", err)
@@ -406,26 +419,28 @@ func resourceSoftLayerVirtualGuestUpdate(d *schema.ResourceData, meta interface{
 	}
 
 	return err
+
 }
 
 func resourceSoftLayerVirtualGuestDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*Client).virtualGuestService
-	id, err := strconv.Atoi(d.Id())
-	if err != nil {
-		return fmt.Errorf("Not a valid ID, must be an integer: %s", err)
-	}
+		client := meta.(*Client).virtualGuestService
 
-	_, err = WaitForNoActiveTransactions(d, meta)
+		id, err := strconv.Atoi(d.Id())
+		if err != nil {
+			return fmt.Errorf("Not a valid ID, must be an integer: %s", err)
+		}
 
-	if err != nil {
-		return fmt.Errorf("Error deleting virtual guest, couldn't wait for zero active transactions: %s", err)
-	}
+		_, err = WaitForNoActiveTransactions(d, meta)
 
-	_, err = client.DeleteObject(id)
+		if err != nil {
+			return fmt.Errorf("Error deleting virtual guest, couldn't wait for zero active transactions: %s", err)
+		}
 
-	if err != nil {
-		return fmt.Errorf("Error deleting virtual guest: %s", err)
-	}
+		_, err = client.DeleteObject(id)
+
+		if err != nil {
+			return fmt.Errorf("Error deleting virtual guest: %s", err)
+		}
 
 	return nil
 }
