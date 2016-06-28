@@ -64,13 +64,15 @@ func resourceSoftLayerScaleGroup() *schema.Resource {
 			},
 
 			"health_check": &schema.Schema{
-				Type:     schema.TypeMap,
-				Required: true,
+				Type: schema.TypeMap,
+				// TODO Make this required once the softlayer-go datatype is available
+				// Until then, use health_check_id
+				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"type": &schema.Schema{
 							Type:     schema.TypeString,
-							Required: true,
+							Required: false,
 						},
 
 						// Conditionally-required fields, based on value of "type"
@@ -82,12 +84,12 @@ func resourceSoftLayerScaleGroup() *schema.Resource {
 
 						"custom_request": &schema.Schema{
 							Type:     schema.TypeString,
-							Required: true,
+							Optional: true,
 						},
 
 						"custom_response": &schema.Schema{
 							Type:     schema.TypeString,
-							Required: true,
+							Optional: true,
 						},
 					},
 				},
@@ -153,6 +155,57 @@ func resourceSoftLayerScaleGroupCreate(d *schema.ResourceData, meta interface{})
 
 	opts.TerminationPolicy = &datatypes.SoftLayer_Scale_Termination_Policy{
 		KeyName: d.Get("termination_policy").(string),
+	}
+
+	healthCheck := d.Get("health_check").(map[string]interface{})
+	healthCheckOpts := datatypes.SoftLayer_Health_Check{
+		Name: healthCheck["type"].(string),
+	}
+
+	if healthCheckOpts.Name == "HTTP-CUSTOM" {
+		// Validate and apply type-specific fields
+		healthCheckMethod, ok := healthCheck["custom_method"]
+		if !ok {
+			return fmt.Errorf("\"custom_method\" is required when HTTP-CUSTOM healthcheck is specified")
+		}
+
+		healthCheckRequest, ok := healthCheck["custom_request"]
+		if !ok {
+			return fmt.Errorf("\"custom_request\" is required when HTTP-CUSTOM healthcheck is specified")
+		}
+
+		healthCheckResponse, ok := healthCheck["custom_response"]
+		if !ok {
+			return fmt.Errorf("\"custom_response\" is required when HTTP-CUSTOM healthcheck is specified")
+		}
+
+		healthCheckOpts.Attributes = make([]datatypes.SoftLayer_Health_Check_Attribute, 3)
+		healthCheckOpts.Attributes[0] = datatypes.SoftLayer_Health_Check_Attribute{
+			Type: &datatypes.SoftLayer_Health_Check_Attribute_Type{
+				Keyname: "HTTP_CUSTOM_TYPE",
+			},
+			Value: healthCheckMethod.(string),
+		}
+		healthCheckOpts.Attributes[1] = datatypes.SoftLayer_Health_Check_Attribute{
+			Type: &datatypes.SoftLayer_Health_Check_Attribute_Type{
+				Keyname: "LOCATION",
+			},
+			Value: healthCheckRequest.(string),
+		}
+		healthCheckOpts.Attributes[2] = datatypes.SoftLayer_Health_Check_Attribute{
+			Type: &datatypes.SoftLayer_Health_Check_Attribute_Type{
+				Keyname: "EXPECTED_RESPONSE",
+			},
+			Value: healthCheckResponse.(string),
+		}
+
+	}
+
+	opts.LoadBalancers = make([]datatypes.SoftLayer_Scale_LoadBalancer, 1)
+	opts.LoadBalancers[0] = datatypes.SoftLayer_Scale_LoadBalancer{
+		HealthCheck:     &healthCheckOpts,
+		Port:            d.Get("port").(int),
+		VirtualServerId: d.Get("virtual_server_id").(int),
 	}
 
 	res, err := client.CreateObject(opts)
