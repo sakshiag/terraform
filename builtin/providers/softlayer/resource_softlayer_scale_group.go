@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 	"log"
 	"strconv"
+	"strings"
 )
 
 func resourceSoftLayerScaleGroup() *schema.Resource {
@@ -159,10 +160,12 @@ func resourceSoftLayerScaleGroupCreate(d *schema.ResourceData, meta interface{})
 
 	healthCheck := d.Get("health_check").(map[string]interface{})
 	healthCheckOpts := datatypes.SoftLayer_Health_Check{
-		Name: healthCheck["type"].(string),
+		Type: datatypes.SoftLayer_Health_Check_Type{
+			KeyName: healthCheck["type"].(string),
+		},
 	}
 
-	if healthCheckOpts.Name == "HTTP-CUSTOM" {
+	if healthCheckOpts.Type.KeyName == "HTTP-CUSTOM" {
 		// Validate and apply type-specific fields
 		healthCheckMethod, ok := healthCheck["custom_method"]
 		if !ok {
@@ -220,7 +223,54 @@ func resourceSoftLayerScaleGroupCreate(d *schema.ResourceData, meta interface{})
 }
 
 func resourceSoftLayerScaleGroupRead(d *schema.ResourceData, meta interface{}) error {
-	//client := meta.(*Client).scaleGroupService
+	client := meta.(*Client).scaleGroupService
+
+	groupId, _ := strconv.Atoi(d.Id())
+
+	slGroupObj, err := client.GetObject(groupId)
+	if err != nil {
+		// If the scale group is somehow already destroyed, mark as
+		// successfully gone
+		if strings.Contains(err.Error(), "404 Not Found") {
+			d.SetId("")
+			return nil
+		}
+
+		return fmt.Errorf("Error retrieving SoftLayer Scale Group: %s", err)
+	}
+
+	d.Set("id", slGroupObj.Id)
+	d.Set("name", slGroupObj.Name)
+	d.Set("regional_group", slGroupObj.RegionalGroup.Name)
+	d.Set("minimum_member_count", slGroupObj.MinimumMemberCount)
+	d.Set("maximum_member_count", slGroupObj.MaximumMemberCount)
+	d.Set("cooldown", slGroupObj.Cooldown)
+	d.Set("termination_policy", slGroupObj.TerminationPolicy.KeyName)
+	d.Set("virtual_server_id", slGroupObj.LoadBalancers[0].VirtualServerId)
+	d.Set("port", slGroupObj.LoadBalancers[0].Port)
+
+	healthCheckObj := slGroupObj.LoadBalancers[0].HealthCheck
+	currentHealthCheck := d.Get("health_check").(map[string]interface{})
+
+	currentHealthCheck["type"] = healthCheckObj.Type.KeyName
+
+	if healthCheckObj.Type.KeyName == "HTTP-CUSTOM" {
+		for _, elem := range healthCheckObj.Attributes {
+			switch elem.Type.Keyname {
+			case "HTTP_CUSTOM_TYPE":
+				currentHealthCheck["custom_method"] = elem.Value
+			case "LOCATION":
+				currentHealthCheck["custom_request"] = elem.Value
+			case "EXPECTED_RESPONSE":
+				currentHealthCheck["custom_response"] = elem.Value
+			}
+		}
+	}
+
+	d.Set("health_check", currentHealthCheck)
+
+	log.Printf("******** healthCheckObj: %#v", healthCheckObj)
+	log.Printf("******** currentHealthCheck: %#v", currentHealthCheck)
 
 	return nil
 }
@@ -246,12 +296,22 @@ func resourceSoftLayerScaleGroupDelete(d *schema.ResourceData, meta interface{})
 	}
 
 	d.SetId("")
-	
+
 	return nil
 }
 
 func resourceSoftLayerScaleGroupExists(d *schema.ResourceData, meta interface{}) (bool, error) {
-	//client := meta.(*Client).scaleGroupService
+	client := meta.(*Client).scaleGroupService
 
-	return true, nil
+	if client == nil {
+		return false, fmt.Errorf("The client was nil.")
+	}
+
+	groupId, err := strconv.Atoi(d.Id())
+	if err != nil {
+		return false, fmt.Errorf("Not a valid ID, must be an integer: %s", err)
+	}
+
+	result, err := client.GetObject(groupId)
+	return result.Id == groupId && err == nil, nil
 }
