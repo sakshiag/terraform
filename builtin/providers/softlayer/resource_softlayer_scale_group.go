@@ -66,9 +66,7 @@ func resourceSoftLayerScaleGroup() *schema.Resource {
 
 			"health_check": &schema.Schema{
 				Type: schema.TypeMap,
-				// TODO Make this required once the softlayer-go datatype is available
-				// Until then, use health_check_id
-				Optional: true,
+				Required: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"type": &schema.Schema{
