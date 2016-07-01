@@ -20,6 +20,7 @@ type Client struct {
 	dnsDomainService                            softlayer.SoftLayer_Dns_Domain_Service
 	networkApplicationDeliveryControllerService softlayer.SoftLayer_Network_Application_Delivery_Controller_Service
 	scalePolicyService                          softlayer.SoftLayer_Scale_Policy_Service
+	scalePolicyTriggerService                   softlayer.SoftLayer_Scale_Policy_Trigger_Service
 	scaleGroupService                           softlayer.SoftLayer_Scale_Group_Service
 }
 
@@ -61,6 +62,12 @@ func (c *Config) Client() (*Client, error) {
 		return nil, err
 	}
 
+	scalePolicyTriggerService, err := slc.GetSoftLayer_Scale_Policy_Trigger_Service()
+
+	if err != nil {
+		return nil, err
+	}
+
 	scaleGroupService, err := slc.GetSoftLayer_Scale_Group_Service()
 
 	if err != nil {
@@ -74,6 +81,7 @@ func (c *Config) Client() (*Client, error) {
 		dnsDomainResourceRecordService:              dnsDomainResourceRecordService,
 		networkApplicationDeliveryControllerService: networkApplicationDeliveryControllerService,
 		scalePolicyService:                          scalePolicyService,
+		scalePolicyTriggerService:                   scalePolicyTriggerService,
 		scaleGroupService:                           scaleGroupService,
 	}
 
