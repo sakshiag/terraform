@@ -65,7 +65,7 @@ func resourceSoftLayerScaleGroup() *schema.Resource {
 			},
 
 			"health_check": &schema.Schema{
-				Type: schema.TypeMap,
+				Type:     schema.TypeMap,
 				Required: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -132,7 +132,7 @@ func buildHealthCheckFromResourceData(d map[string]interface{}) (datatypes.SoftL
 		},
 	}
 
-	if healthCheckOpts.Type.KeyName == "HTTP-CUSTOM" {
+	if healthCheckOpts.Type.KeyName == datatypes.HEALTH_CHECK_TYPE_HTTP_CUSTOM {
 		// Validate and apply type-specific fields
 		healthCheckMethod, ok := d["custom_method"]
 		if !ok {
