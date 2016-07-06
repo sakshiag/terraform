@@ -106,8 +106,19 @@ func resourceSoftLayerScaleGroup() *schema.Resource {
 			"network_vlans": &schema.Schema{
 				Type:     schema.TypeSet,
 				Optional: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-				Set:      schema.HashString,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"vlan_number": &schema.Schema{
+							Type:     schema.TypeString,
+							Required: true,
+						},
+
+						"primary_router_hostname": &schema.Schema{
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
 			},
 		},
 	}
@@ -164,6 +175,55 @@ func buildHealthCheckFromResourceData(d map[string]interface{}) (datatypes.SoftL
 	return healthCheckOpts, nil
 }
 
+// Helper method to parse network vlan information in the resource schema format to the SoftLayer datatypes
+func buildScaleVlansFromResourceData(d *schema.Set, meta interface{}) ([]datatypes.SoftLayer_Scale_Network_Vlan, error) {
+	client := meta.(*Client).accountService
+
+	scaleNetworkVlans := make([]datatypes.SoftLayer_Scale_Network_Vlan, 0, d.Len())
+
+	for _, elem := range d.List() {
+		elem := elem.(map[string]interface{})
+
+		vlanNumber, err := strconv.Atoi(elem["vlan_number"].(string))
+		if err != nil {
+			return nil, fmt.Errorf("Vlan number must be an integer: %s", elem["vlan_number"])
+		}
+
+		primaryRouterHostname := elem["primary_router_hostname"].(string)
+
+		mask := []string{
+			"id",
+		}
+
+		filter := fmt.Sprintf(
+			"{\"networkVlans\":{\"primaryRouter\":{\"hostname\":{\"operation\":\"%s\"}},"+
+				"\"vlanNumber\":{\"operation\":%d}}}",
+			primaryRouterHostname,
+			vlanNumber)
+
+		networkVlan, err := client.GetNetworkVlans(mask, filter)
+
+		if err != nil {
+			return nil, fmt.Errorf("Error looking up Vlan: %s", err)
+		}
+
+		if len(networkVlan) < 1 {
+			return nil, fmt.Errorf(
+				"Unable to locate a vlan matching the provided router hostname and vlan number: %s/%s",
+				primaryRouterHostname,
+				vlanNumber)
+		}
+
+		scaleNetworkVlans = append(
+			scaleNetworkVlans,
+			datatypes.SoftLayer_Scale_Network_Vlan{
+				NetworkVlanId: networkVlan[0].Id,
+			})
+	}
+
+	return scaleNetworkVlans, nil
+}
+
 func resourceSoftLayerScaleGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client).scaleGroupService
 
@@ -189,6 +249,11 @@ func resourceSoftLayerScaleGroupCreate(d *schema.ResourceData, meta interface{})
 	// Get the virtual guest creation template from the completed resource data object
 	virtualGuestTemplateOpts, _ := GetVirtualGuestTemplateFromResourceData(vGuestResourceData)
 
+	scaleNetworkVlans, err := buildScaleVlansFromResourceData(d.Get("network_vlans").(*schema.Set), meta)
+	if err != nil {
+		return fmt.Errorf("Error while parsing network vlan values: %s", err)
+	}
+
 	// Build up our creation options
 	opts := datatypes.SoftLayer_Scale_Group{
 		Name:                       d.Get("name").(string),
@@ -197,6 +262,7 @@ func resourceSoftLayerScaleGroupCreate(d *schema.ResourceData, meta interface{})
 		MaximumMemberCount:         d.Get("maximum_member_count").(int),
 		SuspendedFlag:              false,
 		VirtualGuestMemberTemplate: virtualGuestTemplateOpts,
+		NetworkVlans:               scaleNetworkVlans,
 	}
 
 	opts.RegionalGroup = &datatypes.SoftLayer_Location_Group_Regional{
