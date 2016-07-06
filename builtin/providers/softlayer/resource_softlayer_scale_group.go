@@ -1,8 +1,10 @@
 package softlayer
 
 import (
+	"bytes"
 	"fmt"
 	datatypes "github.com/TheWeatherCompany/softlayer-go/data_types"
+	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/schema"
 	"log"
 	"strconv"
@@ -92,6 +94,7 @@ func resourceSoftLayerScaleGroup() *schema.Resource {
 						},
 					},
 				},
+				Set: resourceSoftLayerScaleGroupNetworkVlanHash,
 			},
 
 			// This has to be a TypeList, because TypeMap does not handle non-primitive
@@ -322,6 +325,7 @@ func resourceSoftLayerScaleGroupRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("virtual_server_id", slGroupObj.LoadBalancers[0].VirtualServerId)
 	d.Set("port", slGroupObj.LoadBalancers[0].Port)
 
+	// Health Check
 	healthCheckObj := slGroupObj.LoadBalancers[0].HealthCheck
 	currentHealthCheck := d.Get("health_check").(map[string]interface{})
 
@@ -342,8 +346,18 @@ func resourceSoftLayerScaleGroupRead(d *schema.ResourceData, meta interface{}) e
 
 	d.Set("health_check", currentHealthCheck)
 
-	log.Printf("******** healthCheckObj: %#v", healthCheckObj)
-	log.Printf("******** currentHealthCheck: %#v", currentHealthCheck)
+	// Network Vlans
+	networkVlans := &schema.Set{F: resourceSoftLayerScaleGroupNetworkVlanHash}
+
+	for _, elem := range slGroupObj.NetworkVlans {
+		vlan := make(map[string]interface{})
+
+		vlan["vlan_number"] = strconv.Itoa(elem.NetworkVlan.VlanNumber)
+		vlan["primary_router_hostname"] = elem.NetworkVlan.PrimaryRouter.Hostname
+
+		networkVlans.Add(vlan)
+	}
+	d.Set("network_vlans", networkVlans)
 
 	return nil
 }
@@ -419,4 +433,12 @@ func resourceSoftLayerScaleGroupExists(d *schema.ResourceData, meta interface{})
 
 	result, err := client.GetObject(groupId)
 	return result.Id == groupId && err == nil, nil
+}
+
+func resourceSoftLayerScaleGroupNetworkVlanHash(v interface{}) int {
+	var buf bytes.Buffer
+	vlan := v.(map[string]interface{})
+	buf.WriteString(fmt.Sprintf("%s-", vlan["vlan_number"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", vlan["primary_router_hostname"].(string)))
+	return hashcode.String(buf.String())
 }
