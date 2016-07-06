@@ -8,6 +8,8 @@ import (
 	datatypes "github.com/TheWeatherCompany/softlayer-go/data_types"
 	"github.com/hashicorp/terraform/helper/schema"
 	"time"
+	"bytes"
+	"github.com/hashicorp/terraform/helper/hashcode"
 )
 
 func resourceSoftLayerScalePolicy() *schema.Resource {
@@ -45,19 +47,22 @@ func resourceSoftLayerScalePolicy() *schema.Resource {
 				ForceNew: true,
 			},
 			"triggers": &schema.Schema{
-				Type:     schema.TypeList,
+				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"id": &schema.Schema{
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
 						"type": &schema.Schema{
 							Type:     schema.TypeString,
 							Required: true,
-							ForceNew: true,
 						},
 
 						// Conditionally-required fields, based on value of "type"
 						"watches": &schema.Schema{
-							Type:     schema.TypeList,
+							Type:     schema.TypeSet,
 							Optional: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
@@ -83,6 +88,7 @@ func resourceSoftLayerScalePolicy() *schema.Resource {
 									},
 								},
 							},
+							Set : resourceSoftLayerScalePolicyHandlerHash,
 						},
 
 						"date": &schema.Schema{
@@ -94,8 +100,10 @@ func resourceSoftLayerScalePolicy() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
+
 					},
 				},
+				Set : resourceSoftLayerScalePolicyTriggerHash,
 			},
 
 		},
@@ -119,10 +127,10 @@ func resourceSoftLayerScalePolicyCreate(d *schema.ResourceData, meta interface{}
 	},
 	}
 
-	if triggers, ok := d.GetOk("triggers"); ok {
-		opts.OneTimeTriggers = prepareOneTimeTriggers(triggers.([]interface{}))
-		opts.RepeatingTriggers = prepareRepeatingTriggers(triggers.([]interface{}))
-		opts.ResourceUseTriggers = prepareResourceUseTriggers(triggers.([]interface{}))
+	if _, ok := d.GetOk("triggers"); ok {
+		opts.OneTimeTriggers = prepareOneTimeTriggers(d)
+		opts.RepeatingTriggers = prepareRepeatingTriggers(d)
+		opts.ResourceUseTriggers = prepareResourceUseTriggers(d)
 	}
 
 	res, err := client.CreateObject(opts)
@@ -148,75 +156,65 @@ func resourceSoftLayerScalePolicyRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("name", scalePolicy.Name)
 	d.Set("cooldown", scalePolicy.Cooldown)
 	d.Set("scaleGroupId", scalePolicy.ScaleGroupId)
-	d.Set("oneTimeTriggers", readOneTimeTriggers(scalePolicy.OneTimeTriggers))
-	d.Set("repeatingTriggers", readRepeatingTriggers(scalePolicy.RepeatingTriggers))
-	d.Set("resourceUseTriggers", readResourceUseTriggers(scalePolicy.ResourceUseTriggers))
+	triggers := make([]map[string]interface{}, 0)
+	triggers = append(triggers, readOneTimeTriggers(scalePolicy.OneTimeTriggers)...)
+	triggers = append(triggers, readRepeatingTriggers(scalePolicy.RepeatingTriggers)...)
+	triggers = append(triggers, readResourceUseTriggers(scalePolicy.ResourceUseTriggers)...)
+
+	d.Set("triggers", triggers)
 
 	return nil
 }
 
 func resourceSoftLayerScalePolicyUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client).scalePolicyService
+	triggerClient := meta.(*Client).scalePolicyTriggerService
 
-	scalePolicyId := d.Get("id").(int)
-	result, err := client.GetObject(scalePolicyId)
+	scalePolicyId, _ := strconv.Atoi(d.Id())
+
+	scalePolicy, err := client.GetObject(scalePolicyId)
 	if err != nil {
-		return fmt.Errorf("Error retrieving scale policy: %s", err)
+		return fmt.Errorf("Error retrieving scalePolicy: %s", err)
 	}
+
+	var template datatypes.SoftLayer_Scale_Policy
+
+	template.Id, _ = strconv.Atoi(d.Id())
 
 	if d.HasChange("name") {
-		result.Name = d.Get("name").(string)
+		template.Name = d.Get("name").(string)
 	}
 
+	if d.HasChange("scale_type") || d.HasChange("scale_amount") {
+		template.ScaleActions = []datatypes.SoftLayer_Scale_Policy_Action{{
+			Id : scalePolicy.ScaleActions[0].Id,
+			TypeId: 1,
+		}}
+	}
 	if d.HasChange("scale_type") {
-		result.ScaleActions[0].ScaleType = d.Get("scale_type").(string)
+		template.ScaleActions[0].ScaleType = d.Get("scale_type").(string)
 	}
 
 	if d.HasChange("scale_amount") {
-		result.ScaleActions[0].Amount = d.Get("scale_amount").(int)
+		template.ScaleActions[0].Amount = d.Get("scale_amount").(int)
 	}
 
 	if d.HasChange("cooldown") {
-		result.Cooldown = d.Get("cooldown").(int)
+		template.Cooldown = d.Get("cooldown").(int)
 	}
 
-	triggers := d.Get("triggers").([]interface{})
-
-	count := 0
-	countOneTime := 0
-	countRepeating := 0
-	countResourceUse := 0
-
-	for _, _ = range triggers {
-		if d.Get("triggers."+strconv.Itoa(count)+".type") == "ONE_TIME" {
-			if d.HasChange("triggers."+strconv.Itoa(count)+".data") {
-				timeStamp, _ := time.Parse(time.RFC3339Nano, d.Get("triggers."+strconv.Itoa(count)+".date").(string))
-				result.OneTimeTriggers[countOneTime].Date = &timeStamp
-			}
-			countOneTime++
-		}
-		if d.Get("triggers."+strconv.Itoa(count)+".type") == "REPEATING" {
-			if d.HasChange("triggers."+strconv.Itoa(count)+".schedule") {
-				result.RepeatingTriggers[countOneTime].Schedule = d.Get("triggers."+strconv.Itoa(count)+".schedule").(string)
-			}
-			countRepeating++
-		}
-		if d.Get("triggers."+strconv.Itoa(count)+".type") == "RESOURCE_USE" {
-			watches := d.Get("triggers."+strconv.Itoa(count)+".watches").([]interface{})
-			for _, _ = range watches {
-				if d.HasChange("triggers." + strconv.Itoa(count) + ".watches." + strconv.Itoa(countResourceUse) + ".period") {
-					result.ResourceUseTriggers[count].Watches[countResourceUse].Period = d.Get("triggers." + strconv.Itoa(count) + ".watches." + strconv.Itoa(countResourceUse) + ".period").(int)
-//					if d.HasChange("triggers." + strconv.Itoa(0) + ".watches." + strconv.Itoa(0) + ".period") {
-//						result.ResourceUseTriggers[0].Watches[0].Period = d.Get("triggers." + strconv.Itoa(0) + ".watches." + strconv.Itoa(0) + ".period").(int)
-
-				}
-			}
-			countResourceUse++
-		}
-		count++
+	for _, triggerList := range scalePolicy.Triggers {
+		triggerClient.DeleteObject(triggerList.Id)
 	}
 
-	_, err = client.EditObject(scalePolicyId, result)
+	time.Sleep(60)
+	if _, ok := d.GetOk("triggers"); ok {
+		template.OneTimeTriggers = prepareOneTimeTriggers(d)
+		template.RepeatingTriggers = prepareRepeatingTriggers(d)
+		template.ResourceUseTriggers = prepareResourceUseTriggers(d)
+	}
+
+	_, err = client.EditObject(scalePolicyId, template)
 
 	if err != nil {
 		return fmt.Errorf("Error updating scalie policy: %s", err)
@@ -250,68 +248,72 @@ func resourceSoftLayerScalePolicyExists(d *schema.ResourceData, meta interface{}
 	return true, nil
 }
 
-func prepareOneTimeTriggers(raw_triggers []interface{}) []datatypes.SoftLayer_Scale_Policy_Trigger_OneTime {
-	sl_onetime_triggers := make([]datatypes.SoftLayer_Scale_Policy_Trigger_OneTime, 0)
-	for _, raw_trigger := range raw_triggers {
-		trigger := raw_trigger.(map[string]interface{})
+func prepareOneTimeTriggers(d *schema.ResourceData) []datatypes.SoftLayer_Scale_Policy_Trigger_OneTime {
+	triggerLists := d.Get("triggers").(*schema.Set).List()
+	triggers := make([]datatypes.SoftLayer_Scale_Policy_Trigger_OneTime, 0)
+	for _, triggerList := range triggerLists {
+		trigger := triggerList.(map[string]interface{})
 
 		if trigger["type"].(string) == "ONE_TIME" {
-			var sl_onetime_trigger datatypes.SoftLayer_Scale_Policy_Trigger_OneTime
-			sl_onetime_trigger.TypeId = 3
+			var oneTimeTrigger datatypes.SoftLayer_Scale_Policy_Trigger_OneTime
+			oneTimeTrigger.TypeId = datatypes.SOFTLAYER_SCALE_POLICY_TRIGGER_TYPE_ID_ONE_TIME
 			timeStampString := trigger["date"].(string)
 			timeStamp, _ := time.Parse(time.RFC3339Nano, timeStampString)
-			sl_onetime_trigger.Date = &timeStamp
-			sl_onetime_triggers = append(sl_onetime_triggers, sl_onetime_trigger)
+			oneTimeTrigger.Date = &timeStamp
+			triggers = append(triggers, oneTimeTrigger)
 		}
 	}
-	return sl_onetime_triggers
+	return triggers
 }
 
-func prepareRepeatingTriggers(raw_triggers []interface{}) []datatypes.SoftLayer_Scale_Policy_Trigger_Repeating {
-	sl_repeating_triggers := make([]datatypes.SoftLayer_Scale_Policy_Trigger_Repeating, 0)
-	for _, raw_trigger := range raw_triggers {
-		trigger := raw_trigger.(map[string]interface{})
+func prepareRepeatingTriggers(d *schema.ResourceData) []datatypes.SoftLayer_Scale_Policy_Trigger_Repeating {
+	triggerLists := d.Get("triggers").(*schema.Set).List()
+	triggers := make([]datatypes.SoftLayer_Scale_Policy_Trigger_Repeating, 0)
+	for _, triggerList := range triggerLists {
+		trigger := triggerList.(map[string]interface{})
 
 		if trigger["type"].(string) == "REPEATING" {
-			var sl_repeating_trigger datatypes.SoftLayer_Scale_Policy_Trigger_Repeating
-			sl_repeating_trigger.TypeId = 2
-			sl_repeating_trigger.Schedule = trigger["schedule"].(string)
-			sl_repeating_triggers = append(sl_repeating_triggers, sl_repeating_trigger)
+			var repeatingTrigger datatypes.SoftLayer_Scale_Policy_Trigger_Repeating
+			repeatingTrigger.TypeId = datatypes.SOFTLAYER_SCALE_POLICY_TRIGGER_TYPE_ID_REPEATING
+			repeatingTrigger.Schedule = trigger["schedule"].(string)
+			triggers = append(triggers, repeatingTrigger)
 		}
 	}
-	return sl_repeating_triggers
+	return triggers
 }
 
-func prepareResourceUseTriggers(raw_triggers []interface{}) []datatypes.SoftLayer_Scale_Policy_Trigger_ResourceUse {
-	sl_resourceuse_triggers := make([]datatypes.SoftLayer_Scale_Policy_Trigger_ResourceUse, 0)
-	for _, raw_trigger := range raw_triggers {
-		trigger := raw_trigger.(map[string]interface{})
+func prepareResourceUseTriggers(d *schema.ResourceData) []datatypes.SoftLayer_Scale_Policy_Trigger_ResourceUse {
+	triggerLists := d.Get("triggers").(*schema.Set).List()
+	triggers := make([]datatypes.SoftLayer_Scale_Policy_Trigger_ResourceUse, 0)
+	for _, triggerList := range triggerLists {
+		trigger := triggerList.(map[string]interface{})
 
 		if trigger["type"].(string) == "RESOURCE_USE" {
-			var sl_resourceuse_trigger datatypes.SoftLayer_Scale_Policy_Trigger_ResourceUse
-			sl_resourceuse_trigger.TypeId = 1
-			sl_resourceuse_trigger.Watches = prepareWatches(trigger["watches"].([]interface{}))
-			sl_resourceuse_triggers = append(sl_resourceuse_triggers, sl_resourceuse_trigger)
+			var resourceUseTrigger datatypes.SoftLayer_Scale_Policy_Trigger_ResourceUse
+			resourceUseTrigger.TypeId = datatypes.SOFTLAYER_SCALE_POLICY_TRIGGER_TYPE_ID_RESOURCE_USE
+			resourceUseTrigger.Watches = prepareWatches(trigger["watches"].(*schema.Set))
+			triggers = append(triggers, resourceUseTrigger)
 		}
 	}
-	return sl_resourceuse_triggers
+	return triggers
 }
 
-func prepareWatches(raw_watches []interface{}) []datatypes.SoftLayer_Scale_Policy_Trigger_ResourceUse_Watch {
-	sl_watches := make([]datatypes.SoftLayer_Scale_Policy_Trigger_ResourceUse_Watch, 0)
-	for _, raw_watch := range raw_watches {
-		var sl_watch datatypes.SoftLayer_Scale_Policy_Trigger_ResourceUse_Watch
-		watch := raw_watch.(map[string]interface{})
+func prepareWatches(d *schema.Set) []datatypes.SoftLayer_Scale_Policy_Trigger_ResourceUse_Watch {
+	watchLists := d.List()
+	watches := make([]datatypes.SoftLayer_Scale_Policy_Trigger_ResourceUse_Watch, 0)
+	for _, watcheList := range watchLists {
+		var watch datatypes.SoftLayer_Scale_Policy_Trigger_ResourceUse_Watch
+		watchMap := watcheList.(map[string]interface{})
 
-		sl_watch.Metric = watch["metric"].(string)
-		sl_watch.Operator = watch["operator"].(string)
-		sl_watch.Period = watch["period"].(int)
-		sl_watch.Value = watch["value"].(string)
-		sl_watch.Algorithm = "EWMA"
+		watch.Metric = watchMap["metric"].(string)
+		watch.Operator = watchMap["operator"].(string)
+		watch.Period = watchMap["period"].(int)
+		watch.Value = watchMap["value"].(string)
+		watch.Algorithm = "EWMA"
 
-		sl_watches = append(sl_watches, sl_watch)
+		watches = append(watches, watch)
 	}
-	return sl_watches
+	return watches
 }
 
 func readOneTimeTriggers(list []datatypes.SoftLayer_Scale_Policy_Trigger_OneTime) []map[string]interface{} {
@@ -320,7 +322,7 @@ func readOneTimeTriggers(list []datatypes.SoftLayer_Scale_Policy_Trigger_OneTime
 		t := make(map[string]interface{})
 		t["id"] = trigger.Id
 		t["type"] = "ONE_TIME"
-		t["date"] = trigger.Date.String()
+//		t["date"] = trigger.Date.Format(time.RFC3339Nano)
 		triggers = append(triggers, t)
 	}
 	return triggers
@@ -362,4 +364,38 @@ func readResourceUseWatches(list []datatypes.SoftLayer_Scale_Policy_Trigger_Reso
 		watches = append(watches, w)
 	}
 	return watches
+}
+
+func resourceSoftLayerScalePolicyTriggerHash(v interface{}) int {
+	var buf bytes.Buffer
+	trigger := v.(map[string]interface{})
+	if  trigger["type"].(string) == "ONE_TIME" {
+		buf.WriteString(fmt.Sprintf("%s-", trigger["type"].(string)))
+		buf.WriteString(fmt.Sprintf("%s-", trigger["date"].(string)))
+	}
+	if  trigger["type"].(string) == "REPEATING" {
+		buf.WriteString(fmt.Sprintf("%s-", trigger["type"].(string)))
+		buf.WriteString(fmt.Sprintf("%s-", trigger["schedule"].(string)))
+	}
+	if  trigger["type"].(string) == "RESOURCE_USE" {
+		buf.WriteString(fmt.Sprintf("%s-", trigger["type"].(string)))
+		for _, watchList := range trigger["watches"].(*schema.Set).List() {
+			watch := watchList.(map[string]interface{})
+			buf.WriteString(fmt.Sprintf("%s-", watch["metric"].(string)))
+			buf.WriteString(fmt.Sprintf("%s-", watch["operator"].(string)))
+			buf.WriteString(fmt.Sprintf("%s-", watch["value"].(string)))
+			buf.WriteString(fmt.Sprintf("%s-", watch["period"].(int)))
+		}
+	}
+	return hashcode.String(buf.String())
+}
+
+func resourceSoftLayerScalePolicyHandlerHash(v interface{}) int {
+	var buf bytes.Buffer
+	watch := v.(map[string]interface{})
+	buf.WriteString(fmt.Sprintf("%s-", watch["metric"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", watch["operator"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", watch["value"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", watch["period"].(int)))
+	return hashcode.String(buf.String())
 }
