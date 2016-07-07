@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	datatypes "github.com/TheWeatherCompany/softlayer-go/data_types"
+	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/schema"
 	"log"
