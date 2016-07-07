@@ -295,6 +295,13 @@ func resourceSoftLayerScaleGroupCreate(d *schema.ResourceData, meta interface{})
 
 	d.SetId(strconv.Itoa(res.Id))
 	log.Printf("[INFO] Scale Group ID: %d", res.Id)
+	
+	// wait for scale group to become active
+	_, err = WaitForActiveStatus(d, meta)
+	
+	if err != nil {
+	        return fmt.Errorf("Error waiting for scale group (%s) to become active: %s", d.Id(), err)
+	}        
 
 	return resourceSoftLayerScaleGroupRead(d, meta)
 }
@@ -310,6 +317,7 @@ func resourceSoftLayerScaleGroupRead(d *schema.ResourceData, meta interface{}) e
 		"minimumMemberCount",
 		"maximumMemberCount",
 		"cooldown",
+		"status.name",
 		"regionalGroup.id",
 		"regionalGroup.name",
 		"terminationPolicy.keyName",
@@ -345,6 +353,7 @@ func resourceSoftLayerScaleGroupRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("minimum_member_count", slGroupObj.MinimumMemberCount)
 	d.Set("maximum_member_count", slGroupObj.MaximumMemberCount)
 	d.Set("cooldown", slGroupObj.Cooldown)
+	d.Set("status", slGroupObj.Status.Name)
 	d.Set("termination_policy", slGroupObj.TerminationPolicy.KeyName)
 	d.Set("virtual_server_id", slGroupObj.LoadBalancers[0].VirtualServerId)
 	d.Set("port", slGroupObj.LoadBalancers[0].Port)
@@ -521,6 +530,36 @@ func resourceSoftLayerScaleGroupDelete(d *schema.ResourceData, meta interface{})
 	d.SetId("")
 
 	return nil
+}
+
+func WaitForActiveStatus(d *schema.ResourceData, meta interface{}) (interface{}, error) {
+        log.Printf("Waiting for scale group (%s) to become active", d.Id())
+        id, err := strconv.Atoi(d.Id())
+        if err != nil {
+               return nil, fmt.Errorf("The scale group ID %s must be numeric", d.Id())
+        }
+        
+        stateConf := &resource.StateChangeConf{
+                Pending: []string{"", "Scaling"},
+                Target:  []string{"Active"},
+                Refresh: func() (interface{}, string, error) {
+                        client := meta.(*Client).scaleGroupService
+                        // get the status of the scale group
+                        result, err := client.GetObject(id)
+                        
+                        log.Printf("The status of scale group with id (%s) is (%s)", d.Id(), result.Status.Name)
+                        if err != nil {
+                                return nil, "", fmt.Errorf("Couldn't get status of the scale group: %s", err)       
+                        }
+                        
+                        return result, result.Status.Name, nil
+                },
+                Timeout:    10 * time.Minute,
+                Delay:      10 * time.Second,
+                MinTimeout: 3 * time.Second,
+        }
+        
+        return stateConf.WaitForState()
 }
 
 func resourceSoftLayerScaleGroupExists(d *schema.ResourceData, meta interface{}) (bool, error) {
