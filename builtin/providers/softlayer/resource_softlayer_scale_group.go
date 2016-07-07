@@ -304,7 +304,31 @@ func resourceSoftLayerScaleGroupRead(d *schema.ResourceData, meta interface{}) e
 
 	groupId, _ := strconv.Atoi(d.Id())
 
-	slGroupObj, err := client.GetObject(groupId)
+	objectMask := []string{
+		"id",
+		"name",
+		"minimumMemberCount",
+		"maximumMemberCount",
+		"cooldown",
+		"regionalGroup.id",
+		"regionalGroup.name",
+		"terminationPolicy.keyName",
+		"virtualGuestMemberTemplate",
+		"loadBalancers.id",
+		"loadBalancers.port",
+		"loadBalancers.virtualServerId",
+		"loadBalancers.healthCheck.id",
+		"networkVlans.id",
+		"networkVlans.networkVlan.vlanNumber",
+		"networkVlans.networkVlan.primaryRouter.hostname",
+		"loadBalancers.healthCheck.healthCheckTypeId",
+		"loadBalancers.healthCheck.type.keyname",
+		"loadBalancers.healthCheck.attributes.value",
+		"loadBalancers.healthCheck.attributes.type.id",
+		"loadBalancers.healthCheck.attributes.type.keyname",
+	}
+
+	slGroupObj, err := client.GetObject(groupId, objectMask)
 	if err != nil {
 		// If the scale group is somehow already destroyed, mark as successfully gone
 		if strings.Contains(err.Error(), "404 Not Found") {
@@ -373,7 +397,31 @@ func resourceSoftLayerScaleGroupUpdate(d *schema.ResourceData, meta interface{})
 
 	// Fetch the complete object from SoftLayer, update with current values from the configuration, and send the
 	// whole thing back to SoftLayer (effectively, a PUT)
-	groupObj, err := scaleGroupService.GetObject(groupId)
+	objectMask := []string{
+		"id",
+		"name",
+		"minimumMemberCount",
+		"maximumMemberCount",
+		"cooldown",
+		"regionalGroup.id",
+		"regionalGroup.name",
+		"terminationPolicy.keyName",
+		"virtualGuestMemberTemplate",
+		"loadBalancers.id",
+		"loadBalancers.port",
+		"loadBalancers.virtualServerId",
+		"loadBalancers.healthCheck.id",
+		"networkVlans.id",
+		"networkVlans.networkVlan.vlanNumber",
+		"networkVlans.networkVlan.primaryRouter.hostname",
+		"loadBalancers.healthCheck.healthCheckTypeId",
+		"loadBalancers.healthCheck.type.keyname",
+		"loadBalancers.healthCheck.attributes.value",
+		"loadBalancers.healthCheck.attributes.type.id",
+		"loadBalancers.healthCheck.attributes.type.keyname",
+	}
+
+	groupObj, err := scaleGroupService.GetObject(groupId, objectMask)
 	if err != nil {
 		return fmt.Errorf("Error retrieving softlayer_scale_group resource: %s", err)
 	}
@@ -394,7 +442,7 @@ func resourceSoftLayerScaleGroupUpdate(d *schema.ResourceData, meta interface{})
 	groupObj.LoadBalancers[0].HealthCheck = &healthCheck
 
 	if d.HasChange("network_vlans") {
-		// Vlans are handled as follows:
+		// Vlans require special handling:
 		//
 		// 1. Delete any scale_network_vlans which no longer appear in the updated configuration
 		// 2. Pass the updated list of vlans to the Scale_Group.editObject function.  SoftLayer determines
@@ -487,7 +535,9 @@ func resourceSoftLayerScaleGroupExists(d *schema.ResourceData, meta interface{})
 		return false, fmt.Errorf("Not a valid ID, must be an integer: %s", err)
 	}
 
-	result, err := client.GetObject(groupId)
+	objectMask := []string{"id"}
+
+	result, err := client.GetObject(groupId, objectMask)
 	return result.Id == groupId && err == nil, nil
 }
 
