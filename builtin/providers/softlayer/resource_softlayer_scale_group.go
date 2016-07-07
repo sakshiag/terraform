@@ -199,8 +199,8 @@ func buildScaleVlansFromResourceData(d *schema.Set, meta interface{}) ([]datatyp
 		}
 
 		filter := fmt.Sprintf(
-			"{\"networkVlans\":{\"primaryRouter\":{\"hostname\":{\"operation\":\"%s\"}},"+
-				"\"vlanNumber\":{\"operation\":%d}}}",
+			`{"networkVlans":{"primaryRouter":{"hostname":{"operation":"%s"}},`+
+				`"vlanNumber":{"operation":%d}}}`,
 			primaryRouterHostname,
 			vlanNumber)
 
@@ -363,7 +363,8 @@ func resourceSoftLayerScaleGroupRead(d *schema.ResourceData, meta interface{}) e
 }
 
 func resourceSoftLayerScaleGroupUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*Client).scaleGroupService
+	scaleGroupService := meta.(*Client).scaleGroupService
+	scaleNetworkVlanService := meta.(*Client).scaleNetworkVlanService
 
 	groupId, err := strconv.Atoi(d.Id())
 	if err != nil {
@@ -372,7 +373,7 @@ func resourceSoftLayerScaleGroupUpdate(d *schema.ResourceData, meta interface{})
 
 	// Fetch the complete object from SoftLayer, update with current values from the configuration, and send the
 	// whole thing back to SoftLayer (effectively, a PUT)
-	groupObj, err := client.GetObject(groupId)
+	groupObj, err := scaleGroupService.GetObject(groupId)
 	if err != nil {
 		return fmt.Errorf("Error retrieving softlayer_scale_group resource: %s", err)
 	}
@@ -392,11 +393,66 @@ func resourceSoftLayerScaleGroupUpdate(d *schema.ResourceData, meta interface{})
 
 	groupObj.LoadBalancers[0].HealthCheck = &healthCheck
 
-	_, err = client.EditObject(groupId, groupObj)
+	if d.HasChange("network_vlans") {
+		// Vlans are handled as follows:
+		//
+		// 1. Delete any scale_network_vlans which no longer appear in the updated configuration
+		// 2. Pass the updated list of vlans to the Scale_Group.editObject function.  SoftLayer determines
+		// which Vlans are new, and which already exist.
+
+		o, n := d.GetChange("network_vlans")
+
+		// Delete entries from 'old' set not appearing in new (old - new)
+		for _, elem := range o.(*schema.Set).Difference(n.(*schema.Set)).List() {
+			elem := elem.(map[string]interface{})
+
+			// Get the ID of the scale_network_vlan entries to be deleted
+			primaryRouterHostname := elem["primary_router_hostname"].(string)
+			vlanNumber := elem["vlan_number"].(string)
+
+			mask := []string{
+				"id",
+			}
+
+			filter := fmt.Sprintf(
+				`{"networkVlans":{"primaryRouter":{"hostname":{"operation":"%s"}},`+
+					`"vlanNumber":{"operation":%s}}}`,
+				primaryRouterHostname,
+				vlanNumber,
+			)
+
+			networkVlans, err := scaleGroupService.GetNetworkVlans(groupObj.Id, mask, filter)
+			if err != nil {
+				return fmt.Errorf("Error looking up Vlan: %s", err)
+			}
+
+			if len(networkVlans) < 1 {
+				return fmt.Errorf(
+					"Unable to locate a vlan matching the provided router hostname and vlan number: %s/%s",
+					primaryRouterHostname,
+					vlanNumber)
+			}
+
+			_, err = scaleNetworkVlanService.DeleteObject(networkVlans[0].Id)
+			if err != nil {
+				return fmt.Errorf("Error deleting scale network vlan: %s", err)
+			}
+		}
+
+		// Parse the new list of vlans into the appropriate input structure
+		scaleVlans, err := buildScaleVlansFromResourceData(n.(*schema.Set), meta)
+
+		if err != nil {
+			return fmt.Errorf("Unable to parse network vlan options: %s", err)
+		}
+
+		groupObj.NetworkVlans = scaleVlans
+	}
+
+	_, err = scaleGroupService.EditObject(groupId, groupObj)
 	if err != nil {
 		return fmt.Errorf("Error received while editing softlayer_scale_group: %s", err)
 	}
-
 	return nil
 }
 

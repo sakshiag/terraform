@@ -23,6 +23,7 @@ type Client struct {
 	scalePolicyService                          softlayer.SoftLayer_Scale_Policy_Service
 	scalePolicyTriggerService                   softlayer.SoftLayer_Scale_Policy_Trigger_Service
 	scaleGroupService                           softlayer.SoftLayer_Scale_Group_Service
+	scaleNetworkVlanService                     softlayer.SoftLayer_Scale_Network_Vlan_Service
 }
 
 func (c *Config) Client() (*Client, error) {
@@ -81,6 +82,12 @@ func (c *Config) Client() (*Client, error) {
 		return nil, err
 	}
 
+	scaleNetworkVlanService, err := slc.GetSoftLayer_Scale_Network_Vlan_Service()
+
+	if err != nil {
+		return nil, err
+	}
+
 	client := &Client{
 		accountService:                              accountService,
 		virtualGuestService:                         virtualGuestService,
@@ -91,6 +98,7 @@ func (c *Config) Client() (*Client, error) {
 		scalePolicyService:                          scalePolicyService,
 		scalePolicyTriggerService:                   scalePolicyTriggerService,
 		scaleGroupService:                           scaleGroupService,
+		scaleNetworkVlanService:                     scaleNetworkVlanService,
 	}
 
 	log.Println("[INFO] Created SoftLayer client")
