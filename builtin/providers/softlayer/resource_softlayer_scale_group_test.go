@@ -70,9 +70,9 @@ func TestAccSoftLayerScaleGroup_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"softlayer_scale_group.sample-http-cluster", "virtual_guest_member_template.0.user_data", "#!/bin/bash"),
 					resource.TestCheckResourceAttr(
-						"softlayer_scale_group.sample-http-cluster", "network_vlans.0", "sjc01.fcr01.1562"),
+						"softlayer_scale_group.sample-http-cluster", "network_vlans.vlan_number", "1928"),
 					resource.TestCheckResourceAttr(
-						"softlayer_scale_group.sample-http-cluster", "network_vlans.1", "sjc01.fcr02.1896"),
+						"softlayer_scale_group.sample-http-cluster", "network_vlans.primary_router_hostname", "bcr02a.sng01"),
 				),
 			},
 
@@ -161,7 +161,7 @@ resource "softlayer_scale_group" "sample-http-cluster" {
     minimum_member_count = 1
     maximum_member_count = 10
     termination_policy = "CLOSEST_TO_NEXT_CHARGE"
-    virtual_server_id = 262353
+    virtual_server_id = 267513
     port = 8080
     health_check = {
         type = "HTTP"
@@ -181,7 +181,11 @@ resource "softlayer_scale_group" "sample-http-cluster" {
         ssh_keys = [383111]
         user_data = "#!/bin/bash"
     }
-    network_vlans = ["sjc01.fcr01.1562", "sjc01.fcr02.1896"]
+    #network_vlans = ["sjc01.fcr01.1562", "sjc01.fcr02.1896"]
+    network_vlans = {
+            vlan_number = "1928"
+            primary_router_hostname = "bcr02a.sng01"
+    }       
  
 }`
 
