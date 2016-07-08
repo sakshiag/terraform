@@ -16,7 +16,6 @@ func TestAccSoftLayerScaleGroup_Basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckSoftLayerScaleGroupDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config:  testAccCheckSoftLayerScaleGroupConfig_basic,
@@ -36,7 +35,7 @@ func TestAccSoftLayerScaleGroup_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"softlayer_scale_group.sample-http-cluster", "termination_policy", "CLOSEST_TO_NEXT_CHARGE"),
 					resource.TestCheckResourceAttr(
-						"softlayer_scale_group.sample-http-cluster", "virtual_server_id", "262353"),
+						"softlayer_scale_group.sample-http-cluster", "virtual_server_id", "267513"),
 					resource.TestCheckResourceAttr(
 						"softlayer_scale_group.sample-http-cluster", "port", "8080"),
 					resource.TestCheckResourceAttr(
@@ -70,9 +69,9 @@ func TestAccSoftLayerScaleGroup_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"softlayer_scale_group.sample-http-cluster", "virtual_guest_member_template.0.user_data", "#!/bin/bash"),
 					resource.TestCheckResourceAttr(
-						"softlayer_scale_group.sample-http-cluster", "network_vlans.vlan_number", "1928"),
+						"softlayer_scale_group.sample-http-cluster", "network_vlans.1408093727.vlan_number", "1928"),
 					resource.TestCheckResourceAttr(
-						"softlayer_scale_group.sample-http-cluster", "network_vlans.primary_router_hostname", "bcr02a.sng01"),
+						"softlayer_scale_group.sample-http-cluster", "network_vlans.1408093727.primary_router_hostname", "bcr02a.sng01"),
 				),
 			},
 
@@ -101,7 +100,7 @@ func testAccCheckSoftLayerScaleGroupDestroy(s *terraform.State) error {
 		scalegroupId, _ := strconv.Atoi(rs.Primary.ID)
 
 		// Try to find the key
-		mask := []string{"cooldown"}
+		mask := []string{"id"}
 		_, err := client.GetObject(scalegroupId, mask)
 
 		if err != nil {
@@ -138,7 +137,7 @@ func testAccCheckSoftLayerScaleGroupExists(n string, scalegroup *datatypes.SoftL
 		scalegroupId, _ := strconv.Atoi(rs.Primary.ID)
 
 		client := testAccProvider.Meta().(*Client).scaleGroupService
-		mask := []string{"cooldown"}
+		mask := []string{"id"}
 		foundScaleGroup, err := client.GetObject(scalegroupId, mask)
 
 		if err != nil {
@@ -194,6 +193,33 @@ resource "softlayer_scale_group" "sample-http-cluster" {
 const testAccCheckSoftLayerScaleGroupConfig_updated = `
 resource "softlayer_scale_group" "sample-http-cluster" {
     name = "changed_name"
+    regional_group = "as-sgp-central-1"
     cooldown = 35
-    
+    minimum_member_count = 1
+    maximum_member_count = 10
+    termination_policy = "CLOSEST_TO_NEXT_CHARGE"
+    virtual_server_id = 267513
+    port = 8080
+    health_check = {
+        type = "HTTP"
+    }
+    virtual_guest_member_template = {
+        name = "test-VM"
+        domain = "example.com"
+        cpu = 1
+        ram = 4096
+        public_network_speed = 1000
+        hourly_billing = true
+        image = "DEBIAN_7_64"
+        local_disk = false
+        disks = [25,100]
+        region = "sng01"
+        post_install_script_uri = ""
+        ssh_keys = [383111]
+        user_data = "#!/bin/bash"
+    }
+    network_vlans = {
+        vlan_number = "1928"
+        primary_router_hostname = "bcr02a.sng01"
+    }
 }`
