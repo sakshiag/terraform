@@ -319,7 +319,7 @@ func resourceSoftLayerScaleGroupRead(d *schema.ResourceData, meta interface{}) e
 		"minimumMemberCount",
 		"maximumMemberCount",
 		"cooldown",
-		"status.name",
+		"status.keyName",
 		"regionalGroup.id",
 		"regionalGroup.name",
 		"terminationPolicy.keyName",
@@ -355,7 +355,7 @@ func resourceSoftLayerScaleGroupRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("minimum_member_count", slGroupObj.MinimumMemberCount)
 	d.Set("maximum_member_count", slGroupObj.MaximumMemberCount)
 	d.Set("cooldown", slGroupObj.Cooldown)
-	d.Set("status", slGroupObj.Status.Name)
+	d.Set("status", slGroupObj.Status.KeyName)
 	d.Set("termination_policy", slGroupObj.TerminationPolicy.KeyName)
 	d.Set("virtual_server_id", slGroupObj.LoadBalancers[0].VirtualServerId)
 	d.Set("port", slGroupObj.LoadBalancers[0].Port)
@@ -414,6 +414,7 @@ func resourceSoftLayerScaleGroupUpdate(d *schema.ResourceData, meta interface{})
 		"minimumMemberCount",
 		"maximumMemberCount",
 		"cooldown",
+		"status.keyName",
 		"regionalGroup.id",
 		"regionalGroup.name",
 		"terminationPolicy.keyName",
@@ -542,21 +543,21 @@ func WaitForActiveStatus(d *schema.ResourceData, meta interface{}) (interface{},
         }
         
         stateConf := &resource.StateChangeConf{
-                Pending: []string{"", "Scaling"},
-                Target:  []string{"Active"},
+                Pending: []string{"BUSY", "SCALING", "SUSPENDED"},
+                Target:  []string{"ACTIVE"},
                 Refresh: func() (interface{}, string, error) {
                         client := meta.(*Client).scaleGroupService
-			mask := []string{"status.name"}
+			mask := []string{"status.keyName"}
 
                         // get the status of the scale group
                         result, err := client.GetObject(id, mask)
                         
-                        log.Printf("The status of scale group with id (%s) is (%s)", d.Id(), result.Status.Name)
+                        log.Printf("The status of scale group with id (%s) is (%s)", d.Id(), result.Status.KeyName)
                         if err != nil {
                                 return nil, "", fmt.Errorf("Couldn't get status of the scale group: %s", err)       
                         }
                         
-                        return result, result.Status.Name, nil
+                        return result, result.Status.KeyName, nil
                 },
                 Timeout:    10 * time.Minute,
                 Delay:      10 * time.Second,
