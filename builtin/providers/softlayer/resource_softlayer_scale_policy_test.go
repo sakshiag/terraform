@@ -31,16 +31,6 @@ func TestAccSoftLayerScalePolicy_Basic(t *testing.T) {
 						"softlayer_scale_policy.sample-http-cluster-policy", "scale_amount", "1"),
 					resource.TestCheckResourceAttr(
 						"softlayer_scale_policy.sample-http-cluster-policy", "cooldown", "30"),
-					resource.TestCheckResourceAttr(
-						"softlayer_scale_policy.sample-http-cluster-policy", "triggers.0.type", "RESOURCE_USE"),
-					resource.TestCheckResourceAttr(
-						"softlayer_scale_policy.sample-http-cluster-policy", "triggers.0.watches.0.metric", "host.cpu.percent"),
-					resource.TestCheckResourceAttr(
-						"softlayer_scale_policy.sample-http-cluster-policy", "triggers.0.watches.0.operator", ">"),
-					resource.TestCheckResourceAttr(
-						"softlayer_scale_policy.sample-http-cluster-policy", "triggers.0.watches.0.value", "80"),
-					resource.TestCheckResourceAttr(
-						"softlayer_scale_policy.sample-http-cluster-policy", "triggers.0.watches.0.period", "120"),
 				),
 			},
 		},
@@ -148,7 +138,7 @@ resource "softlayer_scale_policy" "sample-http-cluster-policy" {
     scale_amount = 1
     cooldown = 30
     #scale_group_id = "${softlayer_scale_group.sample-http-cluster.id}"
-    scale_group_id = "1070261"
+    scale_group_id = "1075363"
     triggers = {
         type = "RESOURCE_USE"
         watches = {
@@ -159,13 +149,5 @@ resource "softlayer_scale_policy" "sample-http-cluster-policy" {
                     period = 120
         }
     }
-    triggers = {
-            type = "ONE_TIME"
-            date = "2016-07-30T23:55:00-00:00" 
-    }
-    triggers = {
-            type = "REPEATING"
-            schedule = "0 1 ? * MON,WED *"
-    }
-     
+    
 }`
