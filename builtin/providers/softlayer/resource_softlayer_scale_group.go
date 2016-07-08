@@ -394,9 +394,42 @@ func resourceSoftLayerScaleGroupRead(d *schema.ResourceData, meta interface{}) e
 	}
 	d.Set("network_vlans", networkVlans)
 
+	virtualGuestTemplate := d.Get("virtual_guest_member_template")
+	log.Printf("******** virtual_guest_member_template: %#v", virtualGuestTemplate)
+	//virtualGuestTemplate := virtualGuestTemplate[0].(*schema.ResourceData)
+	//populateMemberTemplateResourceData(virtualGuestTemplate, slGroupObj.VirtualGuestMemberTemplate)
+	//d.Set("virtual_guest_member_template", virtualGuestTemplate)
+
 	return nil
 }
 
+/*
+func populateMemberTemplateResourceData(d *schema.ResourceData, template datatypes.SoftLayer_Virtual_Guest_Template) {
+	d.Set("name", template.Hostname)
+	d.Set("domain", template.Domain)
+	d.Set("region", template.Datacenter.Name)
+	d.Set("public_network_speed", template.NetworkComponents[0].MaxSpeed)
+	d.Set("cpu", template.StartCpus)
+	d.Set("ram", template.MaxMemory)
+	d.Set("dedicated_acct_host_only", template.DedicatedAccountHostOnlyFlag)
+	d.Set("private_network_only", template.PrivateNetworkOnlyFlag)
+	d.Set("hourly_billing", template.HourlyBillingFlag)
+	d.Set("local_disk", template.LocalDiskFlag)
+	d.Set("frontend_vlan_id", template.PrimaryNetworkComponent.NetworkVlan.Id)
+	d.Set("backend_vlan_id", template.PrimaryBackendNetworkComponent.NetworkVlan.Id)
+
+	userData := template.UserData
+	if userData != nil && len(userData) > 0 {
+		data, err := base64.StdEncoding.DecodeString(userData[0].Value)
+		if err != nil {
+			log.Printf("Can't base64 decode user data %s. error: %s", userData, err)
+			d.Set("user_data", userData)
+		} else {
+			d.Set("user_data", string(data))
+		}
+	}
+}
+*/
 func resourceSoftLayerScaleGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	scaleGroupService := meta.(*Client).scaleGroupService
 	scaleNetworkVlanService := meta.(*Client).scaleNetworkVlanService
