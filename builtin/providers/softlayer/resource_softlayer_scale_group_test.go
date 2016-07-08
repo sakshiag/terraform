@@ -101,7 +101,8 @@ func testAccCheckSoftLayerScaleGroupDestroy(s *terraform.State) error {
 		scalegroupId, _ := strconv.Atoi(rs.Primary.ID)
 
 		// Try to find the key
-		_, err := client.GetObject(scalegroupId)
+		mask := []string{"cooldown"}
+		_, err := client.GetObject(scalegroupId, mask)
 
 		if err != nil {
 			return fmt.Errorf("Waiting for Auto Scale (%s) to be destroyed: %s", rs.Primary.ID, err)
@@ -137,7 +138,8 @@ func testAccCheckSoftLayerScaleGroupExists(n string, scalegroup *datatypes.SoftL
 		scalegroupId, _ := strconv.Atoi(rs.Primary.ID)
 
 		client := testAccProvider.Meta().(*Client).scaleGroupService
-		foundScaleGroup, err := client.GetObject(scalegroupId)
+		mask := []string{"cooldown"}
+		foundScaleGroup, err := client.GetObject(scalegroupId, mask)
 
 		if err != nil {
 			return err
