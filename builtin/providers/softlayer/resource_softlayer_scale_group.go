@@ -10,6 +10,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func resourceSoftLayerScaleGroup() *schema.Resource {
@@ -545,8 +546,10 @@ func WaitForActiveStatus(d *schema.ResourceData, meta interface{}) (interface{},
                 Target:  []string{"Active"},
                 Refresh: func() (interface{}, string, error) {
                         client := meta.(*Client).scaleGroupService
+			mask := []string{"status.name"}
+
                         // get the status of the scale group
-                        result, err := client.GetObject(id)
+                        result, err := client.GetObject(id, mask)
                         
                         log.Printf("The status of scale group with id (%s) is (%s)", d.Id(), result.Status.Name)
                         if err != nil {
