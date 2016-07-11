@@ -258,7 +258,7 @@ func getVirtualGuestTemplate(vGuestMap map[string]interface{}) (datatypes.SoftLa
 	}
 
 	// Get the virtual guest creation template from the completed resource data object
-	return GetVirtualGuestTemplateFromResourceData(vGuestResourceData)
+	return getVirtualGuestTemplateFromResourceData(vGuestResourceData)
 }
 
 func resourceSoftLayerScaleGroupCreate(d *schema.ResourceData, meta interface{}) error {
@@ -317,7 +317,7 @@ func resourceSoftLayerScaleGroupCreate(d *schema.ResourceData, meta interface{})
 	log.Printf("[INFO] Scale Group ID: %d", res.Id)
 
 	// wait for scale group to become active
-	_, err = WaitForActiveStatus(d, meta)
+	_, err = waitForActiveStatus(d, meta)
 
 	if err != nil {
 		return fmt.Errorf("Error waiting for scale group (%s) to become active: %s", d.Id(), err)
@@ -616,7 +616,7 @@ func resourceSoftLayerScaleGroupDelete(d *schema.ResourceData, meta interface{})
 	return nil
 }
 
-func WaitForActiveStatus(d *schema.ResourceData, meta interface{}) (interface{}, error) {
+func waitForActiveStatus(d *schema.ResourceData, meta interface{}) (interface{}, error) {
 	log.Printf("Waiting for scale group (%s) to become active", d.Id())
 	id, err := strconv.Atoi(d.Id())
 	if err != nil {

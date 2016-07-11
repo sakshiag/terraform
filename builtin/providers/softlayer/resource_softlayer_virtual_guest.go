@@ -189,7 +189,7 @@ func getBlockDevices(d *schema.ResourceData) []datatypes.BlockDevice {
 	}
 }
 
-func GetVirtualGuestTemplateFromResourceData(d *schema.ResourceData) (datatypes.SoftLayer_Virtual_Guest_Template, error) {
+func getVirtualGuestTemplateFromResourceData(d *schema.ResourceData) (datatypes.SoftLayer_Virtual_Guest_Template, error) {
 	dc := datatypes.Datacenter{
 		Name: d.Get("region").(string),
 	}
@@ -279,7 +279,7 @@ func resourceSoftLayerVirtualGuestCreate(d *schema.ResourceData, meta interface{
 		return fmt.Errorf("The client was nil.")
 	}
 
-	opts, err := GetVirtualGuestTemplateFromResourceData(d)
+	opts, err := getVirtualGuestTemplateFromResourceData(d)
 
 	if err != nil {
 		return err
