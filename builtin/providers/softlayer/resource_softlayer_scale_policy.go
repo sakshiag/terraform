@@ -5,11 +5,11 @@ import (
 	"log"
 	"strconv"
 
+	"bytes"
 	datatypes "github.com/TheWeatherCompany/softlayer-go/data_types"
+	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/schema"
 	"time"
-	"bytes"
-	"github.com/hashicorp/terraform/helper/hashcode"
 )
 
 func resourceSoftLayerScalePolicy() *schema.Resource {
@@ -67,28 +67,28 @@ func resourceSoftLayerScalePolicy() *schema.Resource {
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"id": &schema.Schema{
-										Type:	  schema.TypeInt,
+										Type:     schema.TypeInt,
 										Computed: true,
 									},
 									"metric": &schema.Schema{
-										Type:	  schema.TypeString,
+										Type:     schema.TypeString,
 										Required: true,
 									},
 									"operator": &schema.Schema{
-										Type:	  schema.TypeString,
+										Type:     schema.TypeString,
 										Required: true,
 									},
 									"value": &schema.Schema{
-										Type:	  schema.TypeString,
+										Type:     schema.TypeString,
 										Required: true,
 									},
 									"period": &schema.Schema{
-										Type:	  schema.TypeInt,
+										Type:     schema.TypeInt,
 										Required: true,
 									},
 								},
 							},
-							Set : resourceSoftLayerScalePolicyHandlerHash,
+							Set: resourceSoftLayerScalePolicyHandlerHash,
 						},
 
 						"date": &schema.Schema{
@@ -100,12 +100,10 @@ func resourceSoftLayerScalePolicy() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
-
 					},
 				},
-				Set : resourceSoftLayerScalePolicyTriggerHash,
+				Set: resourceSoftLayerScalePolicyTriggerHash,
 			},
-
 		},
 	}
 }
@@ -121,9 +119,9 @@ func resourceSoftLayerScalePolicyCreate(d *schema.ResourceData, meta interface{}
 	}
 
 	opts.ScaleActions = []datatypes.SoftLayer_Scale_Policy_Action{{
-		TypeId:       1,
-		Amount:       d.Get("scale_amount").(int),
-		ScaleType:    d.Get("scale_type").(string),
+		TypeId:    1,
+		Amount:    d.Get("scale_amount").(int),
+		ScaleType: d.Get("scale_type").(string),
 	},
 	}
 
@@ -187,7 +185,7 @@ func resourceSoftLayerScalePolicyUpdate(d *schema.ResourceData, meta interface{}
 
 	if d.HasChange("scale_type") || d.HasChange("scale_amount") {
 		template.ScaleActions = []datatypes.SoftLayer_Scale_Policy_Action{{
-			Id : scalePolicy.ScaleActions[0].Id,
+			Id:     scalePolicy.ScaleActions[0].Id,
 			TypeId: 1,
 		}}
 	}
@@ -322,7 +320,7 @@ func readOneTimeTriggers(list []datatypes.SoftLayer_Scale_Policy_Trigger_OneTime
 		t := make(map[string]interface{})
 		t["id"] = trigger.Id
 		t["type"] = "ONE_TIME"
-//		t["date"] = trigger.Date.Format(time.RFC3339Nano)
+		//		t["date"] = trigger.Date.Format(time.RFC3339Nano)
 		triggers = append(triggers, t)
 	}
 	return triggers
@@ -369,15 +367,15 @@ func readResourceUseWatches(list []datatypes.SoftLayer_Scale_Policy_Trigger_Reso
 func resourceSoftLayerScalePolicyTriggerHash(v interface{}) int {
 	var buf bytes.Buffer
 	trigger := v.(map[string]interface{})
-	if  trigger["type"].(string) == "ONE_TIME" {
+	if trigger["type"].(string) == "ONE_TIME" {
 		buf.WriteString(fmt.Sprintf("%s-", trigger["type"].(string)))
 		buf.WriteString(fmt.Sprintf("%s-", trigger["date"].(string)))
 	}
-	if  trigger["type"].(string) == "REPEATING" {
+	if trigger["type"].(string) == "REPEATING" {
 		buf.WriteString(fmt.Sprintf("%s-", trigger["type"].(string)))
 		buf.WriteString(fmt.Sprintf("%s-", trigger["schedule"].(string)))
 	}
-	if  trigger["type"].(string) == "RESOURCE_USE" {
+	if trigger["type"].(string) == "RESOURCE_USE" {
 		buf.WriteString(fmt.Sprintf("%s-", trigger["type"].(string)))
 		for _, watchList := range trigger["watches"].(*schema.Set).List() {
 			watch := watchList.(map[string]interface{})

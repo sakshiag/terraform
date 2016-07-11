@@ -14,8 +14,8 @@ func TestAccSoftLayerScaleGroup_Basic(t *testing.T) {
 	var scalegroup datatypes.SoftLayer_Scale_Group
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config:  testAccCheckSoftLayerScaleGroupConfig_basic,

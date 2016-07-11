@@ -423,24 +423,24 @@ func resourceSoftLayerVirtualGuestUpdate(d *schema.ResourceData, meta interface{
 }
 
 func resourceSoftLayerVirtualGuestDelete(d *schema.ResourceData, meta interface{}) error {
-		client := meta.(*Client).virtualGuestService
+	client := meta.(*Client).virtualGuestService
 
-		id, err := strconv.Atoi(d.Id())
-		if err != nil {
-			return fmt.Errorf("Not a valid ID, must be an integer: %s", err)
-		}
+	id, err := strconv.Atoi(d.Id())
+	if err != nil {
+		return fmt.Errorf("Not a valid ID, must be an integer: %s", err)
+	}
 
-		_, err = WaitForNoActiveTransactions(d, meta)
+	_, err = WaitForNoActiveTransactions(d, meta)
 
-		if err != nil {
-			return fmt.Errorf("Error deleting virtual guest, couldn't wait for zero active transactions: %s", err)
-		}
+	if err != nil {
+		return fmt.Errorf("Error deleting virtual guest, couldn't wait for zero active transactions: %s", err)
+	}
 
-		_, err = client.DeleteObject(id)
+	_, err = client.DeleteObject(id)
 
-		if err != nil {
-			return fmt.Errorf("Error deleting virtual guest: %s", err)
-		}
+	if err != nil {
+		return fmt.Errorf("Error deleting virtual guest: %s", err)
+	}
 
 	return nil
 }
