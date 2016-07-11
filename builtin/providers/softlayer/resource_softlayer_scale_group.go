@@ -581,15 +581,20 @@ func resourceSoftLayerScaleGroupUpdate(d *schema.ResourceData, meta interface{})
 		groupObj.NetworkVlans = scaleVlans
 	}
 
-	// Retrieve the map of virtual_guest_member_template attributes
-	// Note: Because 'virtual_guest_member_template' is defined using TypeList, a list is returned.  We assert
-	// that only one element exists, therefore we get the first element of the list, which contains the actual
-	// map we care about.
-	vGuestMap := d.Get("virtual_guest_member_template").([]interface{})[0].(map[string]interface{})
+	if d.HasChange("virtual_guest_member_template") {
+		// Retrieve the map of new virtual_guest_member_template attributes
+		// We can safely assume that the List type contains only one element (see -Create function for
+		// explanation)
+		vGuestMap := d.Get("virtual_guest_member_template").([]interface{})[0].(map[string]interface{})
 
-	virtualGuestTemplateOpts, err := getVirtualGuestTemplate(vGuestMap)
-	groupObj.VirtualGuestMemberTemplate = virtualGuestTemplateOpts
+		virtualGuestTemplateOpts, err := getVirtualGuestTemplate(vGuestMap)
+		if err != nil {
+			return fmt.Errorf("Unable to parse virtual guest member template options: %s", err)
+		}
 
+		groupObj.VirtualGuestMemberTemplate = virtualGuestTemplateOpts
+
+	}
 	_, err = scaleGroupService.EditObject(groupId, groupObj)
 	if err != nil {
 		return fmt.Errorf("Error received while editing softlayer_scale_group: %s", err)
