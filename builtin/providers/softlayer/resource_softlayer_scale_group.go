@@ -105,7 +105,7 @@ func resourceSoftLayerScaleGroup() *schema.Resource {
 			"virtual_guest_member_template": &schema.Schema{
 				Type:     schema.TypeList,
 				Required: true,
-				Elem:     resourceSoftLayerVirtualGuest(),
+				Elem:     getModifiedVirtualGuestResource(),
 			},
 
 			"network_vlans": &schema.Schema{
@@ -127,6 +127,19 @@ func resourceSoftLayerScaleGroup() *schema.Resource {
 			},
 		},
 	}
+}
+
+// Returns a modified version of the virtual guest resource, with all members set to ForceNew = false.
+// Otherwise a modified template parameter unnecessarily forces scale group drop/create
+func getModifiedVirtualGuestResource() *schema.Resource {
+
+	r := resourceSoftLayerVirtualGuest()
+
+	for _, elem := range r.Schema {
+		elem.ForceNew = false
+	}
+
+	return r
 }
 
 // Helper method to parse healthcheck data in the resource schema format to the SoftLayer datatypes
@@ -229,15 +242,7 @@ func buildScaleVlansFromResourceData(d *schema.Set, meta interface{}) ([]datatyp
 	return scaleNetworkVlans, nil
 }
 
-func resourceSoftLayerScaleGroupCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*Client).scaleGroupService
-
-	// Retrieve the map of virtual_guest_member_template attributes
-	// Note: Because 'virtual_guest_member_template' is defined using TypeList, a slice is returned.  We assert
-	// that only one element exists, therefore we get the first element in the slice, which contains the actual
-	// map we care about.
-	vGuestMap := d.Get("virtual_guest_member_template").([]interface{})[0].(map[string]interface{})
-
+func getVirtualGuestTemplate(vGuestMap map[string]interface{}) (datatypes.SoftLayer_Virtual_Guest_Template, error) {
 	// Create an empty ResourceData instance for a SoftLayer_Virtual_Guest resource
 	vGuestResourceData := resourceSoftLayerVirtualGuest().Data(nil)
 
@@ -247,12 +252,25 @@ func resourceSoftLayerScaleGroupCreate(d *schema.ResourceData, meta interface{})
 		log.Printf("****** %s: %#v", k, v)
 		err := vGuestResourceData.Set(k, v)
 		if err != nil {
-			return fmt.Errorf("Error while parsing virtual_guest_member_template values: %s", err)
+			return datatypes.SoftLayer_Virtual_Guest_Template{},
+				fmt.Errorf("Error while parsing virtual_guest_member_template values: %s", err)
 		}
 	}
 
 	// Get the virtual guest creation template from the completed resource data object
-	virtualGuestTemplateOpts, _ := GetVirtualGuestTemplateFromResourceData(vGuestResourceData)
+	return GetVirtualGuestTemplateFromResourceData(vGuestResourceData)
+}
+
+func resourceSoftLayerScaleGroupCreate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*Client).scaleGroupService
+
+	// Retrieve the map of virtual_guest_member_template attributes
+	// Note: Because 'virtual_guest_member_template' is defined using TypeList, a list is returned.  We assert
+	// that only one element exists, therefore we get the first element of the list, which contains the actual
+	// map we care about.
+	vGuestMap := d.Get("virtual_guest_member_template").([]interface{})[0].(map[string]interface{})
+
+	virtualGuestTemplateOpts, err := getVirtualGuestTemplate(vGuestMap)
 
 	scaleNetworkVlans, err := buildScaleVlansFromResourceData(d.Get("network_vlans").(*schema.Set), meta)
 	if err != nil {
@@ -394,42 +412,63 @@ func resourceSoftLayerScaleGroupRead(d *schema.ResourceData, meta interface{}) e
 	}
 	d.Set("network_vlans", networkVlans)
 
-	virtualGuestTemplate := d.Get("virtual_guest_member_template")
-	log.Printf("******** virtual_guest_member_template: %#v", virtualGuestTemplate)
-	//virtualGuestTemplate := virtualGuestTemplate[0].(*schema.ResourceData)
-	//populateMemberTemplateResourceData(virtualGuestTemplate, slGroupObj.VirtualGuestMemberTemplate)
-	//d.Set("virtual_guest_member_template", virtualGuestTemplate)
+	virtualGuestTemplate := populateMemberTemplateResourceData(slGroupObj.VirtualGuestMemberTemplate)
+	d.Set("virtual_guest_member_template", virtualGuestTemplate)
 
 	return nil
 }
 
-/*
-func populateMemberTemplateResourceData(d *schema.ResourceData, template datatypes.SoftLayer_Virtual_Guest_Template) {
-	d.Set("name", template.Hostname)
-	d.Set("domain", template.Domain)
-	d.Set("region", template.Datacenter.Name)
-	d.Set("public_network_speed", template.NetworkComponents[0].MaxSpeed)
-	d.Set("cpu", template.StartCpus)
-	d.Set("ram", template.MaxMemory)
-	d.Set("dedicated_acct_host_only", template.DedicatedAccountHostOnlyFlag)
-	d.Set("private_network_only", template.PrivateNetworkOnlyFlag)
-	d.Set("hourly_billing", template.HourlyBillingFlag)
-	d.Set("local_disk", template.LocalDiskFlag)
-	d.Set("frontend_vlan_id", template.PrimaryNetworkComponent.NetworkVlan.Id)
-	d.Set("backend_vlan_id", template.PrimaryBackendNetworkComponent.NetworkVlan.Id)
+func populateMemberTemplateResourceData(template datatypes.SoftLayer_Virtual_Guest_Template) map[string]interface{} {
 
-	userData := template.UserData
-	if userData != nil && len(userData) > 0 {
-		data, err := base64.StdEncoding.DecodeString(userData[0].Value)
-		if err != nil {
-			log.Printf("Can't base64 decode user data %s. error: %s", userData, err)
-			d.Set("user_data", userData)
-		} else {
-			d.Set("user_data", string(data))
-		}
+	d := make(map[string]interface{})
+
+	d["name"] = template.Hostname
+	d["domain"] = template.Domain
+	d["region"] = template.Datacenter.Name
+	d["public_network_speed"] = template.NetworkComponents[0].MaxSpeed
+	d["cpu"] = template.StartCpus
+	d["ram"] = template.MaxMemory
+	d["dedicated_acct_host_only"] = template.DedicatedAccountHostOnlyFlag
+	d["private_network_only"] = template.PrivateNetworkOnlyFlag
+	d["hourly_billing"] = template.HourlyBillingFlag
+	d["local_disk"] = template.LocalDiskFlag
+	d["user_data"] = template.UserData[0].Value
+	d["post_install_script_uri"] = template.PostInstallScriptUri
+	d["image"] = template.OperatingSystemReferenceCode
+
+	if template.BlockDeviceTemplateGroup != nil {
+		d["block_device_template_group_gid"] = template.BlockDeviceTemplateGroup.GlobalIdentifier
+	} else {
+		d["block_device_template_group_gid"] = ""
 	}
+
+	if template.PrimaryBackendNetworkComponent != nil {
+		d["frontend_vlan_id"] = template.PrimaryNetworkComponent.NetworkVlan.Id
+	} else {
+		d["frontend_vlan_id"] = ""
+	}
+
+	if template.PrimaryBackendNetworkComponent != nil {
+		d["backend_vlan_id"] = template.PrimaryBackendNetworkComponent.NetworkVlan.Id
+	} else {
+		d["backend_vlan_id"] = ""
+	}
+
+	sshKeys := make([]interface{}, 0, len(template.SshKeys))
+	for _, elem := range template.SshKeys {
+		sshKeys = append(sshKeys, elem.Id)
+	}
+	d["ssh_keys"] = sshKeys
+
+	disks := make([]interface{}, 0, len(template.BlockDevices))
+	for _, elem := range template.BlockDevices {
+		disks = append(disks, elem.DiskImage.Capacity)
+	}
+	d["disks"] = disks
+
+	return d
 }
-*/
+
 func resourceSoftLayerScaleGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	scaleGroupService := meta.(*Client).scaleGroupService
 	scaleNetworkVlanService := meta.(*Client).scaleNetworkVlanService
@@ -541,6 +580,15 @@ func resourceSoftLayerScaleGroupUpdate(d *schema.ResourceData, meta interface{})
 
 		groupObj.NetworkVlans = scaleVlans
 	}
+
+	// Retrieve the map of virtual_guest_member_template attributes
+	// Note: Because 'virtual_guest_member_template' is defined using TypeList, a list is returned.  We assert
+	// that only one element exists, therefore we get the first element of the list, which contains the actual
+	// map we care about.
+	vGuestMap := d.Get("virtual_guest_member_template").([]interface{})[0].(map[string]interface{})
+
+	virtualGuestTemplateOpts, err := getVirtualGuestTemplate(vGuestMap)
+	groupObj.VirtualGuestMemberTemplate = virtualGuestTemplateOpts
 
 	_, err = scaleGroupService.EditObject(groupId, groupObj)
 	if err != nil {
