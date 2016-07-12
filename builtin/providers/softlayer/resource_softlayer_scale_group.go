@@ -598,6 +598,14 @@ func resourceSoftLayerScaleGroupUpdate(d *schema.ResourceData, meta interface{})
 	if err != nil {
 		return fmt.Errorf("Error received while editing softlayer_scale_group: %s", err)
 	}
+
+	// wait for scale group to become active
+	_, err = waitForActiveStatus(d, meta)
+
+	if err != nil {
+		return fmt.Errorf("Error waiting for scale group (%s) to become active: %s", d.Id(), err)
+	}
+
 	return nil
 }
 
@@ -645,8 +653,8 @@ func waitForActiveStatus(d *schema.ResourceData, meta interface{}) (interface{},
 			return result, result.Status.KeyName, nil
 		},
 		Timeout:    10 * time.Minute,
-		Delay:      10 * time.Second,
-		MinTimeout: 3 * time.Second,
+		Delay:      2 * time.Second,
+		MinTimeout: 5 * time.Second,
 	}
 
 	return stateConf.WaitForState()
