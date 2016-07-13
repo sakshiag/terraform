@@ -101,44 +101,46 @@ func testAccCheckSoftLayerScalePolicyExists(n string, scalepolicy *datatypes.Sof
 }
 
 const testAccCheckSoftLayerScalePolicyConfig_basic = `
-#resource "softlayer_scale_group" "sample-http-cluster" {
-#    name = "srini-sample-http-cluster"
-#    regional_group = "as-sgp-central-1" 
-#    cooldown = 30
-#    minimum_member_count = 1
-#    maximum_member_count = 10
-#    termination_policy = "CLOSEST_TO_NEXT_CHARGE"
-#    virtual_server_id = 262353
-#    port = 8080
-#    health_check = {
-#        type = "HTTP"
-#    }
-#    virtual_guest_member_template = {
-#        name = "test-VM"
-#        domain = "example.com"
-#       cpu = 1
-#        ram = 4096
-#        public_network_speed = 1000
-#        hourly_billing = true
-#        image = "DEBIAN_7_64"
-#        local_disk = false
-#        disks = [25,100]
-#        region = "sng01"
-#        post_install_script_uri = ""
-#        ssh_keys = [383111]
-#        user_data = "#!/bin/bash"
-#    }
-#    network_vlans = ["sjc01.fcr01.1562", "sjc01.fcr02.1896"]
-# 
-#}
+resource "softlayer_scale_group" "sample-http-cluster" {
+    name = "sample-http-cluster"
+    regional_group = "as-sgp-central-1" 
+    cooldown = 30
+    minimum_member_count = 1
+    maximum_member_count = 10
+    termination_policy = "CLOSEST_TO_NEXT_CHARGE"
+    virtual_server_id = 267513
+    port = 8080
+    health_check = {
+        type = "HTTP"
+    }
+    virtual_guest_member_template = {
+        name = "test-VM"
+        domain = "example.com"
+        cpu = 1
+        ram = 4096
+        public_network_speed = 1000
+        hourly_billing = true
+        image = "DEBIAN_7_64"
+        local_disk = false
+        disks = [25,100]
+        region = "sng01"
+        post_install_script_uri = ""
+        ssh_keys = [383111]
+        user_data = "#!/bin/bash"
+    }
+    network_vlans = {
+        vlan_number = "1928"
+        primary_router_hostname = "bcr02a.sng01"
+    }
+ 
+}
 
 resource "softlayer_scale_policy" "sample-http-cluster-policy" {
     name = "sample-http-cluster-policy"
     scale_type = "RELATIVE"
     scale_amount = 1
     cooldown = 30
-    #scale_group_id = "${softlayer_scale_group.sample-http-cluster.id}"
-    scale_group_id = "1075363"
+    scale_group_id = "${softlayer_scale_group.sample-http-cluster.id}"
     triggers = {
         type = "RESOURCE_USE"
         watches = {
@@ -148,6 +150,14 @@ resource "softlayer_scale_policy" "sample-http-cluster-policy" {
                     value = "80"
                     period = 120
         }
+    }
+    triggers = {
+        type = "ONE_TIME"
+        date = "2016-07-30T23:55:00-00:00"
+    }
+    triggers = {
+        type = "REPEATING"
+        schedule = "0 1 ? * MON,WED *"
     }
     
 }`
