@@ -103,9 +103,13 @@ func TestAccSoftLayerScaleGroup_Basic(t *testing.T) {
                                         resource.TestCheckResourceAttr(
                                                 "softlayer_scale_group.sample-http-cluster", "virtual_guest_member_template.0.ram", "8192"),
                                         resource.TestCheckResourceAttr(
+                                                "softlayer_scale_group.sample-http-cluster", "virtual_guest_member_template.0.public_network_speed", "100"),        
+                                        resource.TestCheckResourceAttr(
                                                 "softlayer_scale_group.sample-http-cluster", "virtual_guest_member_template.0.image", "CENTOS_7_64"),
                                         resource.TestCheckResourceAttr(
-                                                "softlayer_scale_group.sample-http-cluster", "virtual_guest_member_template.0.region", "sng01"),        
+                                                "softlayer_scale_group.sample-http-cluster", "virtual_guest_member_template.0.region", "sng01"),
+                                        resource.TestCheckResourceAttr(
+                                                "softlayer_scale_group.sample-http-cluster", "virtual_guest_member_template.0.post_install_script_uri", "http://localhost/index.html"),        
 				),
 			},
 		},
@@ -245,13 +249,13 @@ resource "softlayer_scale_group" "sample-http-cluster" {
         domain = "test.com"
         cpu = 2
         ram = 8192
-        public_network_speed = 1000
+        public_network_speed = 100
         hourly_billing = true
         image = "CENTOS_7_64"
         local_disk = false
         disks = [25,100]
         region = "sng01"
-        post_install_script_uri = ""
+        post_install_script_uri = "http://localhost/index.html"
         ssh_keys = [383111]
         user_data = "#!/bin/bash"
     }
