@@ -8,14 +8,16 @@ import (
 	datatypes "github.com/TheWeatherCompany/softlayer-go/data_types"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"strings"
 )
 
 func TestAccSoftLayerScaleGroup_Basic(t *testing.T) {
 	var scalegroup datatypes.SoftLayer_Scale_Group
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckSoftLayerScaleGroupDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config:  testAccCheckSoftLayerScaleGroupConfig_basic,
@@ -103,8 +105,8 @@ func testAccCheckSoftLayerScaleGroupDestroy(s *terraform.State) error {
 		mask := []string{"id"}
 		_, err := client.GetObject(scalegroupId, mask)
 
-		if err != nil {
-			return fmt.Errorf("Waiting for Auto Scale (%s) to be destroyed: %s", rs.Primary.ID, err)
+		if err != nil && !strings.Contains(err.Error(), "404") {
+			return fmt.Errorf("Error waiting for Auto Scale (%s) to be destroyed: %s", rs.Primary.ID, err)
 		}
 	}
 
