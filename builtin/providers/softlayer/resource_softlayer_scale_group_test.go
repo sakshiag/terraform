@@ -20,7 +20,7 @@ func TestAccSoftLayerScaleGroup_Basic(t *testing.T) {
 		CheckDestroy: testAccCheckSoftLayerScaleGroupDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config:  testAccCheckSoftLayerScaleGroupConfig_basic,
+				Config: testAccCheckSoftLayerScaleGroupConfig_basic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSoftLayerScaleGroupExists("softlayer_scale_group.sample-http-cluster", &scalegroup),
 					resource.TestCheckResourceAttr(
@@ -82,35 +82,35 @@ func TestAccSoftLayerScaleGroup_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"softlayer_scale_group.sample-http-cluster", "name", "changed_name"),
 					resource.TestCheckResourceAttr(
-                                                "softlayer_scale_group.sample-http-cluster", "regional_group", "as-sgp-central-1"),
-                                        resource.TestCheckResourceAttr(
-                                                "softlayer_scale_group.sample-http-cluster", "minimum_member_count", "2"),
-                                        resource.TestCheckResourceAttr(
-                                                "softlayer_scale_group.sample-http-cluster", "maximum_member_count", "12"),
-                                        resource.TestCheckResourceAttr(
-                                                "softlayer_scale_group.sample-http-cluster", "termination_policy", "NEWEST"),
-                                        resource.TestCheckResourceAttr(
+						"softlayer_scale_group.sample-http-cluster", "regional_group", "as-sgp-central-1"),
+					resource.TestCheckResourceAttr(
+						"softlayer_scale_group.sample-http-cluster", "minimum_member_count", "2"),
+					resource.TestCheckResourceAttr(
+						"softlayer_scale_group.sample-http-cluster", "maximum_member_count", "12"),
+					resource.TestCheckResourceAttr(
+						"softlayer_scale_group.sample-http-cluster", "termination_policy", "NEWEST"),
+					resource.TestCheckResourceAttr(
 						"softlayer_scale_group.sample-http-cluster", "cooldown", "35"),
 					resource.TestCheckResourceAttr(
-                                                "softlayer_scale_group.sample-http-cluster", "port", "9090"),
-                                        resource.TestCheckResourceAttr(
-                                                "softlayer_scale_group.sample-http-cluster", "health_check.type", "HTTP-CUSTOM"),
-                                        resource.TestCheckResourceAttr(
-                                                "softlayer_scale_group.sample-http-cluster", "virtual_guest_member_template.0.name", "example-VM"),
-                                        resource.TestCheckResourceAttr(
-                                                "softlayer_scale_group.sample-http-cluster", "virtual_guest_member_template.0.domain", "test.com"),
-                                        resource.TestCheckResourceAttr(
-                                                "softlayer_scale_group.sample-http-cluster", "virtual_guest_member_template.0.cpu", "2"),
-                                        resource.TestCheckResourceAttr(
-                                                "softlayer_scale_group.sample-http-cluster", "virtual_guest_member_template.0.ram", "8192"),
-                                        resource.TestCheckResourceAttr(
-                                                "softlayer_scale_group.sample-http-cluster", "virtual_guest_member_template.0.public_network_speed", "100"),        
-                                        resource.TestCheckResourceAttr(
-                                                "softlayer_scale_group.sample-http-cluster", "virtual_guest_member_template.0.image", "CENTOS_7_64"),
-                                        resource.TestCheckResourceAttr(
-                                                "softlayer_scale_group.sample-http-cluster", "virtual_guest_member_template.0.region", "sng01"),
-                                        resource.TestCheckResourceAttr(
-                                                "softlayer_scale_group.sample-http-cluster", "virtual_guest_member_template.0.post_install_script_uri", "http://localhost/index.html"),        
+						"softlayer_scale_group.sample-http-cluster", "port", "9090"),
+					resource.TestCheckResourceAttr(
+						"softlayer_scale_group.sample-http-cluster", "health_check.type", "HTTP-CUSTOM"),
+					resource.TestCheckResourceAttr(
+						"softlayer_scale_group.sample-http-cluster", "virtual_guest_member_template.0.name", "example-VM"),
+					resource.TestCheckResourceAttr(
+						"softlayer_scale_group.sample-http-cluster", "virtual_guest_member_template.0.domain", "test.com"),
+					resource.TestCheckResourceAttr(
+						"softlayer_scale_group.sample-http-cluster", "virtual_guest_member_template.0.cpu", "2"),
+					resource.TestCheckResourceAttr(
+						"softlayer_scale_group.sample-http-cluster", "virtual_guest_member_template.0.ram", "8192"),
+					resource.TestCheckResourceAttr(
+						"softlayer_scale_group.sample-http-cluster", "virtual_guest_member_template.0.public_network_speed", "100"),
+					resource.TestCheckResourceAttr(
+						"softlayer_scale_group.sample-http-cluster", "virtual_guest_member_template.0.image", "CENTOS_7_64"),
+					resource.TestCheckResourceAttr(
+						"softlayer_scale_group.sample-http-cluster", "virtual_guest_member_template.0.region", "sng01"),
+					resource.TestCheckResourceAttr(
+						"softlayer_scale_group.sample-http-cluster", "virtual_guest_member_template.0.post_install_script_uri", "http://localhost/index.html"),
 				),
 			},
 		},
