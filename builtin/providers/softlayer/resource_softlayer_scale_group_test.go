@@ -71,9 +71,8 @@ func TestAccSoftLayerScaleGroup_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"softlayer_scale_group.sample-http-cluster", "virtual_guest_member_template.0.user_data", "#!/bin/bash"),
 					resource.TestCheckResourceAttr(
-						"softlayer_scale_group.sample-http-cluster", "network_vlans.1408093727.vlan_number", "1928"),
-					resource.TestCheckResourceAttr(
-						"softlayer_scale_group.sample-http-cluster", "network_vlans.1408093727.primary_router_hostname", "bcr02a.sng01"),
+						"softlayer_scale_group.sample-http-cluster", "network_vlans.#", "1"),
+					testAccCheckSoftLayerScaleGroupContainsNetworkVlan(&scalegroup, 1928, "bcr02a.sng01"),
 				),
 			},
 
@@ -113,11 +112,24 @@ func testAccCheckSoftLayerScaleGroupDestroy(s *terraform.State) error {
 	return nil
 }
 
-func testAccCheckSoftLayerScaleGroupAttributes(scalegroup *datatypes.SoftLayer_Scale_Group) resource.TestCheckFunc {
+func testAccCheckSoftLayerScaleGroupContainsNetworkVlan(scaleGroup *datatypes.SoftLayer_Scale_Group, vlanNumber int, primaryRouterHostname string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
+		found := false
 
-		if scalegroup.Name != "sample-http-cluster" {
-			return fmt.Errorf("Bad name: %s", scalegroup.Name)
+		for _, scaleVlan := range scaleGroup.NetworkVlans {
+			vlan := scaleVlan.NetworkVlan
+
+			if vlan.VlanNumber == vlanNumber && vlan.PrimaryRouter.Hostname == primaryRouterHostname {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			return fmt.Errorf(
+				"Vlan number %d with router hostname %s not found in scale group",
+				vlanNumber,
+				primaryRouterHostname)
 		}
 
 		return nil
@@ -139,8 +151,7 @@ func testAccCheckSoftLayerScaleGroupExists(n string, scalegroup *datatypes.SoftL
 		scalegroupId, _ := strconv.Atoi(rs.Primary.ID)
 
 		client := testAccProvider.Meta().(*Client).scaleGroupService
-		mask := []string{"id"}
-		foundScaleGroup, err := client.GetObject(scalegroupId, mask)
+		foundScaleGroup, err := client.GetObject(scalegroupId, SoftLayerScaleGroupObjectMask)
 
 		if err != nil {
 			return err
