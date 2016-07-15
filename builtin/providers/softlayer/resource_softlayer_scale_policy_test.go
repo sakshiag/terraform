@@ -8,6 +8,8 @@ import (
 	datatypes "github.com/TheWeatherCompany/softlayer-go/data_types"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"strings"
+	"time"
 )
 
 func TestAccSoftLayerScalePolicy_Basic(t *testing.T) {
@@ -16,6 +18,7 @@ func TestAccSoftLayerScalePolicy_Basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
+		CheckDestroy: testAccCheckSoftLayerScalePolicyDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config:  testAccCheckSoftLayerScalePolicyConfig_basic,
@@ -33,8 +36,6 @@ func TestAccSoftLayerScalePolicy_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
                                                 "softlayer_scale_policy.sample-http-cluster-policy", "triggers.#", "3"),
                                         testAccCheckSoftLayerScalePolicyContainsRepeatingTriggers(&scalepolicy, 2, "0 1 ? * MON,WED *"),
-                                        resource.TestCheckResourceAttr(
-                                                "softlayer_scale_policy.sample-http-cluster-policy", "triggers.#", "3"),
                                         testAccCheckSoftLayerScalePolicyContainsResourceUseTriggers(&scalepolicy, 120, "80"),
 				),
 			},
@@ -46,14 +47,14 @@ func TestAccSoftLayerScalePolicy_Basic(t *testing.T) {
                                         resource.TestCheckResourceAttr(
                                                 "softlayer_scale_policy.sample-http-cluster-policy", "name", "changed-name"),
                                         resource.TestCheckResourceAttr(
+                                                "softlayer_scale_policy.sample-http-cluster-policy", "scale_type", "ABSOLUTE"),        
+                                        resource.TestCheckResourceAttr(
                                                 "softlayer_scale_policy.sample-http-cluster-policy", "scale_amount", "2"),
                                         resource.TestCheckResourceAttr(
                                                 "softlayer_scale_policy.sample-http-cluster-policy", "cooldown", "35"),
                                         resource.TestCheckResourceAttr(
                                                 "softlayer_scale_policy.sample-http-cluster-policy", "triggers.#", "2"),
                                         testAccCheckSoftLayerScalePolicyContainsRepeatingTriggers(&scalepolicy, 2, "0 1 ? * MON,WED,SAT *"),
-                                        resource.TestCheckResourceAttr(
-                                                "softlayer_scale_policy.sample-http-cluster-policy", "triggers.#", "2"),
                                         testAccCheckSoftLayerScalePolicyContainsResourceUseTriggers(&scalepolicy, 130, "90"),
                                 ),
                         },
@@ -74,8 +75,8 @@ func testAccCheckSoftLayerScalePolicyDestroy(s *terraform.State) error {
 		// Try to find the key
 		_, err := client.GetObject(scalepolicyId)
 
-		if err != nil {
-			return fmt.Errorf("Waiting for Auto Scale Policy (%s) to be destroyed: %s", rs.Primary.ID, err)
+		if err != nil && !strings.Contains(err.Error(), "404") {
+			return fmt.Errorf("Error waiting for Auto Scale Policy (%s) to be destroyed: %s", rs.Primary.ID, err)
 		}
 	}
 
@@ -122,6 +123,26 @@ func testAccCheckSoftLayerScalePolicyContainsRepeatingTriggers(scalePolicy *data
                 }
 
                 return nil
+        }
+}
+
+func testAccCheckSoftLayerScalePolicyContainsOneTimeTriggers(scalePolicy *datatypes.SoftLayer_Scale_Policy, date time.Time) resource.TestCheckFunc {
+        return func(s *terraform.State) error {
+                found := false
+
+                for _, scaleOneTimeTrigger := range scalePolicy.OneTimeTriggers {
+                        if scaleOneTimeTrigger.Date.String() == date.String() {
+                                found = true
+                                break
+                        }
+                }
+
+                if !found {
+                        return fmt.Errorf("One time trigger with date %s not found in scale policy", date)
+                }
+
+                return nil
+
         }
 }
 
@@ -220,7 +241,7 @@ resource "softlayer_scale_policy" "sample-http-cluster-policy" {
     }
     triggers = {
         type = "ONE_TIME"
-        date = "2016-07-30T23:55:00-00:00"
+        date = "2016-07-31T23:55:00-00:00"
     }
     triggers = {
         type = "REPEATING"
@@ -265,7 +286,7 @@ resource "softlayer_scale_group" "sample-http-cluster" {
 }
 resource "softlayer_scale_policy" "sample-http-cluster-policy" {
     name = "changed-name"
-    scale_type = "RELATIVE"
+    scale_type = "ABSOLUTE"
     scale_amount = 2
     cooldown = 35
     scale_group_id = "${softlayer_scale_group.sample-http-cluster.id}"
@@ -283,5 +304,4 @@ resource "softlayer_scale_policy" "sample-http-cluster-policy" {
         type = "REPEATING"
         schedule = "0 1 ? * MON,WED,SAT *"
     }
-
 }`
