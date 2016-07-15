@@ -211,17 +211,8 @@ resource "softlayer_scale_group" "sample-http-cluster" {
         hourly_billing = true
         image = "DEBIAN_7_64"
         local_disk = false
-        #disks = [25,100]
         region = "sng01"
-        #post_install_script_uri = ""
-        #ssh_keys = [383111]
-        #user_data = "#!/bin/bash"
     }
-    #network_vlans = {
-    #    vlan_number = "1928"
-    #    primary_router_hostname = "bcr02a.sng01"
-    #}
- 
 }
 
 resource "softlayer_scale_policy" "sample-http-cluster-policy" {
@@ -275,17 +266,8 @@ resource "softlayer_scale_group" "sample-http-cluster" {
         hourly_billing = true
         image = "DEBIAN_7_64"
         local_disk = false
-        #disks = [25,100]
         region = "sng01"
-        #post_install_script_uri = ""
-        #ssh_keys = [383111]
-        #user_data = "#!/bin/bash"
     }
-    #network_vlans = {
-    #    vlan_number = "1928"
-    #    primary_router_hostname = "bcr02a.sng01"
-    #}
-
 }
 resource "softlayer_scale_policy" "sample-http-cluster-policy" {
     name = "changed-name"
