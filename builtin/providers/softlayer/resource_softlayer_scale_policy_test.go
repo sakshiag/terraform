@@ -37,6 +37,7 @@ func TestAccSoftLayerScalePolicy_Basic(t *testing.T) {
                                                 "softlayer_scale_policy.sample-http-cluster-policy", "triggers.#", "3"),
                                         testAccCheckSoftLayerScalePolicyContainsRepeatingTriggers(&scalepolicy, 2, "0 1 ? * MON,WED *"),
                                         testAccCheckSoftLayerScalePolicyContainsResourceUseTriggers(&scalepolicy, 120, "80"),
+                                        testAccCheckSoftLayerScalePolicyContainsOneTimeTriggers(&scalepolicy, &testOnetimeTriggerDate),
 				),
 			},
 			
@@ -126,19 +127,19 @@ func testAccCheckSoftLayerScalePolicyContainsRepeatingTriggers(scalePolicy *data
         }
 }
 
-func testAccCheckSoftLayerScalePolicyContainsOneTimeTriggers(scalePolicy *datatypes.SoftLayer_Scale_Policy, date time.Time) resource.TestCheckFunc {
+func testAccCheckSoftLayerScalePolicyContainsOneTimeTriggers(scalePolicy *datatypes.SoftLayer_Scale_Policy, testOnetimeTriggerDate *time.Time) resource.TestCheckFunc {
         return func(s *terraform.State) error {
                 found := false
 
                 for _, scaleOneTimeTrigger := range scalePolicy.OneTimeTriggers {
-                        if scaleOneTimeTrigger.Date.String() == date.String() {
+                        if scaleOneTimeTrigger.Date == testOnetimeTriggerDate {
                                 found = true
                                 break
                         }
                 }
 
                 if !found {
-                        return fmt.Errorf("One time trigger with date %s not found in scale policy", date)
+                        return fmt.Errorf("One time trigger with date %s not found in scale policy", testOnetimeTriggerDate)
                 }
 
                 return nil
@@ -188,7 +189,7 @@ func testAccCheckSoftLayerScalePolicyExists(n string, scalepolicy *datatypes.Sof
 	}
 }
 
-const testAccCheckSoftLayerScalePolicyConfig_basic = `
+var testAccCheckSoftLayerScalePolicyConfig_basic = fmt.Sprintf( `
 resource "softlayer_scale_group" "sample-http-cluster" {
     name = "sample-http-cluster"
     regional_group = "as-sgp-central-1" 
@@ -241,14 +242,16 @@ resource "softlayer_scale_policy" "sample-http-cluster-policy" {
     }
     triggers = {
         type = "ONE_TIME"
-        date = "2016-07-31T23:55:00-00:00"
+        date = "%s"
     }
     triggers = {
         type = "REPEATING"
         schedule = "0 1 ? * MON,WED *"
     }
     
-}`
+}`, testOnetimeTriggerDate)
+
+var testOnetimeTriggerDate = time.Now().AddDate(0, 0, 1)
 
 const testAccCheckSoftLayerScalePolicyConfig_updated = `
 resource "softlayer_scale_group" "sample-http-cluster" {
