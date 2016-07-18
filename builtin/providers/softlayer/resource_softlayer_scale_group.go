@@ -85,7 +85,7 @@ func resourceSoftLayerScaleGroup() *schema.Resource {
 
 			"virtual_server_id": &schema.Schema{
 				Type:     schema.TypeInt,
-				Optional: true,
+				Required: true,
 			},
 
 			"port": &schema.Schema{

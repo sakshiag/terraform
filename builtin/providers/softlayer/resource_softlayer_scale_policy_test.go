@@ -8,18 +8,20 @@ import (
 	datatypes "github.com/TheWeatherCompany/softlayer-go/data_types"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"strings"
+	"time"
 )
 
 func TestAccSoftLayerScalePolicy_Basic(t *testing.T) {
 	var scalepolicy datatypes.SoftLayer_Scale_Policy
-
+	
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
+		CheckDestroy: testAccCheckSoftLayerScalePolicyDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config:  testAccCheckSoftLayerScalePolicyConfig_basic,
-				Destroy: false,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSoftLayerScalePolicyExists("softlayer_scale_policy.sample-http-cluster-policy", &scalepolicy),
 					testAccCheckSoftLayerScalePolicyAttributes(&scalepolicy),
@@ -31,8 +33,33 @@ func TestAccSoftLayerScalePolicy_Basic(t *testing.T) {
 						"softlayer_scale_policy.sample-http-cluster-policy", "scale_amount", "1"),
 					resource.TestCheckResourceAttr(
 						"softlayer_scale_policy.sample-http-cluster-policy", "cooldown", "30"),
+					resource.TestCheckResourceAttr(
+                                                "softlayer_scale_policy.sample-http-cluster-policy", "triggers.#", "3"),
+                                        testAccCheckSoftLayerScalePolicyContainsRepeatingTriggers(&scalepolicy, 2, "0 1 ? * MON,WED *"),
+                                        testAccCheckSoftLayerScalePolicyContainsResourceUseTriggers(&scalepolicy, 120, "80"),
+                                        testAccCheckSoftLayerScalePolicyContainsOneTimeTriggers(&scalepolicy, testOnetimeTriggerDate),
 				),
 			},
+			
+			resource.TestStep{
+                                Config: testAccCheckSoftLayerScalePolicyConfig_updated,
+                                Check: resource.ComposeTestCheckFunc(
+                                        testAccCheckSoftLayerScalePolicyExists("softlayer_scale_policy.sample-http-cluster-policy", &scalepolicy),
+                                        resource.TestCheckResourceAttr(
+                                                "softlayer_scale_policy.sample-http-cluster-policy", "name", "changed-name"),
+                                        resource.TestCheckResourceAttr(
+                                                "softlayer_scale_policy.sample-http-cluster-policy", "scale_type", "ABSOLUTE"),        
+                                        resource.TestCheckResourceAttr(
+                                                "softlayer_scale_policy.sample-http-cluster-policy", "scale_amount", "2"),
+                                        resource.TestCheckResourceAttr(
+                                                "softlayer_scale_policy.sample-http-cluster-policy", "cooldown", "35"),
+                                        resource.TestCheckResourceAttr(
+                                                "softlayer_scale_policy.sample-http-cluster-policy", "triggers.#", "3"),
+                                        testAccCheckSoftLayerScalePolicyContainsRepeatingTriggers(&scalepolicy, 2, "0 1 ? * MON,WED,SAT *"),
+                                        testAccCheckSoftLayerScalePolicyContainsResourceUseTriggers(&scalepolicy, 130, "90"),
+                                        testAccCheckSoftLayerScalePolicyContainsOneTimeTriggers(&scalepolicy, testOnetimeTriggerUpdatedDate),
+                                ),
+                        },
 		},
 	})
 }
@@ -50,12 +77,76 @@ func testAccCheckSoftLayerScalePolicyDestroy(s *terraform.State) error {
 		// Try to find the key
 		_, err := client.GetObject(scalepolicyId)
 
-		if err != nil {
-			return fmt.Errorf("Waiting for Auto Scale Policy (%s) to be destroyed: %s", rs.Primary.ID, err)
+		if err != nil && !strings.Contains(err.Error(), "404") {
+			return fmt.Errorf("Error waiting for Auto Scale Policy (%s) to be destroyed: %s", rs.Primary.ID, err)
 		}
 	}
 
 	return nil
+}
+
+func testAccCheckSoftLayerScalePolicyContainsResourceUseTriggers(scalePolicy *datatypes.SoftLayer_Scale_Policy, period int, value string) resource.TestCheckFunc {
+        return func(s *terraform.State) error {
+                found := false
+
+                for _, scaleResourceUseTrigger := range scalePolicy.ResourceUseTriggers {
+                        for _, scaleResourceUseWatch := range scaleResourceUseTrigger.Watches {
+                                if scaleResourceUseWatch.Metric == "host.cpu.percent" && scaleResourceUseWatch.Operator == ">" &&
+                                        scaleResourceUseWatch.Period == period && scaleResourceUseWatch.Value == value {
+                                        found = true
+                                        break
+                                }
+                        }
+                }
+
+                if !found {
+                        return fmt.Errorf("Resource use trigger not found in scale policy")
+
+                }
+
+                return nil
+        }
+}
+
+func testAccCheckSoftLayerScalePolicyContainsRepeatingTriggers(scalePolicy *datatypes.SoftLayer_Scale_Policy, typeId int, schedule string) resource.TestCheckFunc {
+        return func(s *terraform.State) error {
+                found := false
+
+                for _, scaleRepeatingTrigger := range scalePolicy.RepeatingTriggers {
+                        if scaleRepeatingTrigger.TypeId == typeId && scaleRepeatingTrigger.Schedule == schedule {
+                                found = true
+                                break
+                        }
+                }
+
+                if !found {
+                        return fmt.Errorf("Repeating trigger %d with schedule %s not found in scale policy", typeId, schedule)
+
+                }
+
+                return nil
+        }
+}
+
+func testAccCheckSoftLayerScalePolicyContainsOneTimeTriggers(scalePolicy *datatypes.SoftLayer_Scale_Policy, testOnetimeTriggerDate string) resource.TestCheckFunc {
+        return func(s *terraform.State) error {
+                found := false
+                const SoftLayerTimeFormat = "2006-01-02T15:04:05-00:00"
+
+                for _, scaleOneTimeTrigger := range scalePolicy.OneTimeTriggers {
+                        if scaleOneTimeTrigger.Date.Format(SoftLayerTimeFormat) == testOnetimeTriggerDate {
+                                found = true
+                                break
+                        }
+                }
+
+                if !found {
+                        return fmt.Errorf("One time trigger with date %s not found in scale policy", testOnetimeTriggerDate)
+                }
+
+                return nil
+
+        }
 }
 
 func testAccCheckSoftLayerScalePolicyAttributes(scalepolicy *datatypes.SoftLayer_Scale_Policy) resource.TestCheckFunc {
@@ -100,7 +191,7 @@ func testAccCheckSoftLayerScalePolicyExists(n string, scalepolicy *datatypes.Sof
 	}
 }
 
-const testAccCheckSoftLayerScalePolicyConfig_basic = `
+var testAccCheckSoftLayerScalePolicyConfig_basic = fmt.Sprintf( `
 resource "softlayer_scale_group" "sample-http-cluster" {
     name = "sample-http-cluster"
     regional_group = "as-sgp-central-1" 
@@ -122,17 +213,8 @@ resource "softlayer_scale_group" "sample-http-cluster" {
         hourly_billing = true
         image = "DEBIAN_7_64"
         local_disk = false
-        disks = [25,100]
         region = "sng01"
-        post_install_script_uri = ""
-        ssh_keys = [383111]
-        user_data = "#!/bin/bash"
     }
-    network_vlans = {
-        vlan_number = "1928"
-        primary_router_hostname = "bcr02a.sng01"
-    }
- 
 }
 
 resource "softlayer_scale_policy" "sample-http-cluster-policy" {
@@ -153,11 +235,68 @@ resource "softlayer_scale_policy" "sample-http-cluster-policy" {
     }
     triggers = {
         type = "ONE_TIME"
-        date = "2016-07-30T23:55:00-00:00"
+        date = "%s"
     }
     triggers = {
         type = "REPEATING"
         schedule = "0 1 ? * MON,WED *"
     }
     
-}`
+}`, testOnetimeTriggerDate)
+
+const SoftLayerTimeFormat = string("2006-01-02T15:04:05-00:00")
+
+var testOnetimeTriggerDate = time.Now().AddDate(0, 0, 1).Format(SoftLayerTimeFormat)
+
+var testAccCheckSoftLayerScalePolicyConfig_updated = fmt.Sprintf(`
+resource "softlayer_scale_group" "sample-http-cluster" {
+    name = "sample-http-cluster"
+    regional_group = "as-sgp-central-1"
+    cooldown = 30
+    minimum_member_count = 1
+    maximum_member_count = 10
+    termination_policy = "CLOSEST_TO_NEXT_CHARGE"
+    virtual_server_id = 267513
+    port = 8080
+    health_check = {
+        type = "HTTP"
+    }
+    virtual_guest_member_template = {
+        name = "test-VM"
+        domain = "example.com"
+        cpu = 1
+        ram = 4096
+        public_network_speed = 1000
+        hourly_billing = true
+        image = "DEBIAN_7_64"
+        local_disk = false
+        region = "sng01"
+    }
+}
+resource "softlayer_scale_policy" "sample-http-cluster-policy" {
+    name = "changed-name"
+    scale_type = "ABSOLUTE"
+    scale_amount = 2
+    cooldown = 35
+    scale_group_id = "${softlayer_scale_group.sample-http-cluster.id}"
+    triggers = {
+        type = "RESOURCE_USE"
+        watches = {
+
+                    metric = "host.cpu.percent"
+                    operator = ">"
+                    value = "90"
+                    period = 130
+        }
+    }
+    triggers = {
+        type = "REPEATING"
+        schedule = "0 1 ? * MON,WED,SAT *"
+    }
+    triggers = {
+        type = "ONE_TIME"
+        date = "%s"
+    }
+}`, testOnetimeTriggerUpdatedDate)
+
+ var testOnetimeTriggerUpdatedDate = time.Now().AddDate(0, 0, 2).Format(SoftLayerTimeFormat)

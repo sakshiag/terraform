@@ -20,8 +20,7 @@ func TestAccSoftLayerScaleGroup_Basic(t *testing.T) {
 		CheckDestroy: testAccCheckSoftLayerScaleGroupDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config:  testAccCheckSoftLayerScaleGroupConfig_basic,
-				Destroy: false,
+				Config: testAccCheckSoftLayerScaleGroupConfig_basic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSoftLayerScaleGroupExists("softlayer_scale_group.sample-http-cluster", &scalegroup),
 					resource.TestCheckResourceAttr(
@@ -83,7 +82,35 @@ func TestAccSoftLayerScaleGroup_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"softlayer_scale_group.sample-http-cluster", "name", "changed_name"),
 					resource.TestCheckResourceAttr(
+						"softlayer_scale_group.sample-http-cluster", "regional_group", "as-sgp-central-1"),
+					resource.TestCheckResourceAttr(
+						"softlayer_scale_group.sample-http-cluster", "minimum_member_count", "2"),
+					resource.TestCheckResourceAttr(
+						"softlayer_scale_group.sample-http-cluster", "maximum_member_count", "12"),
+					resource.TestCheckResourceAttr(
+						"softlayer_scale_group.sample-http-cluster", "termination_policy", "NEWEST"),
+					resource.TestCheckResourceAttr(
 						"softlayer_scale_group.sample-http-cluster", "cooldown", "35"),
+					resource.TestCheckResourceAttr(
+						"softlayer_scale_group.sample-http-cluster", "port", "9090"),
+					resource.TestCheckResourceAttr(
+						"softlayer_scale_group.sample-http-cluster", "health_check.type", "HTTP-CUSTOM"),
+					resource.TestCheckResourceAttr(
+						"softlayer_scale_group.sample-http-cluster", "virtual_guest_member_template.0.name", "example-VM"),
+					resource.TestCheckResourceAttr(
+						"softlayer_scale_group.sample-http-cluster", "virtual_guest_member_template.0.domain", "test.com"),
+					resource.TestCheckResourceAttr(
+						"softlayer_scale_group.sample-http-cluster", "virtual_guest_member_template.0.cpu", "2"),
+					resource.TestCheckResourceAttr(
+						"softlayer_scale_group.sample-http-cluster", "virtual_guest_member_template.0.ram", "8192"),
+					resource.TestCheckResourceAttr(
+						"softlayer_scale_group.sample-http-cluster", "virtual_guest_member_template.0.public_network_speed", "100"),
+					resource.TestCheckResourceAttr(
+						"softlayer_scale_group.sample-http-cluster", "virtual_guest_member_template.0.image", "CENTOS_7_64"),
+					resource.TestCheckResourceAttr(
+						"softlayer_scale_group.sample-http-cluster", "virtual_guest_member_template.0.region", "sng01"),
+					resource.TestCheckResourceAttr(
+						"softlayer_scale_group.sample-http-cluster", "virtual_guest_member_template.0.post_install_script_uri", "http://localhost/index.html"),
 				),
 			},
 		},
@@ -195,7 +222,6 @@ resource "softlayer_scale_group" "sample-http-cluster" {
         ssh_keys = [383111]
         user_data = "#!/bin/bash"
     }
-    #network_vlans = ["sjc01.fcr01.1562", "sjc01.fcr02.1896"]
     network_vlans = {
             vlan_number = "1928"
             primary_router_hostname = "bcr02a.sng01"
@@ -208,26 +234,29 @@ resource "softlayer_scale_group" "sample-http-cluster" {
     name = "changed_name"
     regional_group = "as-sgp-central-1"
     cooldown = 35
-    minimum_member_count = 1
-    maximum_member_count = 10
-    termination_policy = "CLOSEST_TO_NEXT_CHARGE"
+    minimum_member_count = 2
+    maximum_member_count = 12
+    termination_policy = "NEWEST"
     virtual_server_id = 267513
-    port = 8080
+    port = 9090
     health_check = {
-        type = "HTTP"
+        type = "HTTP-CUSTOM"
+        custom_method = "GET"
+        custom_request = "/healthcheck"
+        custom_response = 200
     }
     virtual_guest_member_template = {
-        name = "test-VM"
-        domain = "example.com"
-        cpu = 1
-        ram = 4096
-        public_network_speed = 1000
+        name = "example-VM"
+        domain = "test.com"
+        cpu = 2
+        ram = 8192
+        public_network_speed = 100
         hourly_billing = true
-        image = "DEBIAN_7_64"
+        image = "CENTOS_7_64"
         local_disk = false
         disks = [25,100]
         region = "sng01"
-        post_install_script_uri = ""
+        post_install_script_uri = "http://localhost/index.html"
         ssh_keys = [383111]
         user_data = "#!/bin/bash"
     }
