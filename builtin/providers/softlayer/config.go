@@ -22,40 +22,43 @@ type Client struct {
 	dnsDomainService                            softlayer.SoftLayer_Dns_Domain_Service
 	networkApplicationDeliveryControllerService softlayer.SoftLayer_Network_Application_Delivery_Controller_Service
 	securityCertificateService                  softlayer.SoftLayer_Security_Certificate_Service
+	loadBalancerService                         softlayer.SoftLayer_Load_Balancer_Service
 }
 
 func (c *Config) Client() (*Client, error) {
 	slc := slclient.NewSoftLayerClient(c.Username, c.ApiKey)
 
 	accountService, err := slc.GetSoftLayer_Account_Service()
+
 	if err != nil {
 		return nil, err
 	}
 
 	virtualGuestService, err := slc.GetSoftLayer_Virtual_Guest_Service()
+
 	if err != nil {
 		return nil, err
 	}
 
 	networkApplicationDeliveryControllerService, err := slc.GetSoftLayer_Network_Application_Delivery_Controller_Service()
+
 	if err != nil {
 		return nil, err
 	}
 
 	sshKeyService, err := slc.GetSoftLayer_Security_Ssh_Key_Service()
+
 	if err != nil {
 		return nil, err
 	}
 
 	productOrderService, err := slc.GetSoftLayer_Product_Order_Service()
+
 	if err != nil {
 		return nil, err
 	}
 
 	billingItemService, err := slc.GetSoftLayer_Billing_Item_Service()
-	if err != nil {
-		return nil, err
-	}
 
 	if err != nil {
 		return nil, err
@@ -79,6 +82,12 @@ func (c *Config) Client() (*Client, error) {
 		return nil, err
 	}
 
+	loadBalancerService, err := slc.GetSoftLayer_Load_Balancer_Service()
+
+	if err != nil {
+		return nil, err
+	}
+
 	client := &Client{
 		accountService:                              accountService,
 		virtualGuestService:                         virtualGuestService,
@@ -89,6 +98,7 @@ func (c *Config) Client() (*Client, error) {
 		dnsDomainResourceRecordService:              dnsDomainResourceRecordService,
 		networkApplicationDeliveryControllerService: networkApplicationDeliveryControllerService,
 		securityCertificateService:                  securityCertificateService,
+		loadBalancerService:                         loadBalancerService,
 	}
 
 	log.Println("[INFO] Created SoftLayer client")
