@@ -6,9 +6,9 @@ import (
 	"errors"
 	"fmt"
 
-	common "github.com/TheWeatherCompany/softlayer-go/common"
+	"github.com/TheWeatherCompany/softlayer-go/common"
 	datatypes "github.com/TheWeatherCompany/softlayer-go/data_types"
-	softlayer "github.com/TheWeatherCompany/softlayer-go/softlayer"
+	"github.com/TheWeatherCompany/softlayer-go/softlayer"
 )
 
 type softLayer_Hardware_Service struct {

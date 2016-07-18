@@ -33,6 +33,7 @@ func Provider() terraform.ResourceProvider {
 			"softlayer_lb_local":               resourceSoftLayerLoadBalancer(),
 			"softlayer_lb_local_service_group": resourceSoftLayerLoadBalancerServiceGroup(),
 			"softlayer_lb_local_service":       resourceSoftLayerLoadBalancerService(),
+			"softlayer_user":          resourceSoftLayerUserCustomer(),
 		},
 
 		ConfigureFunc: providerConfigure,
