@@ -887,66 +887,6 @@
 			"revision": "e4ec8cc423bbe20d26584b96efbeb9102e16d05f"
 		},
 		{
-			"checksumSHA1": "Ib2KxaQ9OSu+2Cmyh1iRJIDFhM0=",
-			"path": "github.com/hashicorp/terraform/config",
-			"revision": "24bcac42be0e2fbac621baf8f753ef2e6c1eb68d",
-			"revisionTime": "2016-06-16T15:03:16Z"
-		},
-		{
-			"checksumSHA1": "g7eaxQ091tdIuaplzbESmFkEuMs=",
-			"path": "github.com/hashicorp/terraform/config/module",
-			"revision": "24bcac42be0e2fbac621baf8f753ef2e6c1eb68d",
-			"revisionTime": "2016-06-16T15:03:16Z"
-		},
-		{
-			"checksumSHA1": "Dr8CXGM6I/evRrA1E9NyHwJmOlU=",
-			"path": "github.com/hashicorp/terraform/dag",
-			"revision": "24bcac42be0e2fbac621baf8f753ef2e6c1eb68d",
-			"revisionTime": "2016-06-16T15:03:16Z"
-		},
-		{
-			"checksumSHA1": "TxqBBTRqbLW9f21FvjWKJlfzQFw=",
-			"path": "github.com/hashicorp/terraform/dot",
-			"revision": "24bcac42be0e2fbac621baf8f753ef2e6c1eb68d",
-			"revisionTime": "2016-06-16T15:03:16Z"
-		},
-		{
-			"checksumSHA1": "0Q17QX0jzIL2Bg+XThUuOetCwU0=",
-			"path": "github.com/hashicorp/terraform/flatmap",
-			"revision": "24bcac42be0e2fbac621baf8f753ef2e6c1eb68d",
-			"revisionTime": "2016-06-16T15:03:16Z"
-		},
-		{
-			"checksumSHA1": "uT6Q9RdSRAkDjyUgQlJ2XKJRab4=",
-			"path": "github.com/hashicorp/terraform/helper/config",
-			"revision": "24bcac42be0e2fbac621baf8f753ef2e6c1eb68d",
-			"revisionTime": "2016-06-16T15:03:16Z"
-		},
-		{
-			"checksumSHA1": "B267stWNQd0/pBTXHfI/tJsxzfc=",
-			"path": "github.com/hashicorp/terraform/helper/hilmapstructure",
-			"revision": "24bcac42be0e2fbac621baf8f753ef2e6c1eb68d",
-			"revisionTime": "2016-06-16T15:03:16Z"
-		},
-		{
-			"checksumSHA1": "Mew+XXnUAAr3GpTtNUolvJhSs7Q=",
-			"path": "github.com/hashicorp/terraform/helper/logging",
-			"revision": "24bcac42be0e2fbac621baf8f753ef2e6c1eb68d",
-			"revisionTime": "2016-06-16T15:03:16Z"
-		},
-		{
-			"checksumSHA1": "Dg0AAsMEpGfqjbyA50dSUabkohM=",
-			"path": "github.com/hashicorp/terraform/helper/resource",
-			"revision": "24bcac42be0e2fbac621baf8f753ef2e6c1eb68d",
-			"revisionTime": "2016-06-16T15:03:16Z"
-		},
-		{
-			"checksumSHA1": "kQ+4TarDex2wG60My9N97AEfWVg=",
-			"path": "github.com/hashicorp/terraform/terraform",
-			"revision": "24bcac42be0e2fbac621baf8f753ef2e6c1eb68d",
-			"revisionTime": "2016-06-16T15:03:16Z"
-		},
-		{
 			"path": "github.com/hashicorp/yamux",
 			"revision": "df949784da9ed028ee76df44652e42d37a09d7e4"
 		},
