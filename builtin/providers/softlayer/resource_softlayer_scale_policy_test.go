@@ -14,6 +14,7 @@ import (
 
 func TestAccSoftLayerScalePolicy_Basic(t *testing.T) {
 	var scalepolicy datatypes.SoftLayer_Scale_Policy
+	const SoftLayerTimeFormat = "2006-01-02T15:04:05-00:00"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
@@ -37,7 +38,7 @@ func TestAccSoftLayerScalePolicy_Basic(t *testing.T) {
                                                 "softlayer_scale_policy.sample-http-cluster-policy", "triggers.#", "3"),
                                         testAccCheckSoftLayerScalePolicyContainsRepeatingTriggers(&scalepolicy, 2, "0 1 ? * MON,WED *"),
                                         testAccCheckSoftLayerScalePolicyContainsResourceUseTriggers(&scalepolicy, 120, "80"),
-                                        testAccCheckSoftLayerScalePolicyContainsOneTimeTriggers(&scalepolicy, &testOnetimeTriggerDate),
+                                        testAccCheckSoftLayerScalePolicyContainsOneTimeTriggers(&scalepolicy, testOnetimeTriggerDate),
 				),
 			},
 			
@@ -127,12 +128,12 @@ func testAccCheckSoftLayerScalePolicyContainsRepeatingTriggers(scalePolicy *data
         }
 }
 
-func testAccCheckSoftLayerScalePolicyContainsOneTimeTriggers(scalePolicy *datatypes.SoftLayer_Scale_Policy, testOnetimeTriggerDate *time.Time) resource.TestCheckFunc {
+func testAccCheckSoftLayerScalePolicyContainsOneTimeTriggers(scalePolicy *datatypes.SoftLayer_Scale_Policy, testOnetimeTriggerDate string) resource.TestCheckFunc {
         return func(s *terraform.State) error {
                 found := false
 
                 for _, scaleOneTimeTrigger := range scalePolicy.OneTimeTriggers {
-                        if scaleOneTimeTrigger.Date == testOnetimeTriggerDate {
+                        if scaleOneTimeTrigger.Date.Format(SoftLayerTimeFormat) == testOnetimeTriggerDate {
                                 found = true
                                 break
                         }
@@ -242,7 +243,9 @@ resource "softlayer_scale_policy" "sample-http-cluster-policy" {
     
 }`, testOnetimeTriggerDate)
 
-var testOnetimeTriggerDate = time.Now().AddDate(0, 0, 1)
+const SoftLayerTimeFormat = string("2006-01-02T15:04:05-00:00")
+
+var testOnetimeTriggerDate = time.Now().AddDate(0, 0, 1).Format(SoftLayerTimeFormat)
 
 const testAccCheckSoftLayerScalePolicyConfig_updated = `
 resource "softlayer_scale_group" "sample-http-cluster" {
