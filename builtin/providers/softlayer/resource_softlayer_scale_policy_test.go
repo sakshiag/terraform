@@ -131,10 +131,11 @@ func testAccCheckSoftLayerScalePolicyContainsRepeatingTriggers(scalePolicy *data
 func testAccCheckSoftLayerScalePolicyContainsOneTimeTriggers(scalePolicy *datatypes.SoftLayer_Scale_Policy, testOnetimeTriggerDate string) resource.TestCheckFunc {
         return func(s *terraform.State) error {
                 found := false
-                const SoftLayerTimeFormat = "2006-01-02T15:04:05-00:00"
+                const SoftLayerTimeFormat = "2006-01-02T15:04:05-07:00"
+                estLoc, _ := time.LoadLocation("EST")
 
                 for _, scaleOneTimeTrigger := range scalePolicy.OneTimeTriggers {
-                        if scaleOneTimeTrigger.Date.Format(SoftLayerTimeFormat) == testOnetimeTriggerDate {
+                        if scaleOneTimeTrigger.Date.In(estLoc).Format(SoftLayerTimeFormat) == testOnetimeTriggerDate {
                                 found = true
                                 break
                         }
@@ -244,9 +245,11 @@ resource "softlayer_scale_policy" "sample-http-cluster-policy" {
     
 }`, testOnetimeTriggerDate)
 
-const SoftLayerTimeFormat = string("2006-01-02T15:04:05-00:00")
+const SoftLayerTimeFormat = string("2006-01-02T15:04:05-07:00")
 
-var testOnetimeTriggerDate = time.Now().AddDate(0, 0, 1).Format(SoftLayerTimeFormat)
+var estLoc, _ = time.LoadLocation("EST")
+
+var testOnetimeTriggerDate = time.Now().In(estLoc).AddDate(0, 0, 1).Format(SoftLayerTimeFormat)
 
 var testAccCheckSoftLayerScalePolicyConfig_updated = fmt.Sprintf(`
 resource "softlayer_scale_group" "sample-http-cluster" {
@@ -299,4 +302,4 @@ resource "softlayer_scale_policy" "sample-http-cluster-policy" {
     }
 }`, testOnetimeTriggerUpdatedDate)
 
- var testOnetimeTriggerUpdatedDate = time.Now().AddDate(0, 0, 2).Format(SoftLayerTimeFormat)
+ var testOnetimeTriggerUpdatedDate = time.Now().In(estLoc).AddDate(0, 0, 2).Format(SoftLayerTimeFormat)
