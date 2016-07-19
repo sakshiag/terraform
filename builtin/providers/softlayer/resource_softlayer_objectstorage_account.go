@@ -25,6 +25,10 @@ func resourceSoftLayerObjectStorageAccount() *schema.Resource {
 			},
 			"name": &schema.Schema{
 				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"local_note": &schema.Schema{
+				Type:     schema.TypeString,
 				Optional: true,
 			},
 		},
@@ -79,6 +83,7 @@ func resourceSoftLayerObjectStorageAccountCreate(d *schema.ResourceData, meta in
 
 	// Get account name and set as the Id
 	d.SetId(objectStorageAccounts[0].Username)
+	d.Set("name", objectStorageAccounts[0].Username)
 
 	return nil
 }
@@ -116,6 +121,7 @@ func WaitForOrderCompletion(receipt *datatypes.SoftLayer_Container_Product_Order
 func resourceSoftLayerObjectStorageAccountRead(d *schema.ResourceData, meta interface{}) error {
 	accountService := meta.(*Client).accountService
 	accountName := d.Id()
+	d.Set("name", accountName)
 
 	// Check if an object storage account exists
 	objectStorageAccounts, err := accountService.GetHubNetworkStorageByFilter(
