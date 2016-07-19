@@ -436,10 +436,15 @@ func populateMemberTemplateResourceData(template datatypes.SoftLayer_Virtual_Gue
 	d["private_network_only"] = template.PrivateNetworkOnlyFlag
 	d["hourly_billing"] = template.HourlyBillingFlag
 	d["local_disk"] = template.LocalDiskFlag
-	d["user_data"] = template.UserData[0].Value
 	d["post_install_script_uri"] = template.PostInstallScriptUri
 	d["image"] = template.OperatingSystemReferenceCode
 
+	if len(template.UserData) > 0 {
+		d["user_data"] = template.UserData[0].Value
+	} else {
+		d["user_data"] = ""
+	}
+	
 	if template.BlockDeviceTemplateGroup != nil {
 		d["block_device_template_group_gid"] = template.BlockDeviceTemplateGroup.GlobalIdentifier
 	} else {
