@@ -54,9 +54,6 @@ func resourceSoftLayerLoadBalancerServiceGroup() *schema.Resource {
 
 func resourceSoftLayerLoadBalancerServiceGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client).loadBalancerService
-	if client == nil {
-		return fmt.Errorf("The client is nil.")
-	}
 
 	loadBalancer, err := client.GetObject(d.Get("load_balancer_id").(int))
 
@@ -103,9 +100,6 @@ func resourceSoftLayerLoadBalancerServiceGroupCreate(d *schema.ResourceData, met
 
 func resourceSoftLayerLoadBalancerServiceGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client).loadBalancerService
-	if client == nil {
-		return fmt.Errorf("The client is nil.")
-	}
 
 	loadBalancer, err := client.GetObject(d.Get("load_balancer_id").(int))
 
@@ -167,9 +161,6 @@ func resourceSoftLayerLoadBalancerServiceGroupRead(d *schema.ResourceData, meta 
 
 func resourceSoftLayerLoadBalancerServiceGroupDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client).loadBalancerService
-	if client == nil {
-		return fmt.Errorf("The client is nil.")
-	}
 
 	success, err := client.DeleteLoadBalancerVirtualServer(d.Get("virtual_server_id").(int))
 

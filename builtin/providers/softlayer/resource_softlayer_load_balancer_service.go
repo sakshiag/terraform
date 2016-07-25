@@ -167,9 +167,6 @@ func resourceSoftLayerLoadBalancerServiceRead(d *schema.ResourceData, meta inter
 
 func resourceSoftLayerLoadBalancerServiceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client).loadBalancerService
-	if client == nil {
-		return fmt.Errorf("The client is nil.")
-	}
 
 	id, _ := strconv.Atoi(d.Id())
 	success, err := client.DeleteLoadBalancerService(id)
