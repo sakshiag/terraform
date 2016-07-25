@@ -41,6 +41,8 @@ resource "softlayer_lb_local_service_group" "test_service_group" {
 
 ## Attributes Reference
 
-* `id` - A Local Load Balancer Service Group's internal identifier.
+* `id` - A Local Load Balancer Service Group's internal identifier.  This will be the same as the `virtual_server_id`
 * `virtual_server_id` - A Local Load Balancer Service Group's associated Virtual Server identifier. Note that
     the implementation details of the virtual server are handled internally by Softlayer.
+* `service_group_id` - The internal ID of the load balancer service group.  Reference this attribute from a
+    `softlayer_local_lb_service` resource

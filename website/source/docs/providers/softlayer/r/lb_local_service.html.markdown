@@ -15,7 +15,7 @@ Create, update, and destroy SoftLayer Local Load Balancer Service's.
 ```
 resource "softlayer_lb_local_service" "test_service" {
     port = 80
-    service_group_id = "${softlayer_lb_local_service_group.test_service_group.id}"
+    service_group_id = "${softlayer_lb_local_service_group.test_service_group.service_group_id}"
     weight = 1
     health_check_type = "DNS"
     ip_address_id = "${softlayer_virtual_guest.test_server_1.ip_address_id}"
@@ -27,7 +27,8 @@ resource "softlayer_lb_local_service" "test_service" {
 * `port` | *int*
     * (Required) Specifies the destination port for the Local Load Balancer Service.
 * `service_group_id` | *string*
-    * (Required) The id of the Local Load Balancer Service Group that this Service will be associated with.
+    * (Required) The `service_group_id` of the Local Load Balancer Service Group that this service will be associated
+        with.
 * `weight` | *int*
     * (Required) The weight of the Local Load Balancer Service Group.
 * `health_check_type` | *string*
