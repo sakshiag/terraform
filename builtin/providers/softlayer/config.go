@@ -23,6 +23,7 @@ type Client struct {
 	networkApplicationDeliveryControllerService softlayer.SoftLayer_Network_Application_Delivery_Controller_Service
 	securityCertificateService                  softlayer.SoftLayer_Security_Certificate_Service
 	loadBalancerService                         softlayer.SoftLayer_Load_Balancer_Service
+	loadBalancerServiceGroupService             softlayer.SoftLayer_Load_Balancer_Service_Group_Service
 }
 
 func (c *Config) Client() (*Client, error) {
@@ -88,6 +89,12 @@ func (c *Config) Client() (*Client, error) {
 		return nil, err
 	}
 
+	loadBalancerServiceGroupService, err := slc.GetSoftLayer_Load_Balancer_Service_Group_Service()
+
+	if err != nil {
+		return nil, err
+	}
+
 	client := &Client{
 		accountService:                              accountService,
 		virtualGuestService:                         virtualGuestService,
@@ -99,6 +106,7 @@ func (c *Config) Client() (*Client, error) {
 		networkApplicationDeliveryControllerService: networkApplicationDeliveryControllerService,
 		securityCertificateService:                  securityCertificateService,
 		loadBalancerService:                         loadBalancerService,
+		loadBalancerServiceGroupService:             loadBalancerServiceGroupService,
 	}
 
 	log.Println("[INFO] Created SoftLayer client")

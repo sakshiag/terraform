@@ -61,7 +61,7 @@ resource "softlayer_lb_local_service_group" "test_service_group" {
 resource "softlayer_lb_local_service" "test_service" {
     port = 80
     enabled = true
-    service_group_id = "${softlayer_lb_local_service_group.test_service_group.id}"
+    service_group_id = "${softlayer_lb_local_service_group.test_service_group.service_group_id}"
     weight = 1
     health_check_type = "DNS"
     ip_address_id = "${softlayer_virtual_guest.test_server_1.ip_address_id}"

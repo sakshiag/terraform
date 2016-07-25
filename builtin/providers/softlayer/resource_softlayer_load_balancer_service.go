@@ -2,11 +2,11 @@ package softlayer
 
 import (
 	"fmt"
+	"github.com/TheWeatherCompany/softlayer-go/data_types"
 	"github.com/TheWeatherCompany/softlayer-go/softlayer"
 	"github.com/hashicorp/terraform/helper/schema"
 	"log"
 	"strconv"
-	"strings"
 )
 
 func resourceSoftLayerLoadBalancerService() *schema.Resource {
@@ -19,7 +19,7 @@ func resourceSoftLayerLoadBalancerService() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"service_group_id": &schema.Schema{
-				Type:     schema.TypeString,
+				Type:     schema.TypeInt,
 				Required: true,
 				ForceNew: true,
 			},
@@ -48,19 +48,14 @@ func resourceSoftLayerLoadBalancerService() *schema.Resource {
 }
 
 func resourceSoftLayerLoadBalancerServiceCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*Client).loadBalancerService
-	if client == nil {
-		return fmt.Errorf("The client is nil.")
-	}
-
-	loadBalancer, err := client.GetObject(GetLbId(d.Get("service_group_id").(string)))
+	serviceGroup, err := getServiceGroup(d.Get("service_group_id").(int), meta)
 
 	if err != nil {
-		return fmt.Errorf("Error retrieving load balancer: %s", err)
+		return fmt.Errorf("Error retrieving load balancer service group from SoftLayer, %s", err)
 	}
 
 	opts := softlayer.SoftLayer_Load_Balancer_Service_CreateOptions{
-		ServiceGroupId:  GetServiceGroupId(d.Get("service_group_id").(string)),
+		ServiceGroupId:  serviceGroup.Id,
 		Enabled:         1,
 		Port:            d.Get("port").(int),
 		IpAddressId:     d.Get("ip_address_id").(int),
@@ -70,7 +65,9 @@ func resourceSoftLayerLoadBalancerServiceCreate(d *schema.ResourceData, meta int
 
 	log.Printf("[INFO] Creating load balancer service")
 
-	success, err := client.CreateLoadBalancerService(loadBalancer.Id, &opts)
+	client := meta.(*Client).loadBalancerService
+
+	success, err := client.CreateLoadBalancerService(serviceGroup.VirtualServer.VirtualIpAddress.Id, &opts)
 
 	if err != nil {
 		return fmt.Errorf("Error creating load balancer service: %s", err)
@@ -80,18 +77,18 @@ func resourceSoftLayerLoadBalancerServiceCreate(d *schema.ResourceData, meta int
 		return fmt.Errorf("Error creating load balancer service")
 	}
 
-	loadBalancer, err = client.GetObject(GetLbId(d.Get("service_group_id").(string)))
+	lbObj, err := client.GetObject(serviceGroup.VirtualServer.VirtualIpAddress.Id)
 
 	if err != nil {
 		return fmt.Errorf("Error retrieving load balancer: %s", err)
 	}
 
-	for _, virtualServer := range loadBalancer.VirtualServers {
+	for _, virtualServer := range lbObj.VirtualServers {
 		if virtualServer.Id == virtualServer.Id {
 			for _, service := range virtualServer.ServiceGroups[0].Services {
 				if service.IpAddressId == d.Get("ip_address_id").(int) &&
 					service.Port == d.Get("port").(int) {
-					d.SetId(fmt.Sprintf("%d|%d|%d", loadBalancer.Id, virtualServer.ServiceGroups[0].Id, service.Id))
+					d.SetId(strconv.Itoa(service.Id))
 				}
 			}
 		}
@@ -103,19 +100,14 @@ func resourceSoftLayerLoadBalancerServiceCreate(d *schema.ResourceData, meta int
 }
 
 func resourceSoftLayerLoadBalancerServiceUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*Client).loadBalancerService
-	if client == nil {
-		return fmt.Errorf("The client is nil.")
-	}
-
-	loadBalancer, err := client.GetObject(GetLbId(d.Id()))
+	serviceGroup, err := getServiceGroup(d.Get("service_group_id").(int), meta)
 
 	if err != nil {
-		return fmt.Errorf("Error retrieving load balancer: %s", err)
+		return fmt.Errorf("Error retrieving load balancer service group from SoftLayer, %s", err)
 	}
 
 	opts := softlayer.SoftLayer_Load_Balancer_Service_CreateOptions{
-		ServiceGroupId:  GetServiceGroupId(d.Id()),
+		ServiceGroupId:  serviceGroup.Id,
 		Enabled:         1,
 		Port:            d.Get("port").(int),
 		IpAddressId:     d.Get("ip_address_id").(int),
@@ -125,7 +117,10 @@ func resourceSoftLayerLoadBalancerServiceUpdate(d *schema.ResourceData, meta int
 
 	log.Printf("[INFO] Updating load balancer service")
 
-	success, err := client.UpdateLoadBalancerService(loadBalancer.Id, GetServiceGroupId(d.Id()), getServiceId(d.Id()), &opts)
+	client := meta.(*Client).loadBalancerService
+
+	serviceId, _ := strconv.Atoi(d.Id())
+	success, err := client.UpdateLoadBalancerService(serviceGroup.VirtualServer.VirtualIpAddress.Id, serviceGroup.Id, serviceId, &opts)
 
 	if err != nil {
 		return fmt.Errorf("Error updating load balancer service: %s", err)
@@ -139,17 +134,25 @@ func resourceSoftLayerLoadBalancerServiceUpdate(d *schema.ResourceData, meta int
 }
 
 func resourceSoftLayerLoadBalancerServiceRead(d *schema.ResourceData, meta interface{}) error {
+	serviceGroup, err := getServiceGroup(d.Get("service_group_id").(int), meta)
+
+	if err != nil {
+		return fmt.Errorf("Error retrieving load balancer service group from SoftLayer, %s", err)
+	}
+
 	client := meta.(*Client).loadBalancerService
-	loadBalancer, err := client.GetObject(GetLbId(d.Id()))
+
+	loadBalancer, err := client.GetObject(serviceGroup.VirtualServer.VirtualIpAddress.Id)
 	if err != nil {
 		return fmt.Errorf("Error retrieving load balancer: %s", err)
 	}
 
+	id, _ := strconv.Atoi(d.Id())
 	for _, virtualServer := range loadBalancer.VirtualServers {
 		serviceGroup := virtualServer.ServiceGroups[0]
-		if serviceGroup.Id == GetServiceGroupId(d.Id()) {
+		if serviceGroup.Id == serviceGroup.Id {
 			for _, service := range serviceGroup.Services {
-				if service.Id == getServiceId(d.Id()) {
+				if service.Id == id {
 					d.Set("ip_address_id", service.IpAddressId)
 					d.Set("port", service.Port)
 					d.Set("health_check_type", service.HealthChecks[0].HealthCheckType)
@@ -168,7 +171,8 @@ func resourceSoftLayerLoadBalancerServiceDelete(d *schema.ResourceData, meta int
 		return fmt.Errorf("The client is nil.")
 	}
 
-	success, err := client.DeleteLoadBalancerService(getServiceId(d.Id()))
+	id, _ := strconv.Atoi(d.Id())
+	success, err := client.DeleteLoadBalancerService(id)
 
 	if err != nil {
 		return fmt.Errorf("Error deleting service group: %s", err)
@@ -182,16 +186,24 @@ func resourceSoftLayerLoadBalancerServiceDelete(d *schema.ResourceData, meta int
 }
 
 func resourceSoftLayerLoadBalancerServiceExists(d *schema.ResourceData, meta interface{}) (bool, error) {
+	serviceGroup, err := getServiceGroup(d.Get("service_group_id").(int), meta)
+
+	if err != nil {
+		return false, fmt.Errorf("Error retrieving load balancer service group from SoftLayer, %s", err)
+	}
+
 	client := meta.(*Client).loadBalancerService
-	lb, err := client.GetObject(GetLbId(d.Id()))
+
+	lb, err := client.GetObject(serviceGroup.VirtualServer.VirtualIpAddress.Id)
 	if err != nil {
 		return false, err
 	}
 
+	id, _ := strconv.Atoi(d.Id())
 	for _, virtualServer := range lb.VirtualServers {
-		if virtualServer.ServiceGroups[0].Id == GetServiceGroupId(d.Id()) {
+		if virtualServer.ServiceGroups[0].Id == serviceGroup.Id {
 			for _, service := range virtualServer.ServiceGroups[0].Services {
-				if service.Id == getServiceId(d.Id()) {
+				if service.Id == id {
 					return true, nil
 				}
 			}
@@ -201,12 +213,13 @@ func resourceSoftLayerLoadBalancerServiceExists(d *schema.ResourceData, meta int
 	return false, nil
 }
 
-func getServiceId(id string) int {
-	lbId, err := strconv.Atoi(strings.Split(id, "|")[2])
+func getServiceGroup(sgid int, meta interface{}) (data_types.Softlayer_Service_Group, error) {
+	client := meta.(*Client).loadBalancerServiceGroupService
 
-	if err != nil {
-		return -1
+	mask := []string{
+		"id",
+		"virtualServer.virtualIpAddress.id",
 	}
 
-	return lbId
+	return client.GetObject(sgid, mask)
 }
