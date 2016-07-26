@@ -29,11 +29,6 @@ func resourceSoftLayerProvisioningHook() *schema.Resource {
                                 Required: true,
                         },
 
-                        "typeId": &schema.Schema{
-                                Type:     schema.TypeInt,
-                                Required: true,
-                        },
-
                         "uri": &schema.Schema{
                                 Type:     schema.TypeString,
                                 Required: true,
@@ -47,17 +42,10 @@ func resourceSoftLayerProvisioningHookCreate(d *schema.ResourceData, meta interf
 
         opts := datatypes.SoftLayer_Provisioning_Hook_Template{
                 Name:   d.Get("name").(string),
-                TypeId: d.Get("typeId").(int),
                 Uri:    d.Get("uri").(string),
         }
 
-        // if strings.HasPrefix(d.Get("uri").(string),"http" || strings.HasPrefix(d.Get("uri").(string),"https" {
-        //         opts.Uri = d.Get("uri").(string)
-        // } else {
-        //         return fmt.Errorf("Uri needs to start with http or https")
-        // }
-
-        hook, err := client.CreateProvisioningHook(opts)
+        hook, err := client.CreateObject(opts)
         if err != nil {
                 return fmt.Errorf("Error creating Provisioning Hook: %s", err)
         }
