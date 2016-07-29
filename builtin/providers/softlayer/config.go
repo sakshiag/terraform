@@ -13,6 +13,7 @@ type Config struct {
 }
 
 type Client struct {
+	accountService                              softlayer.SoftLayer_Account_Service
 	virtualGuestService                         softlayer.SoftLayer_Virtual_Guest_Service
 	sshKeyService                               softlayer.SoftLayer_Security_Ssh_Key_Service
 	productOrderService                         softlayer.SoftLayer_Product_Order_Service
@@ -24,6 +25,12 @@ type Client struct {
 
 func (c *Config) Client() (*Client, error) {
 	slc := slclient.NewSoftLayerClient(c.Username, c.ApiKey)
+	accountService, err := slc.GetSoftLayer_Account_Service()
+
+        if err != nil {
+                return nil, err
+        }
+
 	virtualGuestService, err := slc.GetSoftLayer_Virtual_Guest_Service()
 
 	if err != nil {
@@ -61,6 +68,7 @@ func (c *Config) Client() (*Client, error) {
 	}
 
 	client := &Client{
+	        accountService:                              accountService,
 		virtualGuestService:                         virtualGuestService,
 		sshKeyService:                               sshKeyService,
 		dnsDomainService:                            dnsDomainService,
