@@ -147,6 +147,11 @@ func resourceSoftLayerVirtualGuest() *schema.Resource {
 				Default:  nil,
 				ForceNew: true,
 			},
+			
+			"provisioning_hook_name": &schema.Schema{
+                                Type:     schema.TypeString,
+                                Optional: true,
+                        },
 
 			"block_device_template_group_gid": &schema.Schema{
 				Type:     schema.TypeString,
@@ -189,6 +194,31 @@ func getBlockDevices(d *schema.ResourceData) []datatypes.BlockDevice {
 	}
 }
 
+func getPostProvisioningHookFromResourceData(d *schema.ResourceData, meta interface{}) (datatypes.SoftLayer_Provisioning_Hook, error) {
+        client := meta.(*Client).accountService
+
+        mask := []string{
+                "id",
+        }
+
+        provisioningHookName := d.Get("provisioning_hook_name").(string)
+
+        filter := fmt.Sprintf(`{"name":"%s"}`, provisioningHookName)
+
+        hooks, err := client.GetPostProvisioningHooks(mask, filter)
+
+        if err != nil {
+                return datatypes.SoftLayer_Provisioning_Hook{}, fmt.Errorf("Error looking up Provisioning Hook: %d %s", len(hooks), err)
+        }
+
+        if len(hooks) < 1 {
+                return datatypes.SoftLayer_Provisioning_Hook{}, fmt.Errorf(
+                        "Unable to locate a provisioning hook matching the provided provisioning hook name: %s", provisioningHookName)
+        }
+
+        return hooks[0], nil
+}
+
 func resourceSoftLayerVirtualGuestCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client).virtualGuestService
 	if client == nil {
@@ -215,9 +245,23 @@ func resourceSoftLayerVirtualGuestCreate(d *schema.ResourceData, meta interface{
 		NetworkComponents:      []datatypes.NetworkComponents{networkComponent},
 		BlockDevices:           getBlockDevices(d),
 		LocalDiskFlag:          d.Get("local_disk").(bool),
-		PostInstallScriptUri:   d.Get("post_install_script_uri").(string),
+		//PostInstallScriptUri:   d.Get("post_install_script_uri").(string),
 	}
 
+	// Apply post install script Uri if provided
+	if postInstallScriptUri, ok := d.GetOk("post_install_script_uri"); ok {
+                opts.PostInstallScriptUri = postInstallScriptUri.(string)
+        }
+
+	// Apply uri of provisioning hook if hook name provided
+	if len(d.Get("provisioning_hook_name").(string)) > 0 {
+                provisioningHook, err := getPostProvisioningHookFromResourceData(d, meta)
+                if err != nil {
+                        return fmt.Errorf("Could not get post provisioning hook from resource data: %s", err)
+                }
+                opts.PostInstallScriptUri = provisioningHook.Uri
+        }
+	
 	if dedicatedAcctHostOnly, ok := d.GetOk("dedicated_acct_host_only"); ok {
 		opts.DedicatedAccountHostOnlyFlag = dedicatedAcctHostOnly.(bool)
 	}
