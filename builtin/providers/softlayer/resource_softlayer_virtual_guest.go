@@ -144,7 +144,7 @@ func resourceSoftLayerVirtualGuest() *schema.Resource {
 			"post_install_script_uri": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
-				Default:  nil,
+				//Default:  nil,
 				ForceNew: true,
 			},
 			
@@ -194,29 +194,33 @@ func getBlockDevices(d *schema.ResourceData) []datatypes.BlockDevice {
 	}
 }
 
-func getPostProvisioningHookFromResourceData(d *schema.ResourceData, meta interface{}) (datatypes.SoftLayer_Provisioning_Hook, error) {
+func getPostProvisioningHooksByName(provisioningHookName string, meta interface{}) ([]datatypes.SoftLayer_Provisioning_Hook, error) {
         client := meta.(*Client).accountService
 
         mask := []string{
                 "id",
+                "name",
+                "uri",
         }
-
-        provisioningHookName := d.Get("provisioning_hook_name").(string)
-
-        filter := fmt.Sprintf(`{"name":"%s"}`, provisioningHookName)
-
-        hooks, err := client.GetPostProvisioningHooks(mask, filter)
+        
+        filter := fmt.Sprintf(`{"postProvisioningHooks":{"name":{"operation":"%s"}}}`, provisioningHookName)
+        
+        provisioningHooks, err := client.GetPostProvisioningHooks(mask, filter)
 
         if err != nil {
-                return datatypes.SoftLayer_Provisioning_Hook{}, fmt.Errorf("Error looking up Provisioning Hook: %d %s", len(hooks), err)
+                return nil, fmt.Errorf("Error looking up Provisioning Hook: %s", err)
         }
 
-        if len(hooks) < 1 {
-                return datatypes.SoftLayer_Provisioning_Hook{}, fmt.Errorf(
+        if len(provisioningHooks) < 1 {
+                return nil, fmt.Errorf(
                         "Unable to locate a provisioning hook matching the provided provisioning hook name: %s", provisioningHookName)
         }
+        
+        for _, hook := range provisioningHooks {
+                log.Printf("[INFO] The retrieved post provisioning hook name and uri : %s, %s", hook.Name, hook.Uri)
+        }
 
-        return hooks[0], nil
+        return provisioningHooks, nil
 }
 
 func resourceSoftLayerVirtualGuestCreate(d *schema.ResourceData, meta interface{}) error {
@@ -248,20 +252,21 @@ func resourceSoftLayerVirtualGuestCreate(d *schema.ResourceData, meta interface{
 		//PostInstallScriptUri:   d.Get("post_install_script_uri").(string),
 	}
 
-	// Apply post install script Uri if provided
-	if postInstallScriptUri, ok := d.GetOk("post_install_script_uri"); ok {
-                opts.PostInstallScriptUri = postInstallScriptUri.(string)
+	// Apply uri of provisioning hook if hook name provided
+	provisioningHookName := d.Get("provisioning_hook_name").(string)
+        if provisioningHookName != "" {
+                provisioningHooks, err := getPostProvisioningHooksByName(provisioningHookName, meta)
+                if err != nil {
+                        return fmt.Errorf("Could not get post provisioning hook from provided name: %s", err)
+                }
+                opts.PostInstallScriptUri = provisioningHooks[0].Uri
+        } else {
+                // Apply post install script Uri if provided
+                if postInstallScriptUri, ok := d.GetOk("post_install_script_uri"); ok {
+                        opts.PostInstallScriptUri = postInstallScriptUri.(string)
+                }
         }
 
-	// Apply uri of provisioning hook if hook name provided
-	if len(d.Get("provisioning_hook_name").(string)) > 0 {
-                provisioningHook, err := getPostProvisioningHookFromResourceData(d, meta)
-                if err != nil {
-                        return fmt.Errorf("Could not get post provisioning hook from resource data: %s", err)
-                }
-                opts.PostInstallScriptUri = provisioningHook.Uri
-        }
-	
 	if dedicatedAcctHostOnly, ok := d.GetOk("dedicated_acct_host_only"); ok {
 		opts.DedicatedAccountHostOnlyFlag = dedicatedAcctHostOnly.(bool)
 	}
