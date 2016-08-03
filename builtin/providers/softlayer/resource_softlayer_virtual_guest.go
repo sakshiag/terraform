@@ -215,14 +215,9 @@ func resourceSoftLayerVirtualGuestCreate(d *schema.ResourceData, meta interface{
 		NetworkComponents:      []datatypes.NetworkComponents{networkComponent},
 		BlockDevices:           getBlockDevices(d),
 		LocalDiskFlag:          d.Get("local_disk").(bool),
-		//PostInstallScriptUri:   d.Get("post_install_script_uri").(string),
+		PostInstallScriptUri:   d.Get("post_install_script_uri").(string),
 	}
 	
-	// Apply post install script Uri if provided
-        if postInstallScriptUri, ok := d.GetOk("post_install_script_uri"); ok {
-                opts.PostInstallScriptUri = postInstallScriptUri.(string)
-        }
-
 	if dedicatedAcctHostOnly, ok := d.GetOk("dedicated_acct_host_only"); ok {
 		opts.DedicatedAccountHostOnlyFlag = dedicatedAcctHostOnly.(bool)
 	}
