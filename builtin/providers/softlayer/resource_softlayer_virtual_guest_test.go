@@ -135,42 +135,6 @@ func TestAccSoftLayerVirtualGuest_postInstallScriptUri(t *testing.T) {
 	})
 }
 
-func TestAccSoftLayerVirtualGuest_provisioningHook(t *testing.T) {
-        var guest datatypes.SoftLayer_Virtual_Guest
-
-        resource.Test(t, resource.TestCase{
-                PreCheck:     func() { testAccPreCheck(t) },
-                Providers:    testAccProviders,
-                CheckDestroy: testAccCheckSoftLayerVirtualGuestDestroy,
-                Steps: []resource.TestStep{
-                        resource.TestStep{
-                                Config: testAccCheckSoftLayerVirtualGuestConfig_provisioningHook,
-                                Check: resource.ComposeTestCheckFunc(
-                                        testAccCheckSoftLayerVirtualGuestExists("softlayer_virtual_guest.terraform-acceptance-test-provisioning-hook", &guest),
-                                ),
-                        },
-                },
-        })
-}
-
-func TestAccSoftLayerVirtualGuest_postInstallScriptUriAndProvisioningHook(t *testing.T) {
-        var guest datatypes.SoftLayer_Virtual_Guest
-
-        resource.Test(t, resource.TestCase{
-                PreCheck:     func() { testAccPreCheck(t) },
-                Providers:    testAccProviders,
-                CheckDestroy: testAccCheckSoftLayerVirtualGuestDestroy,
-                Steps: []resource.TestStep{
-                        resource.TestStep{
-                                Config: testAccCheckSoftLayerVirtualGuestConfig_postInstallScriptUriAndProvisioningHook,
-                                Check: resource.ComposeTestCheckFunc(
-                                        testAccCheckSoftLayerVirtualGuestExists("softlayer_virtual_guest.terraform-acceptance-test-pISU-provisioning-hook", &guest),
-                                ),
-                        },
-                },
-        })
-}
-
 func testAccCheckSoftLayerVirtualGuestDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*Client).virtualGuestService
 
@@ -317,45 +281,6 @@ resource "softlayer_virtual_guest" "terraform-acceptance-test-pISU" {
     dedicated_acct_host_only = true
     local_disk = false
     post_install_script_uri = "https://www.google.com"
-}
-`
-
-const testAccCheckSoftLayerVirtualGuestConfig_provisioningHook = `
-resource "softlayer_virtual_guest" "terraform-acceptance-test-provisioning-hook" {
-    name = "terraform-test-provisioning-hook"
-    domain = "bar.example.com"
-    image = "DEBIAN_7_64"
-    region = "ams01"
-    public_network_speed = 10
-    hourly_billing = true
-        private_network_only = false
-    cpu = 1
-    ram = 1024
-    disks = [25, 10, 20]
-    user_data = "{\"value\":\"newvalue\"}"
-    dedicated_acct_host_only = true
-    local_disk = false
-    provisioning_hook_name = "srinivas-test-hook"
-}
-`
-
-const testAccCheckSoftLayerVirtualGuestConfig_postInstallScriptUriAndProvisioningHook = `
-resource "softlayer_virtual_guest" "terraform-acceptance-test-pISU-provisioning-hook" {
-    name = "terraform-test-provisioning-hook"
-    domain = "bar.example.com"
-    image = "DEBIAN_7_64"
-    region = "ams01"
-    public_network_speed = 10
-    hourly_billing = true
-        private_network_only = false
-    cpu = 1
-    ram = 1024
-    disks = [25, 10, 20]
-    user_data = "{\"value\":\"newvalue\"}"
-    dedicated_acct_host_only = true
-    local_disk = false
-    post_install_script_uri = "http://www.weather.com"
-    provisioning_hook_name = "srinivas-test-hook"
 }
 `
 
