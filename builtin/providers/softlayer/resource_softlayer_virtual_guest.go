@@ -239,7 +239,7 @@ func resourceSoftLayerVirtualGuestCreate(d *schema.ResourceData, meta interface{
 			return fmt.Errorf("Not a valid frontend ID, must be an integer: %s", err)
 		}
 		opts.PrimaryNetworkComponent = &datatypes.PrimaryNetworkComponent{
-			NetworkVlan: datatypes.NetworkVlan{Id: (frontendVlanId)},
+			NetworkVlan: datatypes.NetworkVlan{Id: frontendVlanId},
 		}
 	}
 
@@ -250,7 +250,7 @@ func resourceSoftLayerVirtualGuestCreate(d *schema.ResourceData, meta interface{
 			return fmt.Errorf("Not a valid backend ID, must be an integer: %s", err)
 		}
 		opts.PrimaryBackendNetworkComponent = &datatypes.PrimaryBackendNetworkComponent{
-			NetworkVlan: datatypes.NetworkVlan{Id: (backendVlanId)},
+			NetworkVlan: datatypes.NetworkVlan{Id: backendVlanId},
 		}
 	}
 

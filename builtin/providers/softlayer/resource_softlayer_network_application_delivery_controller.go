@@ -5,7 +5,7 @@ import (
 	"log"
 	"strconv"
 
-	softlayer "github.com/TheWeatherCompany/softlayer-go/softlayer"
+	"github.com/TheWeatherCompany/softlayer-go/softlayer"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -113,7 +113,7 @@ func resourceSoftLayerNetworkApplicationDeliveryControllerRead(d *schema.Resourc
 	}
 
 	d.Set("name", getObjectResult.Name)
-	d.Set("type", getObjectResult.Type)
+	d.Set("type", getObjectResult.Type.Name)
 	if getObjectResult.Datacenter != nil {
 		d.Set("location", getObjectResult.Datacenter.Name)
 	}

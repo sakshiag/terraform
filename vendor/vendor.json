@@ -244,34 +244,34 @@
 			"revision": "0290933f5e8afd933f2823fce32bf2847e6ea603"
 		},
 		{
-			"checksumSHA1": "HsIGOQjx5ER7CqsHbLdk3f0HHEg=",
+			"checksumSHA1": "k58BAExO0PSsauJFpTR4Y2mw0jU=",
 			"path": "github.com/TheWeatherCompany/softlayer-go/client",
-			"revision": "36c2a33266d9a2dacb12c5772a500dc7fa3e3b6a",
-			"revisionTime": "2016-06-08T22:42:16Z"
+			"revision": "ef7a691a5a2fff5208b5e74ca2cdcffb82bac859",
+			"revisionTime": "2016-06-21T17:41:00Z"
 		},
 		{
-			"checksumSHA1": "YKbmwVbAebRVC0NGPAnb1q8Y0xs=",
+			"checksumSHA1": "+BWLS6euvUeVj9e8OdZjaNeVWXE=",
 			"path": "github.com/TheWeatherCompany/softlayer-go/common",
-			"revision": "36c2a33266d9a2dacb12c5772a500dc7fa3e3b6a",
-			"revisionTime": "2016-06-08T22:42:16Z"
+			"revision": "ef7a691a5a2fff5208b5e74ca2cdcffb82bac859",
+			"revisionTime": "2016-06-21T17:41:00Z"
 		},
 		{
-			"checksumSHA1": "G6TmL65ynDX0RK76LmzgELGghlw=",
+			"checksumSHA1": "Yx+A9Unc287mFmaiBrGvAHBjess=",
 			"path": "github.com/TheWeatherCompany/softlayer-go/data_types",
-			"revision": "36c2a33266d9a2dacb12c5772a500dc7fa3e3b6a",
-			"revisionTime": "2016-06-08T22:42:16Z"
+			"revision": "ef7a691a5a2fff5208b5e74ca2cdcffb82bac859",
+			"revisionTime": "2016-06-21T17:41:00Z"
 		},
 		{
-			"checksumSHA1": "XOsa+MRvn1jjhC+l/a3ok88mnj0=",
+			"checksumSHA1": "NHt1fujtHhGLoNx1AZATYMQf5wA=",
 			"path": "github.com/TheWeatherCompany/softlayer-go/services",
-			"revision": "36c2a33266d9a2dacb12c5772a500dc7fa3e3b6a",
-			"revisionTime": "2016-06-08T22:42:16Z"
+			"revision": "ef7a691a5a2fff5208b5e74ca2cdcffb82bac859",
+			"revisionTime": "2016-06-21T17:41:00Z"
 		},
 		{
-			"checksumSHA1": "RM4VSyk7+q65xFX9WFqk1nhoSMI=",
+			"checksumSHA1": "z5gNImih46SVnOS1ZT6372GwDow=",
 			"path": "github.com/TheWeatherCompany/softlayer-go/softlayer",
-			"revision": "36c2a33266d9a2dacb12c5772a500dc7fa3e3b6a",
-			"revisionTime": "2016-06-08T22:42:16Z"
+			"revision": "ef7a691a5a2fff5208b5e74ca2cdcffb82bac859",
+			"revisionTime": "2016-06-21T17:41:00Z"
 		},
 		{
 			"path": "github.com/Unknwon/com",

@@ -52,7 +52,6 @@ func TestAccSoftLayerVirtualGuest_Basic(t *testing.T) {
 						"softlayer_virtual_guest.terraform-acceptance-test-1", "local_disk", "false"),
 					resource.TestCheckResourceAttr(
 						"softlayer_virtual_guest.terraform-acceptance-test-1", "dedicated_acct_host_only", "true"),
-
 					// TODO: As agreed, will be enabled when VLAN support is implemented: https://github.com/TheWeatherCompany/softlayer-go/issues/3
 					//					resource.TestCheckResourceAttr(
 					//						"softlayer_virtual_guest.terraform-acceptance-test-1", "frontend_vlan_id", "1085155"),
