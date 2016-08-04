@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/hil/ast"
 	"github.com/hashicorp/terraform/config"
 	"github.com/hashicorp/terraform/config/module"
+	"github.com/hashicorp/terraform/flatmap"
 )
 
 const (
@@ -161,7 +162,6 @@ func (i *Interpolater) valueModuleVar(
 		} else {
 			// Same reasons as the comment above.
 			result[n] = unknownVariable()
-
 		}
 	}
 
@@ -484,12 +484,17 @@ func (i *Interpolater) computeResourceMultiVariable(
 			err)
 	}
 
-	// If we have no module in the state yet or count, return empty
-	if module == nil || len(module.Resources) == 0 || count == 0 {
-		return &ast.Variable{Type: ast.TypeString, Value: ""}, nil
+	// If count is zero, we return an empty list
+	if count == 0 {
+		return &ast.Variable{Type: ast.TypeList, Value: []ast.Variable{}}, nil
 	}
 
-	var values []string
+	// If we have no module in the state yet or count, return unknown
+	if module == nil || len(module.Resources) == 0 {
+		return &unknownVariable, nil
+	}
+
+	var values []interface{}
 	for j := 0; j < count; j++ {
 		id := fmt.Sprintf("%s.%d", v.ResourceId(), j)
 
@@ -517,9 +522,10 @@ func (i *Interpolater) computeResourceMultiVariable(
 			continue
 		}
 
-		// computed list attribute
-		_, ok = r.Primary.Attributes[v.Field+".#"]
-		if !ok {
+		// computed list or map attribute
+		_, isList := r.Primary.Attributes[v.Field+".#"]
+		_, isMap := r.Primary.Attributes[v.Field+".%"]
+		if !(isList || isMap) {
 			continue
 		}
 		multiAttr, err := i.interpolateComplexTypeAttribute(v.Field, r.Primary.Attributes)
@@ -531,14 +537,7 @@ func (i *Interpolater) computeResourceMultiVariable(
 			return &ast.Variable{Type: ast.TypeString, Value: ""}, nil
 		}
 
-		for _, element := range multiAttr.Value.([]ast.Variable) {
-			strVal := element.Value.(string)
-			if strVal == config.UnknownVariableValue {
-				return &unknownVariable, nil
-			}
-
-			values = append(values, strVal)
-		}
+		values = append(values, multiAttr)
 	}
 
 	if len(values) == 0 {
@@ -589,21 +588,19 @@ func (i *Interpolater) interpolateComplexTypeAttribute(
 			return unknownVariable(), nil
 		}
 
-		var keys []string
+		keys := make([]string, 0)
 		listElementKey := regexp.MustCompile("^" + resourceID + "\\.[0-9]+$")
-		for id, _ := range attributes {
+		for id := range attributes {
 			if listElementKey.MatchString(id) {
 				keys = append(keys, id)
 			}
 		}
+		sort.Strings(keys)
 
 		var members []string
 		for _, key := range keys {
 			members = append(members, attributes[key])
 		}
-		// This behaviour still seems very broken to me... it retains BC but is
-		// probably going to cause problems in future
-		sort.Strings(members)
 
 		return hil.InterfaceToVariable(members)
 	}
@@ -620,19 +617,16 @@ func (i *Interpolater) interpolateComplexTypeAttribute(
 			return unknownVariable(), nil
 		}
 
-		var keys []string
+		resourceFlatMap := make(map[string]string)
 		mapElementKey := regexp.MustCompile("^" + resourceID + "\\.([^%]+)$")
-		for id, _ := range attributes {
-			if submatches := mapElementKey.FindAllStringSubmatch(id, -1); len(submatches) > 0 {
-				keys = append(keys, submatches[0][1])
+		for id, val := range attributes {
+			if mapElementKey.MatchString(id) {
+				resourceFlatMap[id] = val
 			}
 		}
 
-		members := make(map[string]interface{})
-		for _, key := range keys {
-			members[key] = attributes[resourceID+"."+key]
-		}
-		return hil.InterfaceToVariable(members)
+		expanded := flatmap.Expand(resourceFlatMap, resourceID)
+		return hil.InterfaceToVariable(expanded)
 	}
 
 	return ast.Variable{}, fmt.Errorf("No complex type %s found", resourceID)
