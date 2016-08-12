@@ -24,6 +24,7 @@ type Client struct {
 	securityCertificateService                  softlayer.SoftLayer_Security_Certificate_Service
 	userCustomerService                         softlayer.SoftLayer_User_Customer_Service
 	provisioningHookService                     softlayer.SoftLayer_Provisioning_Hook_Service
+	locationDatacenterService                   softlayer.SoftLayer_Location_Datacenter_Service
 }
 
 func (c *Config) Client() (*Client, error) {
@@ -74,9 +75,9 @@ func (c *Config) Client() (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	provisioningHookService, err := slc.GetSoftLayer_Provisioning_Hook_Service()
-	
+
 	if err != nil {
 		return nil, err
 	}
@@ -88,6 +89,12 @@ func (c *Config) Client() (*Client, error) {
 	}
 
 	userCustomerService, err := slc.GetSoftLayer_User_Customer_Service()
+
+	if err != nil {
+		return nil, err
+	}
+
+	locationDatacenterService, err := slc.GetSoftLayer_Location_Datacenter_Service()
 
 	if err != nil {
 		return nil, err
@@ -105,6 +112,7 @@ func (c *Config) Client() (*Client, error) {
 		securityCertificateService:                  securityCertificateService,
 		userCustomerService:                         userCustomerService,
 		provisioningHookService:                     provisioningHookService,
+		locationDatacenterService:                   locationDatacenterService,
 	}
 
 	log.Println("[INFO] Created SoftLayer client")

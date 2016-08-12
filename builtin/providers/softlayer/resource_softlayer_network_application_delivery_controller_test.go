@@ -24,7 +24,7 @@ func TestAccSoftLayerNetworkApplicationDeliveryController_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"softlayer_lb_vpx.testacc_foobar_vpx", "type", "NetScaler VPX"),
 					resource.TestCheckResourceAttr(
-						"softlayer_lb_vpx.testacc_foobar_vpx", "datacenter", "DALLAS06"),
+						"softlayer_lb_vpx.testacc_foobar_vpx", "datacenter", "dal06"),
 					resource.TestCheckResourceAttr(
 						"softlayer_lb_vpx.testacc_foobar_vpx", "speed", "10"),
 					resource.TestCheckResourceAttr(
@@ -33,6 +33,20 @@ func TestAccSoftLayerNetworkApplicationDeliveryController_Basic(t *testing.T) {
 						"softlayer_lb_vpx.testacc_foobar_vpx", "ip_count", "2"),
 					resource.TestCheckResourceAttr(
 						"softlayer_lb_vpx.testacc_foobar_vpx", "version", "10.1"),
+					resource.TestCheckResourceAttr(
+						"softlayer_lb_vpx.testacc_foobar_vpx", "front_end_vlan.vlan_number", "1251"),
+					resource.TestCheckResourceAttr(
+						"softlayer_lb_vpx.testacc_foobar_vpx", "front_end_vlan.primary_router_hostname", "fcr01a.dal06"),
+					resource.TestCheckResourceAttr(
+						"softlayer_lb_vpx.testacc_foobar_vpx", "back_end_vlan.vlan_number", "1540"),
+					resource.TestCheckResourceAttr(
+						"softlayer_lb_vpx.testacc_foobar_vpx", "back_end_vlan.primary_router_hostname", "bcr01a.dal06"),
+					resource.TestCheckResourceAttr(
+						"softlayer_lb_vpx.testacc_foobar_vpx", "front_end_subnet", "23.246.226.248/29"),
+					resource.TestCheckResourceAttr(
+						"softlayer_lb_vpx.testacc_foobar_vpx", "back_end_subnet", "10.107.180.0/26"),
+					resource.TestCheckResourceAttr(
+						"softlayer_lb_vpx.testacc_foobar_vpx", "vip_pool.#", "2"),
 				),
 			},
 		},
@@ -72,9 +86,19 @@ func testAccCheckSoftLayerNetworkApplicationDeliveryControllerExists(n string, n
 
 const testAccCheckSoftLayerNetworkApplicationDeliveryControllerConfig_basic = `
 resource "softlayer_lb_vpx" "testacc_foobar_vpx" {
-    datacenter = "DALLAS06"
+    datacenter = "dal06"
     speed = 10
     version = "10.1"
     plan = "Standard"
     ip_count = 2
+    front_end_vlan {
+       vlan_number = 1251
+       primary_router_hostname = "fcr01a.dal06"
+    }
+    back_end_vlan {
+       vlan_number = 1540
+       primary_router_hostname = "bcr01a.dal06"
+    }
+    front_end_subnet = "23.246.226.248/29"
+    back_end_subnet = "10.107.180.0/26"
 }`
