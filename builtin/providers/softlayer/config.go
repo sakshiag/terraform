@@ -26,6 +26,10 @@ type Client struct {
 	securityCertificateService                  softlayer.SoftLayer_Security_Certificate_Service
 	userCustomerService                         softlayer.SoftLayer_User_Customer_Service
 	provisioningHookService                     softlayer.SoftLayer_Provisioning_Hook_Service
+	scalePolicyService                          softlayer.SoftLayer_Scale_Policy_Service
+	scalePolicyTriggerService                   softlayer.SoftLayer_Scale_Policy_Trigger_Service
+	scaleGroupService                           softlayer.SoftLayer_Scale_Group_Service
+	scaleNetworkVlanService                     softlayer.SoftLayer_Scale_Network_Vlan_Service
 }
 
 func (c *Config) Client() (*Client, error) {
@@ -90,9 +94,9 @@ func (c *Config) Client() (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	provisioningHookService, err := slc.GetSoftLayer_Provisioning_Hook_Service()
-	
+
 	if err != nil {
 		return nil, err
 	}
@@ -104,6 +108,30 @@ func (c *Config) Client() (*Client, error) {
 	}
 
 	userCustomerService, err := slc.GetSoftLayer_User_Customer_Service()
+
+	if err != nil {
+		return nil, err
+	}
+
+	scalePolicyService, err := slc.GetSoftLayer_Scale_Policy_Service()
+
+	if err != nil {
+		return nil, err
+	}
+
+	scalePolicyTriggerService, err := slc.GetSoftLayer_Scale_Policy_Trigger_Service()
+
+	if err != nil {
+		return nil, err
+	}
+
+	scaleGroupService, err := slc.GetSoftLayer_Scale_Group_Service()
+
+	if err != nil {
+		return nil, err
+	}
+
+	scaleNetworkVlanService, err := slc.GetSoftLayer_Scale_Network_Vlan_Service()
 
 	if err != nil {
 		return nil, err
@@ -123,6 +151,10 @@ func (c *Config) Client() (*Client, error) {
 		securityCertificateService:                  securityCertificateService,
 		userCustomerService:                         userCustomerService,
 		provisioningHookService:                     provisioningHookService,
+		scalePolicyService:                          scalePolicyService,
+		scalePolicyTriggerService:                   scalePolicyTriggerService,
+		scaleGroupService:                           scaleGroupService,
+		scaleNetworkVlanService:                     scaleNetworkVlanService,
 	}
 
 	log.Println("[INFO] Created SoftLayer client")
