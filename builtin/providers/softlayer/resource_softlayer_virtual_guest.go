@@ -157,7 +157,7 @@ func resourceSoftLayerVirtualGuest() *schema.Resource {
 				Default:  nil,
 				ForceNew: true,
 			},
-			
+
 			"block_device_template_group_gid": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
@@ -221,7 +221,7 @@ func getVirtualGuestTemplateFromResourceData(d *schema.ResourceData) (datatypes.
 		LocalDiskFlag:          d.Get("local_disk").(bool),
 		PostInstallScriptUri:   d.Get("post_install_script_uri").(string),
 	}
-	
+
 	if dedicatedAcctHostOnly, ok := d.GetOk("dedicated_acct_host_only"); ok {
 		opts.DedicatedAccountHostOnlyFlag = dedicatedAcctHostOnly.(bool)
 	}
