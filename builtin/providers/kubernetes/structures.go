@@ -281,21 +281,6 @@ func resourceListEquals(x, y api.ResourceList) bool {
 	return true
 }
 
-func flattenResourceRequirements(in api.ResourceRequirements) []interface{} {
-	att := make(map[string]interface{})
-	if len(in.Limits) > 0 {
-		att["limits"] = flattenResourceList(in.Limits)
-	}
-	if len(in.Requests) > 0 {
-		att["requests"] = flattenResourceList(in.Requests)
-	}
-
-	if len(att) > 0 {
-		return []interface{}{att}
-	}
-	return nil
-
-}
 func schemaSetToStringArray(set *schema.Set) []string {
 	array := make([]string, 0, set.Len())
 	for _, elem := range set.List() {

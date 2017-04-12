@@ -156,27 +156,3 @@ func expandContainerPort(in []interface{}) ([]v1.ContainerPort, error) {
 	}
 	return ports, nil
 }
-
-func expandResourceRequirements(r []interface{}) (v1.ResourceRequirements, error) {
-	if len(r) == 0 || r[0] == nil {
-		return v1.ResourceRequirements{}, nil
-	}
-	in := r[0].(map[string]interface{})
-	obj := v1.ResourceRequirements{}
-
-	var err error
-	if limits, ok := in["limits"].(map[string]interface{}); ok && len(limits) > 0 {
-		obj.Limits, err = expandMapToResourceList(limits)
-		if err != nil {
-			return obj, err
-		}
-	}
-	if requests, ok := in["requests"].(map[string]interface{}); ok && len(requests) > 0 {
-		obj.Requests, err = expandMapToResourceList(requests)
-		if err != nil {
-			return obj, err
-		}
-	}
-	return obj, nil
-
-}
