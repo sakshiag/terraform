@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"encoding/base64"
+
 	"github.com/hashicorp/terraform/helper/schema"
 	"k8s.io/kubernetes/pkg/api/resource"
 	api "k8s.io/kubernetes/pkg/api/v1"
@@ -278,4 +279,105 @@ func resourceListEquals(x, y api.ResourceList) bool {
 		}
 	}
 	return true
+}
+
+func flattenResourceRequirements(in api.ResourceRequirements) []interface{} {
+	att := make(map[string]interface{})
+	if len(in.Limits) > 0 {
+		att["limits"] = flattenResourceList(in.Limits)
+	}
+	if len(in.Requests) > 0 {
+		att["requests"] = flattenResourceList(in.Requests)
+	}
+
+	if len(att) > 0 {
+		return []interface{}{att}
+	}
+	return nil
+
+}
+func schemaSetToStringArray(set *schema.Set) []string {
+	array := make([]string, 0, set.Len())
+	for _, elem := range set.List() {
+		e := elem.(string)
+		array = append(array, e)
+	}
+	return array
+}
+
+func flattenLocalObjectReferenceArray(in []api.LocalObjectReference) []interface{} {
+	att := make([]interface{}, len(in))
+	for i, v := range in {
+		m := map[string]interface{}{}
+		if v.Name != "" {
+			m["name"] = v.Name
+		}
+		att[i] = m
+	}
+	return att
+}
+
+func flattenPersistentVolumeClaimVolumeSource(in *api.PersistentVolumeClaimVolumeSource) []interface{} {
+	att := make(map[string]interface{})
+	if in.ClaimName != "" {
+		att["claim_name"] = in.ClaimName
+	}
+	if in.ReadOnly {
+		att["read_only"] = in.ReadOnly
+	}
+
+	return []interface{}{att}
+}
+
+func expandPersistentVolumeClaimVolumeSource(l []interface{}) *api.PersistentVolumeClaimVolumeSource {
+	if len(l) == 0 || l[0] == nil {
+		return &api.PersistentVolumeClaimVolumeSource{}
+	}
+	in := l[0].(map[string]interface{})
+	obj := &api.PersistentVolumeClaimVolumeSource{
+		ClaimName: in["claim_name"].(string),
+		ReadOnly:  in["read_only"].(bool),
+	}
+	return obj
+}
+
+func flattenVolumes(volumes []api.Volume) []interface{} {
+	att := make([]interface{}, len(volumes))
+	for i, v := range volumes {
+		obj := map[string]interface{}{}
+		if v.Name != "" {
+			obj["name"] = v.Name
+		}
+		if v.PersistentVolumeClaim != nil {
+			obj["persistent_volume_claim"] = flattenPersistentVolumeClaimVolumeSource(v.PersistentVolumeClaim)
+		}
+		//More values needed here
+		att[i] = obj
+	}
+	return att
+}
+
+func expandVolumes(volumes []interface{}) ([]api.Volume, error) {
+	if len(volumes) == 0 {
+		return []api.Volume{}, nil
+	}
+	vl := make([]api.Volume, len(volumes))
+	for i, c := range volumes {
+		v := c.(map[string]interface{})
+
+		if name, ok := v["name"]; ok {
+			vl[i].Name = name.(string)
+		}
+		if pvc, ok := v["persistent_volume_claim"].([]interface{}); ok {
+			vl[i].PersistentVolumeClaim = expandPersistentVolumeClaimVolumeSource(pvc)
+		}
+
+		//Bring in common Persisten volume
+		//Is this right way to do this
+		//p := expandPersistentVolumeSource([]interface{}{v})
+		//vl[i].AWSElasticBlockStore = p.AWSElasticBlockStore
+		//vl[i].AzureDisk = p.AzureDisk
+
+	}
+	return vl, nil
 }
