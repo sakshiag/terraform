@@ -387,6 +387,84 @@
 			"revisionTime": "2016-06-13T20:05:45Z"
 		},
 		{
+			"checksumSHA1": "e8z2npKenG/OKVkeNq2vuo9Z7TA=",
+			"path": "github.com/IBM-Bluemix/bluemix-cli-sdk/bluemix/trace",
+			"revision": "a8973ea35522fc9cfc66a3650d2bdb844db414da",
+			"revisionTime": "2017-04-18T07:49:24Z"
+		},
+		{
+			"checksumSHA1": "Kl5QSCLdt6HhR3TGnmUEuSybtFU=",
+			"path": "github.com/IBM-Bluemix/bluemix-cli-sdk/common/file_helpers",
+			"revision": "a8973ea35522fc9cfc66a3650d2bdb844db414da",
+			"revisionTime": "2017-04-18T07:49:24Z"
+		},
+		{
+			"checksumSHA1": "GeYAnK/AmDUr3alj6uIMUsFFdIs=",
+			"path": "github.com/IBM-Bluemix/bluemix-go",
+			"revision": "e72af3575fb199e549282ff9f17fbedfb5c03475",
+			"revisionTime": "2017-04-27T05:07:27Z"
+		},
+		{
+			"checksumSHA1": "BagrE20QxE7mxaJBiD8i5mHbtOg=",
+			"path": "github.com/IBM-Bluemix/bluemix-go/api/account/accountv2",
+			"revision": "e72af3575fb199e549282ff9f17fbedfb5c03475",
+			"revisionTime": "2017-04-27T05:07:27Z"
+		},
+		{
+			"checksumSHA1": "bEt8+6yaefusxOaoqcvlU4YZKZs=",
+			"path": "github.com/IBM-Bluemix/bluemix-go/api/cf/cfv2",
+			"revision": "e72af3575fb199e549282ff9f17fbedfb5c03475",
+			"revisionTime": "2017-04-27T05:07:27Z"
+		},
+		{
+			"checksumSHA1": "IoQgh4UiKMsZs/J3V2IHhfAqw9Q=",
+			"path": "github.com/IBM-Bluemix/bluemix-go/api/k8scluster/k8sclusterv1",
+			"revision": "e72af3575fb199e549282ff9f17fbedfb5c03475",
+			"revisionTime": "2017-04-27T05:07:27Z"
+		},
+		{
+			"checksumSHA1": "oLMmGE6p+hXVd60TDvg0J4/rD0Y=",
+			"path": "github.com/IBM-Bluemix/bluemix-go/authentication",
+			"revision": "e72af3575fb199e549282ff9f17fbedfb5c03475",
+			"revisionTime": "2017-04-27T05:07:27Z"
+		},
+		{
+			"checksumSHA1": "oWCDJPXh4RZh+IWA7OIyA4fJGys=",
+			"path": "github.com/IBM-Bluemix/bluemix-go/bmxerror",
+			"revision": "e72af3575fb199e549282ff9f17fbedfb5c03475",
+			"revisionTime": "2017-04-27T05:07:27Z"
+		},
+		{
+			"checksumSHA1": "0zER9p0bz81wpFXtU8uAWTD3MGs=",
+			"path": "github.com/IBM-Bluemix/bluemix-go/endpoints",
+			"revision": "e72af3575fb199e549282ff9f17fbedfb5c03475",
+			"revisionTime": "2017-04-27T05:07:27Z"
+		},
+		{
+			"checksumSHA1": "yU8Mzq3oOWxGm0CsZGDJs6sXj2g=",
+			"path": "github.com/IBM-Bluemix/bluemix-go/helpers",
+			"revision": "e72af3575fb199e549282ff9f17fbedfb5c03475",
+			"revisionTime": "2017-04-27T05:07:27Z"
+		},
+		{
+			"checksumSHA1": "WZNMy2RoSh/kPDeK8a7CVqROiD0=",
+			"path": "github.com/IBM-Bluemix/bluemix-go/http",
+			"revision": "e72af3575fb199e549282ff9f17fbedfb5c03475",
+			"revisionTime": "2017-04-27T05:07:27Z"
+		},
+		{
+			"checksumSHA1": "ricprGVn9IKmnQqBjvVWWf6mPBU=",
+			"path": "github.com/IBM-Bluemix/bluemix-go/rest",
+			"revision": "e72af3575fb199e549282ff9f17fbedfb5c03475",
+			"revisionTime": "2017-04-27T05:07:27Z"
+		},
+		{
+			"checksumSHA1": "A6GTUYxvCdq38v/erHN3V4p34aM=",
+			"path": "github.com/IBM-Bluemix/bluemix-go/session",
+			"revision": "e72af3575fb199e549282ff9f17fbedfb5c03475",
+			"revisionTime": "2017-04-27T05:07:27Z"
+		},
+		{
 			"checksumSHA1": "B+GonfgNwOAJMEe0WUHQGATRtMA=",
 			"path": "github.com/Microsoft/go-winio",
 			"revision": "562bb09f6612d9a4e91597184709d1cdba95af93",
@@ -2524,6 +2602,24 @@
 			"revisionTime": "2016-07-26T03:20:27Z"
 		},
 		{
+			"checksumSHA1": "zV4C20+kJotM0cSDUqfhTxK9KqM=",
+			"path": "github.com/minsikl/netscaler-nitro-go/client",
+			"revision": "d153fdcbbd6453b1e14cfdb99f2b9c5bf0f38a3d",
+			"revisionTime": "2016-11-09T04:20:57Z"
+		},
+		{
+			"checksumSHA1": "LJ7vjCUE5xscI/XdNwi4q98nC/A=",
+			"path": "github.com/minsikl/netscaler-nitro-go/datatypes",
+			"revision": "d153fdcbbd6453b1e14cfdb99f2b9c5bf0f38a3d",
+			"revisionTime": "2016-11-09T04:20:57Z"
+		},
+		{
+			"checksumSHA1": "3dT9TU0WuWcCnoRLHajCPSV6G0g=",
+			"path": "github.com/minsikl/netscaler-nitro-go/op",
+			"revision": "d153fdcbbd6453b1e14cfdb99f2b9c5bf0f38a3d",
+			"revisionTime": "2016-11-09T04:20:57Z"
+		},
+		{
 			"checksumSHA1": "7niW29CvYceZ6zbia6b/LT+yD/M=",
 			"path": "github.com/mitchellh/cli",
 			"revision": "fcf521421aa29bde1d93b6920dfce826d7932208",
@@ -2809,6 +2905,12 @@
 			"revisionTime": "2016-09-28T08:39:49Z"
 		},
 		{
+			"checksumSHA1": "pjBPgV7Vsah79nFWOvWHZ3PkTIc=",
+			"path": "github.com/renier/xmlrpc",
+			"revision": "79afb7136fd5637ee1ad13754a90005a49fce713",
+			"revisionTime": "2016-10-26T21:33:56Z"
+		},
+		{
 			"checksumSHA1": "Yqr9OQ7AuIB1N0HMbSxqEoVQG+k=",
 			"comment": "v2.0.1-8-g983d3a5",
 			"path": "github.com/ryanuber/columnize",
@@ -2862,6 +2964,78 @@
 			"path": "github.com/sethvargo/go-fastly",
 			"revision": "43b7f97296d6c8e3a7bc083ab91101fbbc8c2f94",
 			"revisionTime": "2017-02-28T16:12:19Z"
+		},
+		{
+			"checksumSHA1": "KeNIYJQUdE6o196SaYuLMmjEPZM=",
+			"path": "github.com/softlayer/softlayer-go/config",
+			"revision": "60469c3c1d9c00998d5b7f948da46f9132b27497",
+			"revisionTime": "2017-02-10T12:45:36Z"
+		},
+		{
+			"checksumSHA1": "yCIryelA4K1pdLqbV0btM0XSp94=",
+			"path": "github.com/softlayer/softlayer-go/datatypes",
+			"revision": "60469c3c1d9c00998d5b7f948da46f9132b27497",
+			"revisionTime": "2017-02-10T12:45:36Z"
+		},
+		{
+			"checksumSHA1": "tZ3W1bwC/B9lAGW7007CwaZl6C4=",
+			"path": "github.com/softlayer/softlayer-go/filter",
+			"revision": "60469c3c1d9c00998d5b7f948da46f9132b27497",
+			"revisionTime": "2017-02-10T12:45:36Z"
+		},
+		{
+			"checksumSHA1": "8w7mbrWkcP0yCAdX3BpPr1vndrY=",
+			"path": "github.com/softlayer/softlayer-go/helpers/hardware",
+			"revision": "60469c3c1d9c00998d5b7f948da46f9132b27497",
+			"revisionTime": "2017-02-10T12:45:36Z"
+		},
+		{
+			"checksumSHA1": "iIil9KYj6J7ZEK4dG9UirsFuq1Y=",
+			"path": "github.com/softlayer/softlayer-go/helpers/location",
+			"revision": "5b2d4f89bfde05e925889fe8cca91ac188c422d1",
+			"revisionTime": "2017-04-20T00:02:55Z"
+		},
+		{
+			"checksumSHA1": "r0ijpEVlR3yuirWa/4b6yCDIjEE=",
+			"path": "github.com/softlayer/softlayer-go/helpers/network",
+			"revision": "60469c3c1d9c00998d5b7f948da46f9132b27497",
+			"revisionTime": "2017-02-10T12:45:36Z"
+		},
+		{
+			"checksumSHA1": "bGG9wihg55FY7q/kHVE5KQV8XmE=",
+			"path": "github.com/softlayer/softlayer-go/helpers/order",
+			"revision": "60469c3c1d9c00998d5b7f948da46f9132b27497",
+			"revisionTime": "2017-02-10T12:45:36Z"
+		},
+		{
+			"checksumSHA1": "3pXDrCqMd7e7Xb0TCQDsvkIWPIs=",
+			"path": "github.com/softlayer/softlayer-go/helpers/product",
+			"revision": "60469c3c1d9c00998d5b7f948da46f9132b27497",
+			"revisionTime": "2017-02-10T12:45:36Z"
+		},
+		{
+			"checksumSHA1": "6PpeMwmz39rCvqqn1a/xrNb6ER4=",
+			"path": "github.com/softlayer/softlayer-go/helpers/virtual",
+			"revision": "60469c3c1d9c00998d5b7f948da46f9132b27497",
+			"revisionTime": "2017-02-10T12:45:36Z"
+		},
+		{
+			"checksumSHA1": "1GZ3vJI1qXV76b931naR1RU6LAQ=",
+			"path": "github.com/softlayer/softlayer-go/services",
+			"revision": "5b2d4f89bfde05e925889fe8cca91ac188c422d1",
+			"revisionTime": "2017-04-20T00:02:55Z"
+		},
+		{
+			"checksumSHA1": "1zEp/Xsv6Btt7RsLR6wA87xegIA=",
+			"path": "github.com/softlayer/softlayer-go/session",
+			"revision": "5b2d4f89bfde05e925889fe8cca91ac188c422d1",
+			"revisionTime": "2017-04-20T00:02:55Z"
+		},
+		{
+			"checksumSHA1": "ezx/hLd9la9B/UwbBLCmq7LPobU=",
+			"path": "github.com/softlayer/softlayer-go/sl",
+			"revision": "5b2d4f89bfde05e925889fe8cca91ac188c422d1",
+			"revisionTime": "2017-04-20T00:02:55Z"
 		},
 		{
 			"checksumSHA1": "8tEiK6vhVXuUbnWME5XNWLgvtSo=",
@@ -3161,6 +3335,12 @@
 			"revisionTime": "2017-01-14T04:22:49Z"
 		},
 		{
+			"checksumSHA1": "7EZyXN0EmZLgGxZxK01IJua4c8o=",
+			"path": "golang.org/x/net/websocket",
+			"revision": "da118f7b8e5954f39d0d2130ab35d4bf0e3cb344",
+			"revisionTime": "2017-04-23T14:02:46Z"
+		},
+		{
 			"checksumSHA1": "hyK05cmzm+vPH1OO+F1AkvES3sw=",
 			"path": "golang.org/x/oauth2",
 			"revision": "314dd2c0bf3ebd592ec0d20847d27e79d0dbe8dd",
@@ -3200,6 +3380,30 @@
 			"path": "golang.org/x/sys/windows",
 			"revision": "b699b7032584f0953262cb2788a0ca19bb494703",
 			"revisionTime": "2016-11-10T11:58:56Z"
+		},
+		{
+			"checksumSHA1": "Mr4ur60bgQJnQFfJY0dGtwWwMPE=",
+			"path": "golang.org/x/text/encoding",
+			"revision": "a9a820217f98f7c8a207ec1e45a874e1fe12c478",
+			"revisionTime": "2017-04-20T13:36:16Z"
+		},
+		{
+			"checksumSHA1": "HgcUFTOQF5jOYtTIj5obR3GVN9A=",
+			"path": "golang.org/x/text/encoding/charmap",
+			"revision": "a9a820217f98f7c8a207ec1e45a874e1fe12c478",
+			"revisionTime": "2017-04-20T13:36:16Z"
+		},
+		{
+			"checksumSHA1": "zeHyHebIZl1tGuwGllIhjfci+wI=",
+			"path": "golang.org/x/text/encoding/internal",
+			"revision": "a9a820217f98f7c8a207ec1e45a874e1fe12c478",
+			"revisionTime": "2017-04-20T13:36:16Z"
+		},
+		{
+			"checksumSHA1": "9cg4nSGfKTIWKb6bWV7U4lnuFKA=",
+			"path": "golang.org/x/text/encoding/internal/identifier",
+			"revision": "a9a820217f98f7c8a207ec1e45a874e1fe12c478",
+			"revisionTime": "2017-04-20T13:36:16Z"
 		},
 		{
 			"checksumSHA1": "kv3jbPJGCczHVQ7g51am1MxlD1c=",
