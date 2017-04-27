@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"github.com/hashicorp/terraform/helper/schema"
 	"k8s.io/kubernetes/pkg/api/resource"
+	"k8s.io/kubernetes/pkg/api/unversioned"
 	api "k8s.io/kubernetes/pkg/api/v1"
 )
 
@@ -72,6 +73,15 @@ func expandStringSlice(s []interface{}) []string {
 		result[k] = v.(string)
 	}
 	return result
+}
+
+func schemaSetToStringArray(set *schema.Set) []string {
+	array := make([]string, 0, set.Len())
+	for _, elem := range set.List() {
+		e := elem.(string)
+		array = append(array, e)
+	}
+	return array
 }
 
 func flattenMetadata(meta api.ObjectMeta) []map[string]interface{} {
@@ -197,4 +207,65 @@ func newStringSet(f schema.SchemaSetFunc, in []string) *schema.Set {
 		out[i] = v
 	}
 	return schema.NewSet(f, out)
+}
+
+func flattenLabelSelectorRequirementList(l []unversioned.LabelSelectorRequirement) []interface{} {
+	att := make([]map[string]interface{}, len(l))
+	for i, v := range l {
+		m := map[string]interface{}{}
+		m["key"] = v.Key
+		m["values"] = newStringSet(schema.HashString, v.Values)
+		m["operator"] = string(v.Operator)
+		att[i] = m
+	}
+	return []interface{}{att}
+}
+
+func flattenLocalObjectReferenceArray(in []api.LocalObjectReference) []interface{} {
+	att := make([]interface{}, len(in))
+	for i, v := range in {
+		m := map[string]interface{}{}
+		if v.Name != "" {
+			m["name"] = v.Name
+		}
+		att[i] = m
+	}
+	return att
+}
+func expandLocalObjectReferenceArray(in []interface{}) []api.LocalObjectReference {
+	att := []api.LocalObjectReference{}
+	if len(in) < 1 {
+		return att
+	}
+	for i, c := range in {
+		p := c.(map[string]interface{})
+		if name, ok := p["name"]; ok {
+			att[i].Name = name.(string)
+		}
+	}
+	return att
+}
+func expandDeleteOptions(in []interface{}) *api.DeleteOptions {
+	delete_options := &api.DeleteOptions{}
+	if len(in) < 1 {
+		v := make(map[string]interface{})
+		v["orphan_dependents"] = false
+		s := v["orphan_dependents"].(bool)
+		delete_options.OrphanDependents = &s
+		return delete_options
+	}
+	m := in[0].(map[string]interface{})
+	if v, ok := m["orphan_dependents"].(bool); ok {
+		delete_options.OrphanDependents = &v
+	}
+	return delete_options
+}
+
+func patchTemplate(pathPrefix, prefix string, d *schema.ResourceData) []PatchOperation {
+	tempops := patchMetadata(prefix+"metadata.0.", pathPrefix+"/metadata/", d)
+	if d.HasChange(prefix + "spec") {
+		tempspecOps, _ := patchPodSpec(pathPrefix+"/spec", prefix+"spec", d)
+		tempops = append(tempops, tempspecOps...)
+	}
+	return tempops
 }

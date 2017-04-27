@@ -87,10 +87,15 @@ func Provider() terraform.ResourceProvider {
 
 		ResourcesMap: map[string]*schema.Resource{
 			"kubernetes_config_map":              resourceKubernetesConfigMap(),
+			"kubernetes_deployment":              resourceKubernetesDeployment(),
+			"kubernetes_ingress":                 resourceKubernetesIngress(),
 			"kubernetes_namespace":               resourceKubernetesNamespace(),
 			"kubernetes_persistent_volume":       resourceKubernetesPersistentVolume(),
 			"kubernetes_persistent_volume_claim": resourceKubernetesPersistentVolumeClaim(),
+			"kubernetes_pod":                     resourceKubernetesPod(),
+			"kubernetes_replication_controller":  resourceKubernetesReplicationController(),
 			"kubernetes_secret":                  resourceKubernetesSecret(),
+			"kubernetes_service":                 resourceKubernetesService(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
