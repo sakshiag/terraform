@@ -84,7 +84,7 @@ func validateResourceList(value interface{}, key string) (ws []string, es []erro
 func validateActiveDeadlineSeconds(value interface{}, key string) (ws []string, es []error) {
 	v := value.(int)
 	if v <= 0 {
-		es = append(es, fmt.Errorf("%s must be positive", key))
+		es = append(es, fmt.Errorf("%s must be greater than 0", key))
 	}
 	return
 }
@@ -111,7 +111,7 @@ func validateRestartPolicy(value interface{}, key string) (ws []string, es []err
 func validateTerminationGracePeriodSeconds(value interface{}, key string) (ws []string, es []error) {
 	v := value.(int)
 	if v < 0 {
-		es = append(es, fmt.Errorf("%s must be non-negative", key))
+		es = append(es, fmt.Errorf("%s must be greater than or equal to 0", key))
 	}
 	return
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
+	pkgApi "k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/errors"
 	api "k8s.io/kubernetes/pkg/api/v1"
 	kubernetes "k8s.io/kubernetes/pkg/client/clientset_generated/release_1_5"
@@ -26,11 +27,11 @@ func resourceKubernetesPod() *schema.Resource {
 			"metadata": namespacedMetadataSchema("Pod", true),
 			"spec": {
 				Type:        schema.TypeList,
-				Description: "Specification of the desired behavior of the pod.",
+				Description: "Spec of the pod owned by the cluster",
 				Required:    true,
 				MaxItems:    1,
 				Elem: &schema.Resource{
-					Schema: podSpecFileds(),
+					Schema: podSpecFields(),
 				},
 			},
 		},
@@ -83,9 +84,37 @@ func resourceKubernetesPodCreate(d *schema.ResourceData, meta interface{}) error
 	return resourceKubernetesPodRead(d, meta)
 }
 
+func resourceKubernetesPodUpdate(d *schema.ResourceData, meta interface{}) error {
+	conn := meta.(*kubernetes.Clientset)
+	namespace, name := idParts(d.Id())
+	ops := patchMetadata("metadata.0.", "/metadata/", d)
+	if d.HasChange("spec") {
+		specOps, err := patchPodSpec("/spec", "spec", d)
+		if err != nil {
+			return err
+		}
+		ops = append(ops, specOps...)
+	}
+	data, err := ops.MarshalJSON()
+	if err != nil {
+		return fmt.Errorf("Failed to marshal update operations: %s", err)
+	}
+
+	log.Printf("[INFO] Updating  pod%s: %s", d.Id(), ops)
+	out, err := conn.CoreV1().Pods(namespace).Patch(name, pkgApi.JSONPatchType, data)
+	if err != nil {
+		return err
+	}
+	log.Printf("[INFO] Submitted updated pod: %#v", out)
+
+	d.SetId(buildId(out.ObjectMeta))
+	return resourceKubernetesPodRead(d, meta)
+}
+
 func resourceKubernetesPodRead(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*kubernetes.Clientset)
 	namespace, name := idParts(d.Id())
+
 	log.Printf("[INFO] Reading pod %s", name)
 	pod, err := conn.CoreV1().Pods(namespace).Get(name)
 	if err != nil {
@@ -93,19 +122,25 @@ func resourceKubernetesPodRead(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 	log.Printf("[INFO] Received pod: %#v", pod)
+
 	err = d.Set("metadata", flattenMetadata(pod.ObjectMeta))
 	if err != nil {
 		return err
 	}
-	err = d.Set("spec", flattenPodSpec(pod.Spec))
-	return err
 
-}
+	userSpec, err := expandPodSpec(d.Get("spec").([]interface{}))
+	if err != nil {
+		return err
+	}
 
-func resourceKubernetesPodUpdate(d *schema.ResourceData, meta interface{}) error {
-	//TODO
+	err = d.Set("spec", flattenPodSpec(pod.Spec, userSpec))
+	if err != nil {
+		return err
+	}
 	return nil
+
 }
+
 func resourceKubernetesPodDelete(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*kubernetes.Clientset)
 	namespace, name := idParts(d.Id())
