@@ -66,6 +66,7 @@ func flattenVolumes(volumes []v1.Volume, userVolume []v1.Volume) []interface{} {
 		obj := map[string]interface{}{}
 
 		if !userVolumeNames[v.Name] {
+			//Found a volume which was not provided by user in the tf configuration file and must be internal
 			continue
 		}
 		if v.Name != "" {
@@ -77,7 +78,57 @@ func flattenVolumes(volumes []v1.Volume, userVolume []v1.Volume) []interface{} {
 		if v.Secret != nil {
 			obj["secret"] = flattenSecretVolumeSource(v.Secret)
 		}
-		//More values needed here
+		if v.GCEPersistentDisk != nil {
+			obj["gce_persistent_disk"] = flattenGCEPersistentDiskVolumeSource(v.GCEPersistentDisk)
+		}
+		if v.AWSElasticBlockStore != nil {
+			obj["aws_elastic_block_store"] = flattenAWSElasticBlockStoreVolumeSource(v.AWSElasticBlockStore)
+		}
+		if v.HostPath != nil {
+			obj["host_path"] = flattenHostPathVolumeSource(v.HostPath)
+		}
+		if v.Glusterfs != nil {
+			obj["glusterfs"] = flattenGlusterfsVolumeSource(v.Glusterfs)
+		}
+		if v.NFS != nil {
+			obj["nfs"] = flattenNFSVolumeSource(v.NFS)
+		}
+		if v.RBD != nil {
+			obj["rbd"] = flattenRBDVolumeSource(v.RBD)
+		}
+		if v.ISCSI != nil {
+			obj["iscsi"] = flattenISCSIVolumeSource(v.ISCSI)
+		}
+		if v.Cinder != nil {
+			obj["cinder"] = flattenCinderVolumeSource(v.Cinder)
+		}
+		if v.CephFS != nil {
+			obj["ceph_fs"] = flattenCephFSVolumeSource(v.CephFS)
+		}
+		if v.FC != nil {
+			obj["fc"] = flattenFCVolumeSource(v.FC)
+		}
+		if v.Flocker != nil {
+			obj["flocker"] = flattenFlockerVolumeSource(v.Flocker)
+		}
+		if v.FlexVolume != nil {
+			obj["flex_volume"] = flattenFlexVolumeSource(v.FlexVolume)
+		}
+		if v.AzureFile != nil {
+			obj["azure_file"] = flattenAzureFileVolumeSource(v.AzureFile)
+		}
+		if v.VsphereVolume != nil {
+			obj["vsphere_volume"] = flattenVsphereVirtualDiskVolumeSource(v.VsphereVolume)
+		}
+		if v.Quobyte != nil {
+			obj["quobyte"] = flattenQuobyteVolumeSource(v.Quobyte)
+		}
+		if v.AzureDisk != nil {
+			obj["azure_disk"] = flattenAzureDiskVolumeSource(v.AzureDisk)
+		}
+		if v.PhotonPersistentDisk != nil {
+			obj["photon_persistent_disk"] = flattenPhotonPersistentDiskVolumeSource(v.PhotonPersistentDisk)
+		}
 		att[i] = obj
 	}
 	return att
@@ -226,6 +277,57 @@ func expandVolumes(volumes []interface{}) ([]v1.Volume, error) {
 		}
 		if value, ok := m["secret"].([]interface{}); ok && len(value) > 0 {
 			vl[i].Secret = expandSecretVolumeSource(value)
+		}
+		if v, ok := m["gce_persistent_disk"].([]interface{}); ok && len(v) > 0 {
+			vl[i].GCEPersistentDisk = expandGCEPersistentDiskVolumeSource(v)
+		}
+		if v, ok := m["aws_elastic_block_store"].([]interface{}); ok && len(v) > 0 {
+			vl[i].AWSElasticBlockStore = expandAWSElasticBlockStoreVolumeSource(v)
+		}
+		if v, ok := m["host_path"].([]interface{}); ok && len(v) > 0 {
+			vl[i].HostPath = expandHostPathVolumeSource(v)
+		}
+		if v, ok := m["glusterfs"].([]interface{}); ok && len(v) > 0 {
+			vl[i].Glusterfs = expandGlusterfsVolumeSource(v)
+		}
+		if v, ok := m["nfs"].([]interface{}); ok && len(v) > 0 {
+			vl[i].NFS = expandNFSVolumeSource(v)
+		}
+		if v, ok := m["rbd"].([]interface{}); ok && len(v) > 0 {
+			vl[i].RBD = expandRBDVolumeSource(v)
+		}
+		if v, ok := m["iscsi"].([]interface{}); ok && len(v) > 0 {
+			vl[i].ISCSI = expandISCSIVolumeSource(v)
+		}
+		if v, ok := m["cinder"].([]interface{}); ok && len(v) > 0 {
+			vl[i].Cinder = expandCinderVolumeSource(v)
+		}
+		if v, ok := m["ceph_fs"].([]interface{}); ok && len(v) > 0 {
+			vl[i].CephFS = expandCephFSVolumeSource(v)
+		}
+		if v, ok := m["fc"].([]interface{}); ok && len(v) > 0 {
+			vl[i].FC = expandFCVolumeSource(v)
+		}
+		if v, ok := m["flocker"].([]interface{}); ok && len(v) > 0 {
+			vl[i].Flocker = expandFlockerVolumeSource(v)
+		}
+		if v, ok := m["flex_volume"].([]interface{}); ok && len(v) > 0 {
+			vl[i].FlexVolume = expandFlexVolumeSource(v)
+		}
+		if v, ok := m["azure_file"].([]interface{}); ok && len(v) > 0 {
+			vl[i].AzureFile = expandAzureFileVolumeSource(v)
+		}
+		if v, ok := m["vsphere_volume"].([]interface{}); ok && len(v) > 0 {
+			vl[i].VsphereVolume = expandVsphereVirtualDiskVolumeSource(v)
+		}
+		if v, ok := m["quobyte"].([]interface{}); ok && len(v) > 0 {
+			vl[i].Quobyte = expandQuobyteVolumeSource(v)
+		}
+		if v, ok := m["azure_disk"].([]interface{}); ok && len(v) > 0 {
+			vl[i].AzureDisk = expandAzureDiskVolumeSource(v)
+		}
+		if v, ok := m["photon_persistent_disk"].([]interface{}); ok && len(v) > 0 {
+			vl[i].PhotonPersistentDisk = expandPhotonPersistentDiskVolumeSource(v)
 		}
 	}
 	return vl, nil

@@ -110,7 +110,7 @@ func podSpecFields() map[string]*schema.Schema {
 }
 
 func volumeSchema() *schema.Resource {
-	v := map[string]*schema.Schema{}
+	v := commonVolumeSources()
 
 	v["persistent_volume_claim"] = &schema.Schema{
 		Type:        schema.TypeList,
