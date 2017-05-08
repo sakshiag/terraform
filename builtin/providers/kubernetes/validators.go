@@ -60,6 +60,18 @@ func validateLabels(value interface{}, key string) (ws []string, es []error) {
 	return
 }
 
+func validatePortNum(value interface{}, key string) (ws []string, es []error) {
+	v := value.(int)
+
+	errors := utilValidation.IsValidPortNum(v)
+	if len(errors) > 0 {
+		for _, err := range errors {
+			es = append(es, fmt.Errorf("%s %s", key, err))
+		}
+	}
+	return
+}
+
 func validateResourceList(value interface{}, key string) (ws []string, es []error) {
 	m := value.(map[string]interface{})
 	for k, value := range m {
@@ -82,6 +94,38 @@ func validateResourceList(value interface{}, key string) (ws []string, es []erro
 }
 
 func validateActiveDeadlineSeconds(value interface{}, key string) (ws []string, es []error) {
+	v := value.(int)
+	if v <= 0 {
+		es = append(es, fmt.Errorf("%s must be greater than 0", key))
+	}
+	return
+}
+
+func validateProbeFailureThreshold(value interface{}, key string) (ws []string, es []error) {
+	v := value.(int)
+	if v <= 0 {
+		es = append(es, fmt.Errorf("%s must be greater than 0", key))
+	}
+	return
+}
+
+func validateProbePeriodSeconds(value interface{}, key string) (ws []string, es []error) {
+	v := value.(int)
+	if v <= 0 {
+		es = append(es, fmt.Errorf("%s must be greater than 0", key))
+	}
+	return
+}
+
+func validateProbeSuccessThreshold(value interface{}, key string) (ws []string, es []error) {
+	v := value.(int)
+	if v <= 0 {
+		es = append(es, fmt.Errorf("%s must be greater than 0", key))
+	}
+	return
+}
+
+func validateProbeTimeoutSeconds(value interface{}, key string) (ws []string, es []error) {
 	v := value.(int)
 	if v <= 0 {
 		es = append(es, fmt.Errorf("%s must be greater than 0", key))
