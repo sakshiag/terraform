@@ -40,7 +40,10 @@ func flattenPodSpec(in v1.PodSpec, userSpec v1.PodSpec) []interface{} {
 	}
 
 	if in.SecurityContext != nil {
-		att["security_context"] = flattenPodSecurityContext(in.SecurityContext)
+		securityContext := flattenPodSecurityContext(in.SecurityContext)
+		if securityContext != nil {
+			att["security_context"] = securityContext
+		}
 	}
 	if in.ServiceAccountName != "" {
 		att["service_account_name"] = in.ServiceAccountName
@@ -81,6 +84,12 @@ func flattenPodSecurityContext(in *v1.PodSecurityContext) []interface{} {
 	}
 	if in.SELinuxOptions != nil {
 		att["se_linux_options"] = flattenSeLinuxOptions(in.SELinuxOptions)
+	}
+
+	//K8s is sending back empty context even when none is set during creation
+	//So send nil to the caller of this function to inform that
+	if len(att) == 0 {
+		return nil
 	}
 	return []interface{}{att}
 }
