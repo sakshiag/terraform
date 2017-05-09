@@ -16,6 +16,8 @@ func flattenPodSpec(in v1.PodSpec, userSpec v1.PodSpec) []interface{} {
 	if in.ActiveDeadlineSeconds != nil {
 		att["active_deadline_seconds"] = *in.ActiveDeadlineSeconds
 	}
+	att["containers"] = flattenContainers(in.Containers)
+
 	att["dns_policy"] = in.DNSPolicy
 
 	att["host_ipc"] = in.HostIPC
@@ -25,6 +27,8 @@ func flattenPodSpec(in v1.PodSpec, userSpec v1.PodSpec) []interface{} {
 	if in.Hostname != "" {
 		att["hostname"] = in.Hostname
 	}
+	att["image_pull_secrets"] = flattenLocalObjectReferenceArray(in.ImagePullSecrets)
+
 	if in.NodeName != "" {
 		att["node_name"] = in.NodeName
 	}
@@ -33,6 +37,10 @@ func flattenPodSpec(in v1.PodSpec, userSpec v1.PodSpec) []interface{} {
 	}
 	if in.RestartPolicy != "" {
 		att["restart_policy"] = in.RestartPolicy
+	}
+
+	if in.SecurityContext != nil {
+		att["security_context"] = flattenPodSecurityContext(in.SecurityContext)
 	}
 	if in.ServiceAccountName != "" {
 		att["service_account_name"] = in.ServiceAccountName
@@ -44,12 +52,52 @@ func flattenPodSpec(in v1.PodSpec, userSpec v1.PodSpec) []interface{} {
 	if in.TerminationGracePeriodSeconds != nil {
 		att["termination_grace_period_seconds"] = *in.TerminationGracePeriodSeconds
 	}
-	att["image_pull_secrets"] = flattenLocalObjectReferenceArray(in.ImagePullSecrets)
-	att["containers"] = flattenContainers(in.Containers)
 
 	volume := userSpec.Volumes
 	if len(in.Volumes) > 0 {
 		att["volumes"] = flattenVolumes(in.Volumes, volume)
+	}
+	return []interface{}{att}
+}
+
+func flattenPodSecurityContext(in *v1.PodSecurityContext) []interface{} {
+	att := make(map[string]interface{})
+	if in.FSGroup != nil {
+		att["fs_group"] = *in.FSGroup
+	}
+
+	if in.RunAsNonRoot != nil {
+		att["run_as_non_root"] = *in.RunAsNonRoot
+	}
+
+	if in.RunAsUser != nil {
+		att["run_as_user"] = *in.RunAsUser
+	}
+
+	if len(in.SupplementalGroups) > 0 {
+		att["supplemental_groups"] = newInt64Set(schema.HashSchema(&schema.Schema{
+			Type: schema.TypeInt,
+		}), in.SupplementalGroups)
+	}
+	if in.SELinuxOptions != nil {
+		att["se_linux_options"] = flattenSeLinuxOptions(in.SELinuxOptions)
+	}
+	return []interface{}{att}
+}
+
+func flattenSeLinuxOptions(in *v1.SELinuxOptions) []interface{} {
+	att := make(map[string]interface{})
+	if in.User != "" {
+		att["user"] = in.User
+	}
+	if in.Role != "" {
+		att["role"] = in.Role
+	}
+	if in.User != "" {
+		att["type"] = in.Type
+	}
+	if in.Level != "" {
+		att["level"] = in.Level
 	}
 	return []interface{}{att}
 }
@@ -182,13 +230,6 @@ func expandPodSpec(p []interface{}) (v1.PodSpec, error) {
 		}
 		obj.Containers = cs
 	}
-	if v, ok := in["volumes"].([]interface{}); ok && len(v) > 0 {
-		cs, err := expandVolumes(v)
-		if err != nil {
-			return obj, err
-		}
-		obj.Volumes = cs
-	}
 
 	if v, ok := in["dns_policy"].(string); ok {
 		obj.DNSPolicy = v1.DNSPolicy(v)
@@ -202,8 +243,17 @@ func expandPodSpec(p []interface{}) (v1.PodSpec, error) {
 		obj.HostNetwork = v.(bool)
 	}
 
+	if v, ok := in["host_pid"]; ok {
+		obj.HostPID = v.(bool)
+	}
+
 	if v, ok := in["hostname"]; ok {
 		obj.Hostname = v.(string)
+	}
+
+	if v, ok := in["image_pull_secrets"].([]interface{}); ok {
+		cs := expandLocalObjectReferenceArray(v)
+		obj.ImagePullSecrets = cs
 	}
 
 	if v, ok := in["node_name"]; ok {
@@ -218,6 +268,10 @@ func expandPodSpec(p []interface{}) (v1.PodSpec, error) {
 		obj.RestartPolicy = v1.RestartPolicy(v)
 	}
 
+	if v, ok := in["security_context"].([]interface{}); ok && len(v) > 0 {
+		obj.SecurityContext = expandPodSecurityContext(v)
+	}
+
 	if v, ok := in["service_account_name"].(string); ok {
 		obj.ServiceAccountName = v
 	}
@@ -230,12 +284,61 @@ func expandPodSpec(p []interface{}) (v1.PodSpec, error) {
 		obj.TerminationGracePeriodSeconds = ptrToInt64(int64(v))
 	}
 
-	if v, ok := in["image_pull_secrets"].([]interface{}); ok {
-		cs := expandLocalObjectReferenceArray(v)
-		obj.ImagePullSecrets = cs
+	if v, ok := in["volumes"].([]interface{}); ok && len(v) > 0 {
+		cs, err := expandVolumes(v)
+		if err != nil {
+			return obj, err
+		}
+		obj.Volumes = cs
+	}
+	return obj, nil
+}
+
+func expandPodSecurityContext(l []interface{}) *v1.PodSecurityContext {
+	if len(l) == 0 || l[0] == nil {
+		return &v1.PodSecurityContext{}
+	}
+	in := l[0].(map[string]interface{})
+	obj := &v1.PodSecurityContext{}
+	if v, ok := in["fs_group"].(int); ok {
+		obj.FSGroup = ptrToInt64(int64(v))
+	}
+	if v, ok := in["run_as_non_root"].(bool); ok {
+		obj.RunAsNonRoot = ptrToBool(v)
+	}
+	if v, ok := in["run_as_user"].(int); ok {
+		obj.RunAsUser = ptrToInt64(int64(v))
+	}
+	if v, ok := in["supplemental_groups"].(*schema.Set); ok {
+		obj.SupplementalGroups = schemaSetToInt64Array(v)
 	}
 
-	return obj, nil
+	if v, ok := in["se_linux_options"].([]interface{}); ok && len(v) > 0 {
+		obj.SELinuxOptions = expandSeLinuxOptions(v)
+	}
+
+	return obj
+}
+
+func expandSeLinuxOptions(l []interface{}) *v1.SELinuxOptions {
+	if len(l) == 0 || l[0] == nil {
+		return &v1.SELinuxOptions{}
+	}
+	in := l[0].(map[string]interface{})
+	obj := &v1.SELinuxOptions{}
+	if v, ok := in["level"]; ok {
+		obj.Level = v.(string)
+	}
+	if v, ok := in["role"]; ok {
+		obj.Role = v.(string)
+	}
+	if v, ok := in["type"]; ok {
+		obj.Type = v.(string)
+	}
+	if v, ok := in["user"]; ok {
+		obj.User = v.(string)
+	}
+	return obj
 }
 
 func expandPersistentVolumeClaimVolumeSource(l []interface{}) *v1.PersistentVolumeClaimVolumeSource {

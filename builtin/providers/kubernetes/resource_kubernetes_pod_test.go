@@ -54,6 +54,28 @@ func TestAccKubernetesPod_basic(t *testing.T) {
 	})
 }
 
+func TestAccKubernetesPod_with_pod_security_context(t *testing.T) {
+	var conf api.Pod
+
+	podName := fmt.Sprintf("tf-acc-test-%s", acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum))
+	imageName := "nginx:1.7.9"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccKubernetesPodConfigWithSecurityContext(podName, imageName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckKubernetesPodExists("kubernetes_pod.test", &conf),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.security_context.0.run_as_non_root", "true"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.security_context.0.supplemental_groups.#", "1"),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckKubernetesPodExists(n string, obj *api.Pod) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -143,4 +165,29 @@ resource "kubernetes_pod" "test" {
   }
 }
 	`, secretName, configMapName, podName, imageName)
+}
+
+func testAccKubernetesPodConfigWithSecurityContext(podName, imageName string) string {
+	return fmt.Sprintf(`
+resource "kubernetes_pod" "test" {
+  metadata {
+    labels {
+      app = "pod_label"
+    }
+
+    name = "%s"
+  }
+
+  spec {
+		security_context{
+			run_as_non_root = true
+			supplemental_groups = [101]
+		}
+    containers {
+      image = "%s"
+      name  = "containername"
+    }
+  }
+}
+	`, podName, imageName)
 }

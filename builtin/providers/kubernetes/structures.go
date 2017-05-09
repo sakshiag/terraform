@@ -263,6 +263,13 @@ func newStringSet(f schema.SchemaSetFunc, in []string) *schema.Set {
 	}
 	return schema.NewSet(f, out)
 }
+func newInt64Set(f schema.SchemaSetFunc, in []int64) *schema.Set {
+	var out = make([]interface{}, len(in), len(in))
+	for i, v := range in {
+		out[i] = int(v)
+	}
+	return schema.NewSet(f, out)
+}
 
 func resourceListEquals(x, y api.ResourceList) bool {
 	for k, v := range x {
@@ -295,6 +302,14 @@ func schemaSetToStringArray(set *schema.Set) []string {
 	return array
 }
 
+func schemaSetToInt64Array(set *schema.Set) []int64 {
+	array := make([]int64, 0, set.Len())
+	for _, elem := range set.List() {
+		e := elem.(int)
+		array = append(array, int64(e))
+	}
+	return array
+}
 func flattenLabelSelectorRequirementList(l []unversioned.LabelSelectorRequirement) []interface{} {
 	att := make([]map[string]interface{}, len(l))
 	for i, v := range l {

@@ -88,7 +88,7 @@ func podSpecFields() map[string]*schema.Schema {
 			Description: "SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty",
 			Elem: &schema.Resource{
 				Schema: map[string]*schema.Schema{
-					"fs_group ": {
+					"fs_group": {
 						Type:        schema.TypeInt,
 						Description: "A special supplemental group that applies to all containers in a pod. Some volume types allow the Kubelet to change the ownership of that volume to be owned by the pod: 1. The owning GID will be the FSGroup 2. The setgid bit is set (new files created in the volume will be owned by FSGroup) 3. The permission bits are OR'd with rw-rw---- If unset, the Kubelet will not modify the ownership and permissions of any volume.",
 						Optional:    true,
@@ -103,17 +103,22 @@ func podSpecFields() map[string]*schema.Schema {
 						Description: "The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified",
 						Optional:    true,
 					},
-					"supplemental_groups ": {
-						Type:        schema.TypeList,
+					"supplemental_groups": {
+						Type:        schema.TypeSet,
 						Description: "A list of groups applied to the first process run in each container, in addition to the container's primary GID. If unspecified, no groups will be added to any container.",
 						Optional:    true,
-						Elem:        &schema.Schema{Type: schema.TypeInt},
+						Elem: &schema.Schema{
+							Type: schema.TypeInt,
+						},
 					},
 					"se_linux_options": {
 						Type:        schema.TypeList,
-						Description: "ImagePullSecrets is an optional list of references to secrets in the same namespace to use for pulling any of the images used by this PodSpec. If specified, these secrets will be passed to individual puller implementations for them to use. For example, in the case of docker, only DockerConfig type secrets are honored. More info: http://kubernetes.io/docs/user-guide/images#specifying-imagepullsecrets-on-a-pod",
+						Description: "The SELinux context to be applied to all containers. If unspecified, the container runtime will allocate a random SELinux context for each container. May also be set in SecurityContext. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container.",
 						Optional:    true,
-						Elem:        seLinuxOptionsField(),
+						MaxItems:    1,
+						Elem: &schema.Resource{
+							Schema: seLinuxOptionsField(),
+						},
 					},
 				},
 			},
