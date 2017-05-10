@@ -444,7 +444,7 @@ func probeSchema() *schema.Resource {
 		Optional:     true,
 		Description:  "Minimum consecutive failures for the probe to be considered failed after having succeeded.",
 		Default:      3,
-		ValidateFunc: validateProbeFailureThreshold,
+		ValidateFunc: validatePositiveInteger,
 	}
 	h["initial_delay_seconds"] = &schema.Schema{
 		Type:        schema.TypeInt,
@@ -455,14 +455,14 @@ func probeSchema() *schema.Resource {
 		Type:         schema.TypeInt,
 		Optional:     true,
 		Default:      10,
-		ValidateFunc: validateProbePeriodSeconds,
+		ValidateFunc: validatePositiveInteger,
 		Description:  "How often (in seconds) to perform the probe",
 	}
 	h["success_threshold"] = &schema.Schema{
 		Type:         schema.TypeInt,
 		Optional:     true,
 		Default:      1,
-		ValidateFunc: validateProbeSuccessThreshold,
+		ValidateFunc: validatePositiveInteger,
 		Description:  "Minimum consecutive successes for the probe to be considered successful after having failed.",
 	}
 
@@ -470,7 +470,7 @@ func probeSchema() *schema.Resource {
 		Type:         schema.TypeInt,
 		Optional:     true,
 		Default:      1,
-		ValidateFunc: validateProbeTimeoutSeconds,
+		ValidateFunc: validatePositiveInteger,
 		Description:  "Number of seconds after which the probe times out. More info: http://kubernetes.io/docs/user-guide/pod-states#container-probes",
 	}
 	return &schema.Resource{
@@ -487,7 +487,7 @@ func securityContextSchema() *schema.Resource {
 			Default:     false,
 			Description: `Run container in privileged mode. Processes in privileged containers are essentially equivalent to root on the host.`,
 		},
-		"read_only_root_filesystem ": {
+		"read_only_root_filesystem": {
 			Type:        schema.TypeBool,
 			Optional:    true,
 			Default:     false,

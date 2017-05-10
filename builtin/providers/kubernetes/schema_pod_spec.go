@@ -7,7 +7,7 @@ func podSpecFields() map[string]*schema.Schema {
 		"active_deadline_seconds": {
 			Type:         schema.TypeInt,
 			Optional:     true,
-			ValidateFunc: validateActiveDeadlineSeconds,
+			ValidateFunc: validatePositiveInteger,
 			Description:  "Optional duration in seconds the pod may be active on the node relative to StartTime before the system will actively try to mark it failed and kill associated containers. Value must be a positive integer.",
 		},
 		"containers": {

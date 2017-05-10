@@ -9,9 +9,8 @@ import (
 
 // Flatteners
 
-// userSpec is the  pod spec as specified in the user tf file configuration
-// to compare with the actual PodSpec received from the API
-func flattenPodSpec(in v1.PodSpec, userSpec v1.PodSpec) []interface{} {
+//volumes excludes the ones internal to k8s
+func flattenPodSpec(in v1.PodSpec, volumes []v1.Volume) []interface{} {
 	att := make(map[string]interface{})
 	if in.ActiveDeadlineSeconds != nil {
 		att["active_deadline_seconds"] = *in.ActiveDeadlineSeconds
@@ -56,9 +55,8 @@ func flattenPodSpec(in v1.PodSpec, userSpec v1.PodSpec) []interface{} {
 		att["termination_grace_period_seconds"] = *in.TerminationGracePeriodSeconds
 	}
 
-	volume := userSpec.Volumes
-	if len(in.Volumes) > 0 {
-		att["volumes"] = flattenVolumes(in.Volumes, volume)
+	if len(volumes) > 0 {
+		att["volumes"] = flattenVolumes(volumes)
 	}
 	return []interface{}{att}
 }
@@ -111,21 +109,13 @@ func flattenSeLinuxOptions(in *v1.SELinuxOptions) []interface{} {
 	return []interface{}{att}
 }
 
-func flattenVolumes(volumes []v1.Volume, userVolume []v1.Volume) []interface{} {
+//volumes excludes the ones internal to k8s
+func flattenVolumes(volumes []v1.Volume) []interface{} {
 
-	userVolumeNames := make(map[string]bool, len(userVolume))
-	for _, v := range userVolume {
-		userVolumeNames[v.Name] = true
-	}
-
-	att := make([]interface{}, len(userVolume))
+	att := make([]interface{}, len(volumes))
 	for i, v := range volumes {
 		obj := map[string]interface{}{}
 
-		if !userVolumeNames[v.Name] {
-			//Found a volume which was not provided by user in the tf configuration file and must be internal
-			continue
-		}
 		if v.Name != "" {
 			obj["name"] = v.Name
 		}
@@ -208,14 +198,6 @@ func flattenSecretVolumeSource(in *v1.SecretVolumeSource) []interface{} {
 	if in.SecretName != "" {
 		att["secret_name"] = in.SecretName
 	}
-	return []interface{}{att}
-}
-
-func flattenPodTemplateSpec(in v1.PodTemplateSpec, userSpec v1.PodTemplateSpec) []interface{} {
-	att := make(map[string]interface{})
-
-	att["metadata"] = flattenMetadata(in.ObjectMeta)
-	att["spec"] = flattenPodSpec(in.Spec, userSpec.Spec)
 	return []interface{}{att}
 }
 
@@ -445,28 +427,8 @@ func expandVolumes(volumes []interface{}) ([]v1.Volume, error) {
 	return vl, nil
 }
 
-func expandPodTemplateSpec(p []interface{}) (v1.PodTemplateSpec, error) {
-	obj := v1.PodTemplateSpec{}
-	if len(p) == 0 || p[0] == nil {
-		return obj, nil
-	}
-	in := p[0].(map[string]interface{})
-	meta := expandMetadata(in["metadata"].([]interface{}))
-	obj.ObjectMeta = meta
-
-	if v, ok := in["spec"].([]interface{}); ok && len(v) > 0 {
-		var err error
-		obj.Spec, err = expandPodSpec(v)
-		if err != nil {
-			return obj, err
-		}
-	}
-	return obj, nil
-}
-
 func patchPodSpec(pathPrefix, prefix string, d *schema.ResourceData) (PatchOperations, error) {
 	ops := make([]PatchOperation, 0)
-	prefix += ".0."
 
 	if d.HasChange(prefix + "active_deadline_seconds") {
 

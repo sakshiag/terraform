@@ -93,39 +93,7 @@ func validateResourceList(value interface{}, key string) (ws []string, es []erro
 	return
 }
 
-func validateActiveDeadlineSeconds(value interface{}, key string) (ws []string, es []error) {
-	v := value.(int)
-	if v <= 0 {
-		es = append(es, fmt.Errorf("%s must be greater than 0", key))
-	}
-	return
-}
-
-func validateProbeFailureThreshold(value interface{}, key string) (ws []string, es []error) {
-	v := value.(int)
-	if v <= 0 {
-		es = append(es, fmt.Errorf("%s must be greater than 0", key))
-	}
-	return
-}
-
-func validateProbePeriodSeconds(value interface{}, key string) (ws []string, es []error) {
-	v := value.(int)
-	if v <= 0 {
-		es = append(es, fmt.Errorf("%s must be greater than 0", key))
-	}
-	return
-}
-
-func validateProbeSuccessThreshold(value interface{}, key string) (ws []string, es []error) {
-	v := value.(int)
-	if v <= 0 {
-		es = append(es, fmt.Errorf("%s must be greater than 0", key))
-	}
-	return
-}
-
-func validateProbeTimeoutSeconds(value interface{}, key string) (ws []string, es []error) {
+func validatePositiveInteger(value interface{}, key string) (ws []string, es []error) {
 	v := value.(int)
 	if v <= 0 {
 		es = append(es, fmt.Errorf("%s must be greater than 0", key))

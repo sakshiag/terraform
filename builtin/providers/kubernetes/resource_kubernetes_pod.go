@@ -3,6 +3,7 @@ package kubernetes
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform/helper/resource"
@@ -58,6 +59,9 @@ func resourceKubernetesPodCreate(d *schema.ResourceData, meta interface{}) error
 		return err
 	}
 	log.Printf("[INFO] Submitted new pod: %#v", out)
+
+	d.SetId(buildId(out.ObjectMeta))
+
 	stateConf := &resource.StateChangeConf{
 		Target:  []string{"Running"},
 		Pending: []string{"Pending"},
@@ -80,7 +84,6 @@ func resourceKubernetesPodCreate(d *schema.ResourceData, meta interface{}) error
 	}
 	log.Printf("[INFO] Pod %s created", out.Name)
 
-	d.SetId(buildId(out.ObjectMeta))
 	return resourceKubernetesPodRead(d, meta)
 }
 
@@ -89,7 +92,7 @@ func resourceKubernetesPodUpdate(d *schema.ResourceData, meta interface{}) error
 	namespace, name := idParts(d.Id())
 	ops := patchMetadata("metadata.0.", "/metadata/", d)
 	if d.HasChange("spec") {
-		specOps, err := patchPodSpec("/spec", "spec", d)
+		specOps, err := patchPodSpec("/spec", "spec.0.", d)
 		if err != nil {
 			return err
 		}
@@ -101,6 +104,7 @@ func resourceKubernetesPodUpdate(d *schema.ResourceData, meta interface{}) error
 	}
 
 	log.Printf("[INFO] Updating  pod%s: %s", d.Id(), ops)
+
 	out, err := conn.CoreV1().Pods(namespace).Patch(name, pkgApi.JSONPatchType, data)
 	if err != nil {
 		return err
@@ -128,12 +132,13 @@ func resourceKubernetesPodRead(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	userSpec, err := expandPodSpec(d.Get("spec").([]interface{}))
+	secretList, err := conn.CoreV1().Secrets(namespace).List(api.ListOptions{})
 	if err != nil {
 		return err
 	}
+	userVolumes := pickUserlVolumes(pod.Spec.Volumes, secretList, namespace)
 
-	err = d.Set("spec", flattenPodSpec(pod.Spec, userSpec))
+	err = d.Set("spec", flattenPodSpec(pod.Spec, userVolumes))
 	if err != nil {
 		return err
 	}
@@ -169,4 +174,37 @@ func resourceKubernetesPodExists(d *schema.ResourceData, meta interface{}) (bool
 		log.Printf("[DEBUG] Received error: %#v", err)
 	}
 	return true, err
+}
+
+//Return volumes which were created by user explicitly excluding the volumes created by k8s internally
+func pickUserlVolumes(volumes []api.Volume, secretList *api.SecretList, namespace string) []api.Volume {
+	internalVolumes := make(map[string]struct{})
+	possiblyInternalVolumes := make([]string, 0, len(volumes))
+	for _, v := range volumes {
+		if v.Secret != nil && strings.HasPrefix(v.Name, "default-token-") {
+			possiblyInternalVolumes = append(possiblyInternalVolumes, v.Name)
+		}
+	}
+	for _, v := range possiblyInternalVolumes {
+		for _, s := range secretList.Items {
+			if s.Name != v {
+				continue
+			}
+			for key, val := range s.Annotations {
+				if key == "kubernetes.io/service-account.name" && val == "default" {
+					//guarenteed internal volumes
+					internalVolumes[v] = struct{}{}
+				}
+			}
+		}
+	}
+	userVolumes := make([]api.Volume, 0, len(volumes)-len(internalVolumes))
+	for _, v := range volumes {
+		//Skip the volume which is internal to the k8s
+		if _, ok := internalVolumes[v.Name]; ok {
+			continue
+		}
+		userVolumes = append(userVolumes, v)
+	}
+	return userVolumes
 }
