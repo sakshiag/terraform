@@ -1,6 +1,173 @@
 package kubernetes
 
-import "k8s.io/kubernetes/pkg/api/v1"
+import (
+	"strconv"
+
+	"k8s.io/kubernetes/pkg/api/v1"
+	"k8s.io/kubernetes/pkg/util/intstr"
+)
+
+func flattenCapability(in []v1.Capability) []string {
+	att := make([]string, 0, len(in))
+	for i, v := range in {
+		att[i] = string(v)
+	}
+	return att
+}
+
+func flattenContainerSecurityContext(in *v1.SecurityContext) []interface{} {
+	att := make(map[string]interface{})
+
+	if in.Privileged != nil {
+		att["privileged"] = *in.Privileged
+	}
+	if in.ReadOnlyRootFilesystem != nil {
+		att["read_only_root_filesystem"] = *in.ReadOnlyRootFilesystem
+	}
+
+	if in.RunAsNonRoot != nil {
+		att["run_as_non_root"] = *in.RunAsNonRoot
+	}
+	if in.RunAsUser != nil {
+		att["run_as_user"] = *in.RunAsUser
+	}
+
+	if in.SELinuxOptions != nil {
+		att["se_linux_options"] = flattenSeLinuxOptions(in.SELinuxOptions)
+	}
+	if in.Capabilities != nil {
+		att["capabilities"] = flattenSecurityCapabilities(in.Capabilities)
+	}
+	return []interface{}{att}
+
+}
+
+func flattenSecurityCapabilities(in *v1.Capabilities) []interface{} {
+	att := make(map[string]interface{})
+
+	if in.Add != nil {
+		att["add"] = flattenCapability(in.Add)
+	}
+	if in.Drop != nil {
+		att["drop"] = flattenCapability(in.Drop)
+	}
+
+	return []interface{}{att}
+}
+
+func flattenHandler(in *v1.Handler) []interface{} {
+	att := make(map[string]interface{})
+
+	if in.Exec != nil {
+		att["exec"] = flattenExec(in.Exec)
+	}
+	if in.HTTPGet != nil {
+		att["http_get"] = flattenHTTPGet(in.HTTPGet)
+	}
+	if in.TCPSocket != nil {
+		att["tcp_socket"] = flattenTCPSocket(in.TCPSocket)
+	}
+
+	return []interface{}{att}
+}
+
+func flattenHTTPHeader(in []v1.HTTPHeader) []interface{} {
+	att := make([]interface{}, len(in))
+	for i, v := range in {
+		m := map[string]interface{}{}
+
+		if v.Name != "" {
+			m["name"] = v.Name
+		}
+
+		if v.Value != "" {
+			m["value"] = v.Value
+		}
+		att[i] = m
+	}
+	return att
+}
+
+func expandPort(v string) intstr.IntOrString {
+	i, err := strconv.Atoi(v)
+	if err != nil {
+		return intstr.IntOrString{
+			Type:   intstr.String,
+			StrVal: v,
+		}
+	}
+	return intstr.IntOrString{
+		Type:   intstr.Int,
+		IntVal: int32(i),
+	}
+}
+
+func flattenHTTPGet(in *v1.HTTPGetAction) []interface{} {
+	att := make(map[string]interface{})
+
+	if in.Host != "" {
+		att["host"] = in.Host
+	}
+	if in.Path != "" {
+		att["path"] = in.Path
+	}
+	att["port"] = in.Port.String()
+	att["scheme"] = in.Scheme
+	if len(in.HTTPHeaders) > 0 {
+		att["http_headers"] = flattenHTTPHeader(in.HTTPHeaders)
+	}
+
+	return []interface{}{att}
+}
+
+func flattenTCPSocket(in *v1.TCPSocketAction) []interface{} {
+	att := make(map[string]interface{})
+	att["port"] = in.Port.String()
+	return []interface{}{att}
+}
+
+func flattenExec(in *v1.ExecAction) []interface{} {
+	att := make(map[string]interface{})
+	if len(in.Command) > 0 {
+		att["command"] = in.Command
+	}
+	return []interface{}{att}
+}
+
+func flattenLifeCycle(in *v1.Lifecycle) []interface{} {
+	att := make(map[string]interface{})
+
+	if in.PostStart != nil {
+		att["post_start"] = flattenHandler(in.PostStart)
+	}
+	if in.PreStop != nil {
+		att["pre_stop"] = flattenHandler(in.PreStop)
+	}
+
+	return []interface{}{att}
+}
+
+func flattenProbe(in *v1.Probe) []interface{} {
+	att := make(map[string]interface{})
+
+	att["failure_threshold"] = in.FailureThreshold
+	att["initial_delay_seconds"] = in.InitialDelaySeconds
+	att["period_seconds"] = in.PeriodSeconds
+	att["success_threshold"] = in.SuccessThreshold
+	att["timeout_seconds"] = in.TimeoutSeconds
+
+	if in.Exec != nil {
+		att["exec"] = flattenExec(in.Exec)
+	}
+	if in.HTTPGet != nil {
+		att["http_get"] = flattenHTTPGet(in.HTTPGet)
+	}
+	if in.TCPSocket != nil {
+		att["tcp_socket"] = flattenTCPSocket(in.TCPSocket)
+	}
+
+	return []interface{}{att}
+}
 
 func flattenConfigMapKeyRef(in *v1.ConfigMapKeySelector) []interface{} {
 	att := make(map[string]interface{})
@@ -127,6 +294,17 @@ func flattenContainerPorts(in []v1.ContainerPort) []interface{} {
 	return att
 }
 
+func flattenContainerResourceRequirements(in v1.ResourceRequirements) []interface{} {
+	att := make(map[string]interface{})
+	if len(in.Limits) > 0 {
+		att["limits"] = flattenResourceList(in.Limits)
+	}
+	if len(in.Requests) > 0 {
+		att["requests"] = flattenResourceList(in.Requests)
+	}
+	return []interface{}{att}
+}
+
 func flattenContainers(in []v1.Container) []interface{} {
 	att := make([]interface{}, len(in))
 	for i, v := range in {
@@ -141,16 +319,37 @@ func flattenContainers(in []v1.Container) []interface{} {
 		}
 
 		c["image_pull_policy"] = v.ImagePullPolicy
+		c["termination_message_path"] = v.TerminationMessagePath
+		c["stdin"] = v.Stdin
+		c["stdin_once"] = v.StdinOnce
+		c["tty"] = v.TTY
 		c["working_dir"] = v.WorkingDir
 
 		if len(v.Resources.Limits) == 0 && len(v.Resources.Requests) == 0 {
 			c["resources"] = []interface{}{}
 		} else {
-			c["resources"] = flattenResourceRequirements(v.Resources)
+			c["resources"] = flattenContainerResourceRequirements(v.Resources)
+		}
+		if v.LivenessProbe != nil {
+			c["liveness_probe"] = flattenProbe(v.LivenessProbe)
+		}
+		if v.ReadinessProbe != nil {
+			c["readiness_probe"] = flattenProbe(v.ReadinessProbe)
+		}
+		if v.Lifecycle != nil {
+			c["lifecycle"] = flattenLifeCycle(v.Lifecycle)
 		}
 
-		c["ports"] = flattenContainerPorts(v.Ports)
-		c["env"] = flattenContainerEnvs(v.Env)
+		if v.SecurityContext != nil {
+			c["security_context"] = flattenContainerSecurityContext(v.SecurityContext)
+		}
+		if len(v.Ports) > 0 {
+			c["ports"] = flattenContainerPorts(v.Ports)
+		}
+		if len(v.Env) > 0 {
+			c["env"] = flattenContainerEnvs(v.Env)
+		}
+
 		att[i] = c
 	}
 	return att
@@ -205,6 +404,33 @@ func expandContainers(ctrs []interface{}) ([]v1.Container, error) {
 			cs[i].ImagePullPolicy = v1.PullPolicy(policy.(string))
 		}
 
+		if v, ok := ctr["lifecycle"].([]interface{}); ok && len(v) > 0 {
+			cs[i].Lifecycle = expandLifeCycle(v)
+		}
+
+		if v, ok := ctr["liveness_probe"].([]interface{}); ok && len(v) > 0 {
+			cs[i].LivenessProbe = expandProbe(v)
+		}
+
+		if v, ok := ctr["readiness_probe"].([]interface{}); ok && len(v) > 0 {
+			cs[i].ReadinessProbe = expandProbe(v)
+		}
+		if v, ok := ctr["stdin"]; ok {
+			cs[i].Stdin = v.(bool)
+		}
+		if v, ok := ctr["stdin_once"]; ok {
+			cs[i].StdinOnce = v.(bool)
+		}
+		if v, ok := ctr["termination_message_path"]; ok {
+			cs[i].TerminationMessagePath = v.(string)
+		}
+		if v, ok := ctr["tty"]; ok {
+			cs[i].TTY = v.(bool)
+		}
+		if v, ok := ctr["security_context"].([]interface{}); ok && len(v) > 0 {
+			cs[i].SecurityContext = expandContainerSecurityContext(v)
+		}
+
 		if v, ok := ctr["volume_mounts"].([]interface{}); ok && len(v) > 0 {
 			var err error
 			cs[i].VolumeMounts, err = expandContainerVolumeMounts(v)
@@ -214,6 +440,190 @@ func expandContainers(ctrs []interface{}) ([]v1.Container, error) {
 		}
 	}
 	return cs, nil
+}
+
+func expandExec(l []interface{}) *v1.ExecAction {
+	if len(l) == 0 || l[0] == nil {
+		return &v1.ExecAction{}
+	}
+	in := l[0].(map[string]interface{})
+	obj := v1.ExecAction{}
+	if v, ok := in["command"].([]interface{}); ok && len(v) > 0 {
+		obj.Command = expandStringSlice(v)
+	}
+	return &obj
+}
+
+func expandHTTPHeaders(l []interface{}) []v1.HTTPHeader {
+	if len(l) == 0 {
+		return []v1.HTTPHeader{}
+	}
+	headers := make([]v1.HTTPHeader, len(l))
+	for i, c := range l {
+		m := c.(map[string]interface{})
+		if v, ok := m["name"]; ok {
+			headers[i].Name = v.(string)
+		}
+		if v, ok := m["value"]; ok {
+			headers[i].Value = v.(string)
+		}
+	}
+	return headers
+}
+func expandContainerSecurityContext(l []interface{}) *v1.SecurityContext {
+	if len(l) == 0 || l[0] == nil {
+		return &v1.SecurityContext{}
+	}
+	in := l[0].(map[string]interface{})
+	obj := v1.SecurityContext{}
+	if v, ok := in["privileged"]; ok {
+		obj.Privileged = ptrToBool(v.(bool))
+	}
+	if v, ok := in["read_only_root_filesystem"]; ok {
+		obj.ReadOnlyRootFilesystem = ptrToBool(v.(bool))
+	}
+	if v, ok := in["run_as_non_root"]; ok {
+		obj.RunAsNonRoot = ptrToBool(v.(bool))
+	}
+	if v, ok := in["run_as_user"]; ok {
+		obj.RunAsUser = ptrToInt64(int64(v.(int)))
+	}
+	if v, ok := in["se_linux_options"].([]interface{}); ok && len(v) > 0 {
+		obj.SELinuxOptions = expandSeLinuxOptions(v)
+	}
+	if v, ok := in["capabilities"].([]interface{}); ok && len(v) > 0 {
+		obj.Capabilities = expandSecurityCapabilities(v)
+	}
+
+	return &obj
+}
+
+func expandCapabilitySlice(s []interface{}) []v1.Capability {
+	result := make([]v1.Capability, len(s), len(s))
+	for k, v := range s {
+		result[k] = v.(v1.Capability)
+	}
+	return result
+}
+
+func expandSecurityCapabilities(l []interface{}) *v1.Capabilities {
+	if len(l) == 0 || l[0] == nil {
+		return &v1.Capabilities{}
+	}
+	in := l[0].(map[string]interface{})
+	obj := v1.Capabilities{}
+	if v, ok := in["add"].([]interface{}); ok {
+		obj.Add = expandCapabilitySlice(v)
+	}
+	if v, ok := in["drop"].([]interface{}); ok {
+		obj.Drop = expandCapabilitySlice(v)
+	}
+	return &obj
+}
+
+func expandTCPSocket(l []interface{}) *v1.TCPSocketAction {
+	if len(l) == 0 || l[0] == nil {
+		return &v1.TCPSocketAction{}
+	}
+	in := l[0].(map[string]interface{})
+	obj := v1.TCPSocketAction{}
+	if v, ok := in["port"].(string); ok && len(v) > 0 {
+		obj.Port = expandPort(v)
+	}
+	return &obj
+}
+
+func expandHTTPGet(l []interface{}) *v1.HTTPGetAction {
+	if len(l) == 0 || l[0] == nil {
+		return &v1.HTTPGetAction{}
+	}
+	in := l[0].(map[string]interface{})
+	obj := v1.HTTPGetAction{}
+	if v, ok := in["host"].(string); ok && len(v) > 0 {
+		obj.Host = v
+	}
+	if v, ok := in["path"].(string); ok && len(v) > 0 {
+		obj.Path = v
+	}
+	if v, ok := in["scheme"].(string); ok && len(v) > 0 {
+		obj.Scheme = v1.URIScheme(v)
+	}
+
+	if v, ok := in["port"].(string); ok && len(v) > 0 {
+		obj.Port = expandPort(v)
+	}
+
+	if v, ok := in["http_headers"].([]interface{}); ok && len(v) > 0 {
+		obj.HTTPHeaders = expandHTTPHeaders(v)
+	}
+	return &obj
+}
+
+func expandProbe(l []interface{}) *v1.Probe {
+	if len(l) == 0 || l[0] == nil {
+		return &v1.Probe{}
+	}
+	in := l[0].(map[string]interface{})
+	obj := v1.Probe{}
+	if v, ok := in["exec"].([]interface{}); ok && len(v) > 0 {
+		obj.Exec = expandExec(v)
+	}
+	if v, ok := in["http_get"].([]interface{}); ok && len(v) > 0 {
+		obj.HTTPGet = expandHTTPGet(v)
+	}
+	if v, ok := in["tcp_socket"].([]interface{}); ok && len(v) > 0 {
+		obj.TCPSocket = expandTCPSocket(v)
+	}
+	if v, ok := in["failure_threshold"].(int); ok {
+		obj.FailureThreshold = int32(v)
+	}
+	if v, ok := in["initial_delay_seconds"].(int); ok {
+		obj.InitialDelaySeconds = int32(v)
+	}
+	if v, ok := in["period_seconds"].(int); ok {
+		obj.PeriodSeconds = int32(v)
+	}
+	if v, ok := in["success_threshold"].(int); ok {
+		obj.SuccessThreshold = int32(v)
+	}
+	if v, ok := in["timeout_seconds"].(int); ok {
+		obj.TimeoutSeconds = int32(v)
+	}
+
+	return &obj
+}
+
+func expandHandlers(l []interface{}) *v1.Handler {
+	if len(l) == 0 || l[0] == nil {
+		return &v1.Handler{}
+	}
+	in := l[0].(map[string]interface{})
+	obj := v1.Handler{}
+	if v, ok := in["exec"].([]interface{}); ok && len(v) > 0 {
+		obj.Exec = expandExec(v)
+	}
+	if v, ok := in["http_get"].([]interface{}); ok && len(v) > 0 {
+		obj.HTTPGet = expandHTTPGet(v)
+	}
+	if v, ok := in["tcp_socket"].([]interface{}); ok && len(v) > 0 {
+		obj.TCPSocket = expandTCPSocket(v)
+	}
+	return &obj
+
+}
+func expandLifeCycle(l []interface{}) *v1.Lifecycle {
+	if len(l) == 0 || l[0] == nil {
+		return &v1.Lifecycle{}
+	}
+	in := l[0].(map[string]interface{})
+	obj := &v1.Lifecycle{}
+	if v, ok := in["post_start"].([]interface{}); ok && len(v) > 0 {
+		obj.PostStart = expandHandlers(v)
+	}
+	if v, ok := in["pre_stop"].([]interface{}); ok && len(v) > 0 {
+		obj.PreStop = expandHandlers(v)
+	}
+	return obj
 }
 
 func expandContainerVolumeMounts(in []interface{}) ([]v1.VolumeMount, error) {

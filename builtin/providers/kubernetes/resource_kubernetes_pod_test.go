@@ -76,6 +76,138 @@ func TestAccKubernetesPod_with_pod_security_context(t *testing.T) {
 	})
 }
 
+func TestAccKubernetesPod_with_container_liveness_probe_using_exec(t *testing.T) {
+	var conf api.Pod
+
+	podName := fmt.Sprintf("tf-acc-test-%s", acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum))
+	imageName := "gcr.io/google_containers/busybox"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccKubernetesPodConfigWithLivenessProbeUsingExec(podName, imageName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckKubernetesPodExists("kubernetes_pod.test", &conf),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.args.#", "3"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.liveness_probe.#", "1"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.liveness_probe.0.exec.#", "1"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.liveness_probe.0.exec.0.command.#", "2"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.liveness_probe.0.exec.0.command.0", "cat"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.liveness_probe.0.exec.0.command.1", "/tmp/healthy"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.liveness_probe.0.failure_threshold", "3"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.liveness_probe.0.initial_delay_seconds", "5"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccKubernetesPod_with_container_liveness_probe_using_http_get(t *testing.T) {
+	var conf api.Pod
+
+	podName := fmt.Sprintf("tf-acc-test-%s", acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum))
+	imageName := "gcr.io/google_containers/liveness"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccKubernetesPodConfigWithLivenessProbeUsingHTTPGet(podName, imageName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckKubernetesPodExists("kubernetes_pod.test", &conf),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.args.#", "1"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.liveness_probe.#", "1"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.liveness_probe.0.http_get.#", "1"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.liveness_probe.0.http_get.0.path", "/healthz"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.liveness_probe.0.http_get.0.port", "8080"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.liveness_probe.0.http_get.0.http_headers.#", "1"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.liveness_probe.0.http_get.0.http_headers.0.name", "X-Custom-Header"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.liveness_probe.0.http_get.0.http_headers.0.value", "Awesome"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.liveness_probe.0.initial_delay_seconds", "3"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccKubernetesPod_with_container_liveness_probe_using_tcp(t *testing.T) {
+	var conf api.Pod
+
+	podName := fmt.Sprintf("tf-acc-test-%s", acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum))
+	imageName := "gcr.io/google_containers/liveness"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccKubernetesPodConfigWithLivenessProbeUsingTCP(podName, imageName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckKubernetesPodExists("kubernetes_pod.test", &conf),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.args.#", "1"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.liveness_probe.#", "1"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.liveness_probe.0.tcp_socket.#", "1"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.liveness_probe.0.tcp_socket.0.port", "8080"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccKubernetesPod_with_container_lifecycle(t *testing.T) {
+	var conf api.Pod
+
+	podName := fmt.Sprintf("tf-acc-test-%s", acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum))
+	imageName := "gcr.io/google_containers/liveness"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccKubernetesPodConfigWithLifeCycle(podName, imageName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckKubernetesPodExists("kubernetes_pod.test", &conf),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.lifecycle.#", "1"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.lifecycle.0.post_start.#", "1"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.lifecycle.0.post_start.0.exec.#", "1"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.lifecycle.0.post_start.0.exec.0.command.#", "2"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.lifecycle.0.post_start.0.exec.0.command.0", "ls"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.lifecycle.0.post_start.0.exec.0.command.1", "-al"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.lifecycle.0.pre_stop.#", "1"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.lifecycle.0.pre_stop.0.exec.#", "1"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.lifecycle.0.pre_stop.0.exec.0.command.#", "1"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.lifecycle.0.pre_stop.0.exec.0.command.0", "date"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccKubernetesPod_with_container_security_context(t *testing.T) {
+	var conf api.Pod
+
+	podName := fmt.Sprintf("tf-acc-test-%s", acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum))
+	imageName := "nginx:1.7.9"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccKubernetesPodConfigWithContainerSecurityContext(podName, imageName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckKubernetesPodExists("kubernetes_pod.test", &conf),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.security_context.#", "1"),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckKubernetesPodExists(n string, obj *api.Pod) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -186,6 +318,165 @@ resource "kubernetes_pod" "test" {
     containers {
       image = "%s"
       name  = "containername"
+    }
+  }
+}
+	`, podName, imageName)
+}
+
+func testAccKubernetesPodConfigWithLivenessProbeUsingExec(podName, imageName string) string {
+	return fmt.Sprintf(`
+resource "kubernetes_pod" "test" {
+  metadata {
+    labels {
+      app = "pod_label"
+    }
+
+    name = "%s"
+  }
+
+  spec {
+
+    containers {
+      image = "%s"
+      name  = "containername"
+			args = ["/bin/sh", "-c", "touch /tmp/healthy; sleep 300; rm -rf /tmp/healthy; sleep 600"]
+			liveness_probe {
+				exec{
+					command = ["cat", "/tmp/healthy"]
+				}
+				initial_delay_seconds = 5
+				period_seconds = 5
+			}
+    }
+  }
+}
+	`, podName, imageName)
+}
+
+func testAccKubernetesPodConfigWithLivenessProbeUsingHTTPGet(podName, imageName string) string {
+	return fmt.Sprintf(`
+resource "kubernetes_pod" "test" {
+  metadata {
+    labels {
+      app = "pod_label"
+    }
+
+    name = "%s"
+  }
+
+  spec {
+
+    containers {
+      image = "%s"
+      name  = "containername"
+			args = ["/server"]
+			liveness_probe {
+				http_get{
+					path =  "/healthz"
+					port = 8080
+					http_headers {
+						name = "X-Custom-Header"
+						value = "Awesome"
+					}
+				}
+				initial_delay_seconds = 3
+				period_seconds = 3
+			}
+    }
+  }
+}
+	`, podName, imageName)
+}
+
+func testAccKubernetesPodConfigWithLivenessProbeUsingTCP(podName, imageName string) string {
+	return fmt.Sprintf(`
+resource "kubernetes_pod" "test" {
+  metadata {
+    labels {
+      app = "pod_label"
+    }
+
+    name = "%s"
+  }
+
+  spec {
+
+    containers {
+      image = "%s"
+      name  = "containername"
+			args = ["/server"]
+			liveness_probe {
+				tcp_socket{
+					port = 8080
+				}
+				initial_delay_seconds = 3
+				period_seconds = 3
+			}
+    }
+  }
+}
+	`, podName, imageName)
+}
+
+func testAccKubernetesPodConfigWithLifeCycle(podName, imageName string) string {
+	return fmt.Sprintf(`
+resource "kubernetes_pod" "test" {
+  metadata {
+    labels {
+      app = "pod_label"
+    }
+
+    name = "%s"
+  }
+
+  spec {
+
+    containers {
+      image = "%s"
+      name  = "containername"
+			args = ["/server"]
+			lifecycle {
+				post_start{
+					exec{
+						command = ["ls", "-al"]
+					}
+				}
+				pre_stop{
+					exec{
+						command = ["date"]
+					}
+				}
+			}
+
+    }
+  }
+}
+	`, podName, imageName)
+}
+
+func testAccKubernetesPodConfigWithContainerSecurityContext(podName, imageName string) string {
+	return fmt.Sprintf(`
+resource "kubernetes_pod" "test" {
+  metadata {
+    labels {
+      app = "pod_label"
+    }
+
+    name = "%s"
+  }
+
+  spec {
+
+    containers {
+      image = "%s"
+      name  = "containername"
+			security_context {
+    			privileged =  true
+   	 			se_linux_options {
+						level =  "s0:c123,c456"
+					}
+			}
     }
   }
 }

@@ -46,7 +46,7 @@ func handlerFields() map[string]*schema.Schema {
 					"port": {
 						Type:         schema.TypeString,
 						Optional:     true,
-						ValidateFunc: validatePortNum,
+						ValidateFunc: validatePortNumOrName,
 						Description:  `Name or number of the port to access on the container. Number must be in the range 1 to 65535. Name must be an IANA_SVC_NAME.`,
 					},
 					"http_headers": {
@@ -57,7 +57,7 @@ func handlerFields() map[string]*schema.Schema {
 							Schema: map[string]*schema.Schema{
 								"name": {
 									Type:        schema.TypeString,
-									Required:    true,
+									Optional:    true,
 									Description: "The header field name",
 								},
 								"value": {
@@ -80,7 +80,7 @@ func handlerFields() map[string]*schema.Schema {
 					"port": {
 						Type:         schema.TypeString,
 						Required:     true,
-						ValidateFunc: validatePortNum,
+						ValidateFunc: validatePortNumOrName,
 						Description:  "Number or name of the port to access on the container. Number must be in the range 1 to 65535. Name must be an IANA_SVC_NAME.",
 					},
 				},
@@ -340,9 +340,10 @@ func containerFields() map[string]*schema.Schema {
 			Elem: &schema.Resource{
 				Schema: map[string]*schema.Schema{
 					"container_port": {
-						Type:        schema.TypeInt,
-						Required:    true,
-						Description: "Number of port to expose on the pod's IP address. This must be a valid port number, 0 < x < 65536.",
+						Type:         schema.TypeInt,
+						Required:     true,
+						ValidateFunc: validatePortNumOrName,
+						Description:  "Number of port to expose on the pod's IP address. This must be a valid port number, 0 < x < 65536.",
 					},
 					"host_ip": {
 						Type:        schema.TypeString,
@@ -355,9 +356,10 @@ func containerFields() map[string]*schema.Schema {
 						Description: "Number of port to expose on the host. If specified, this must be a valid port number, 0 < x < 65536. If HostNetwork is specified, this must match ContainerPort. Most containers do not need this.",
 					},
 					"name": {
-						Type:        schema.TypeString,
-						Optional:    true,
-						Description: "If specified, this must be an IANA_SVC_NAME and unique within the pod. Each named port in a pod must have a unique name. Name for the port that can be referred to by services",
+						Type:         schema.TypeString,
+						Optional:     true,
+						ValidateFunc: validatePortNumOrName,
+						Description:  "If specified, this must be an IANA_SVC_NAME and unique within the pod. Each named port in a pod must have a unique name. Name for the port that can be referred to by services",
 					},
 					"protocol": {
 						Type:        schema.TypeString,
@@ -380,7 +382,6 @@ func containerFields() map[string]*schema.Schema {
 			Type:        schema.TypeList,
 			Optional:    true,
 			MaxItems:    1,
-			ForceNew:    true,
 			Description: "Compute Resources required by this container. Cannot be updated. More info: http://kubernetes.io/docs/user-guide/persistent-volumes#resources",
 			Elem: &schema.Resource{
 				Schema: resourcesField(),
@@ -407,10 +408,11 @@ func containerFields() map[string]*schema.Schema {
 			Default:     false,
 			Description: "Whether the container runtime should close the stdin channel after it has been opened by a single attach. When stdin is true the stdin stream will remain open across multiple attach sessions. If stdinOnce is set to true, stdin is opened on container start, is empty until the first client attaches to stdin, and then remains open and accepts data until the client disconnects, at which time stdin is closed and remains closed until the container is restarted. If this flag is false, a container processes that reads from stdin will never receive an EOF.",
 		},
-		"termination_message_path ": {
+		"termination_message_path": {
 			Type:        schema.TypeString,
 			Optional:    true,
 			ForceNew:    true,
+			Default:     "/dev/termination-log",
 			Description: "Optional: Path at which the file to which the container's termination message will be written is mounted into the container's filesystem. Message written is intended to be brief final status, such as an assertion failure message. Defaults to /dev/termination-log. Cannot be updated.",
 		},
 		"tty": {
@@ -466,7 +468,7 @@ func probeSchema() *schema.Resource {
 		Description:  "Minimum consecutive successes for the probe to be considered successful after having failed.",
 	}
 
-	h["timeout_seconds "] = &schema.Schema{
+	h["timeout_seconds"] = &schema.Schema{
 		Type:         schema.TypeInt,
 		Optional:     true,
 		Default:      1,
@@ -507,7 +509,10 @@ func securityContextSchema() *schema.Resource {
 			Type:        schema.TypeList,
 			Description: "ImagePullSecrets is an optional list of references to secrets in the same namespace to use for pulling any of the images used by this PodSpec. If specified, these secrets will be passed to individual puller implementations for them to use. For example, in the case of docker, only DockerConfig type secrets are honored. More info: http://kubernetes.io/docs/user-guide/images#specifying-imagepullsecrets-on-a-pod",
 			Optional:    true,
-			Elem:        seLinuxOptionsField(),
+			MaxItems:    1,
+			Elem: &schema.Resource{
+				Schema: seLinuxOptionsField(),
+			},
 		},
 		"capabilities": {
 			Type:        schema.TypeList,

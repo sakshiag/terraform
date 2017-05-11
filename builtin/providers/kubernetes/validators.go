@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"k8s.io/kubernetes/pkg/api/resource"
@@ -61,15 +62,39 @@ func validateLabels(value interface{}, key string) (ws []string, es []error) {
 }
 
 func validatePortNum(value interface{}, key string) (ws []string, es []error) {
-	v := value.(int)
-
-	errors := utilValidation.IsValidPortNum(v)
+	errors := utilValidation.IsValidPortNum(value.(int))
 	if len(errors) > 0 {
 		for _, err := range errors {
 			es = append(es, fmt.Errorf("%s %s", key, err))
 		}
 	}
 	return
+}
+
+func validatePortName(value interface{}, key string) (ws []string, es []error) {
+	errors := utilValidation.IsValidPortName(value.(string))
+	if len(errors) > 0 {
+		for _, err := range errors {
+			es = append(es, fmt.Errorf("%s %s", key, err))
+		}
+	}
+	return
+}
+func validatePortNumOrName(value interface{}, key string) (ws []string, es []error) {
+	switch value.(type) {
+	case string:
+		intVal, err := strconv.Atoi(value.(string))
+		if err != nil {
+			return validatePortName(value, key)
+		}
+		return validatePortNum(intVal, key)
+	case int:
+		return validatePortNum(value, key)
+
+	default:
+		es = append(es, fmt.Errorf("%s must be defined of type string or int on the schema", key))
+		return
+	}
 }
 
 func validateResourceList(value interface{}, key string) (ws []string, es []error) {
