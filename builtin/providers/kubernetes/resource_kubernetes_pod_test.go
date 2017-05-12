@@ -286,10 +286,8 @@ resource "kubernetes_pod" "test" {
         },
       ]
     }
-
     volumes = [{
       name = "db"
-
       secret = {
         secret_name = "${kubernetes_secret.test.metadata.0.name}"
       }
@@ -309,12 +307,11 @@ resource "kubernetes_pod" "test" {
 
     name = "%s"
   }
-
   spec {
-		security_context{
-			run_as_non_root = true
-			supplemental_groups = [101]
-		}
+    security_context {
+      run_as_non_root     = true
+      supplemental_groups = [101]
+    }
     containers {
       image = "%s"
       name  = "containername"
@@ -336,18 +333,19 @@ resource "kubernetes_pod" "test" {
   }
 
   spec {
-
     containers {
       image = "%s"
       name  = "containername"
-			args = ["/bin/sh", "-c", "touch /tmp/healthy; sleep 300; rm -rf /tmp/healthy; sleep 600"]
-			liveness_probe {
-				exec{
-					command = ["cat", "/tmp/healthy"]
-				}
-				initial_delay_seconds = 5
-				period_seconds = 5
-			}
+      args  = ["/bin/sh", "-c", "touch /tmp/healthy; sleep 300; rm -rf /tmp/healthy; sleep 600"]
+
+      liveness_probe {
+        exec {
+          command = ["cat", "/tmp/healthy"]
+        }
+
+        initial_delay_seconds = 5
+        period_seconds        = 5
+      }
     }
   }
 }
@@ -366,23 +364,24 @@ resource "kubernetes_pod" "test" {
   }
 
   spec {
-
     containers {
       image = "%s"
       name  = "containername"
-			args = ["/server"]
-			liveness_probe {
-				http_get{
-					path =  "/healthz"
-					port = 8080
-					http_headers {
-						name = "X-Custom-Header"
-						value = "Awesome"
-					}
-				}
-				initial_delay_seconds = 3
-				period_seconds = 3
-			}
+      args  = ["/server"]
+
+      liveness_probe {
+        http_get {
+          path = "/healthz"
+          port = 8080
+
+          http_headers {
+            name  = "X-Custom-Header"
+            value = "Awesome"
+          }
+        }
+        initial_delay_seconds = 3
+        period_seconds        = 3
+      }
     }
   }
 }
@@ -399,20 +398,20 @@ resource "kubernetes_pod" "test" {
 
     name = "%s"
   }
-
   spec {
-
     containers {
       image = "%s"
       name  = "containername"
-			args = ["/server"]
-			liveness_probe {
-				tcp_socket{
-					port = 8080
-				}
-				initial_delay_seconds = 3
-				period_seconds = 3
-			}
+      args  = ["/server"]
+
+      liveness_probe {
+        tcp_socket {
+          port = 8080
+        }
+
+        initial_delay_seconds = 3
+        period_seconds        = 3
+      }
     }
   }
 }
@@ -429,29 +428,28 @@ resource "kubernetes_pod" "test" {
 
     name = "%s"
   }
-
   spec {
-
     containers {
       image = "%s"
       name  = "containername"
-			args = ["/server"]
-			lifecycle {
-				post_start{
-					exec{
-						command = ["ls", "-al"]
-					}
-				}
-				pre_stop{
-					exec{
-						command = ["date"]
-					}
-				}
-			}
+      args  = ["/server"]
 
+      lifecycle {
+        post_start {
+          exec {
+            command = ["ls", "-al"]
+          }
+        }
+        pre_stop {
+          exec {
+            command = ["date"]
+          }
+        }
+      }
     }
   }
 }
+
 	`, podName, imageName)
 }
 
@@ -465,20 +463,22 @@ resource "kubernetes_pod" "test" {
 
     name = "%s"
   }
-
   spec {
-
     containers {
       image = "%s"
       name  = "containername"
-			security_context {
-    			privileged =  true
-   	 			se_linux_options {
-						level =  "s0:c123,c456"
-					}
-			}
+
+      security_context {
+        privileged = true
+
+        se_linux_options {
+          level = "s0:c123,c456"
+        }
+      }
     }
   }
 }
+
+
 	`, podName, imageName)
 }
