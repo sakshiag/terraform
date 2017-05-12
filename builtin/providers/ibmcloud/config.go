@@ -195,13 +195,13 @@ func (c *Config) ClientSession() (interface{}, error) {
 
 	accClient, err := accountv2.New(sess.BluemixSession)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	accountAPI := accClient.Accounts()
 
 	clusterClient, err := k8sclusterv1.New(sess.BluemixSession)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	clustersAPI := clusterClient.Clusters()
 	clusterWorkerAPI := clusterClient.Workers()
@@ -226,7 +226,7 @@ func (c *Config) ClientSession() (interface{}, error) {
 		bluemixAccountClient: accountAPI,
 	}
 
-	return session, err
+	return session, nil
 }
 
 func newSession(c *Config) (*Session, error) {
