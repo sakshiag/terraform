@@ -1,6 +1,7 @@
 package ibmcloud
 
 import (
+	"errors"
 	"log"
 	"os"
 	"time"
@@ -231,8 +232,12 @@ func (c *Config) ClientSession() (interface{}, error) {
 func newSession(c *Config) (*Session, error) {
 	ibmcloudSession := &Session{}
 	skipBluemix, skipSoftLayer := c.SkipServiceConfig.Contains("bluemix"), c.SkipServiceConfig.Contains("softlayer")
+
 	if !skipSoftLayer {
 		log.Println("Configuring SoftLayer Session ")
+		if c.SoftLayerUserName == "" || c.SoftLayerAPIKey == "" {
+			return nil, errors.New("softlayer_username and softlayer_api_key must be provided. Please see the documentation on how to configure them")
+		}
 		softlayerSession := &slsession.Session{
 			Endpoint: c.SoftLayerEndpointURL,
 			Timeout:  c.SoftLayerTimeout,
@@ -244,6 +249,9 @@ func newSession(c *Config) (*Session, error) {
 	}
 	if !skipBluemix {
 		log.Println("Configuring Bluemix Session")
+		if c.BluemixAPIKey == "" {
+			return nil, errors.New("bluemix_api_key must be provided. Please see the documentation on how to configure it")
+		}
 		var sess *bxsession.Session
 		bmxConfig := &bluemix.Config{
 			BluemixAPIKey: c.BluemixAPIKey,
