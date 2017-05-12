@@ -15,53 +15,49 @@ Use the navigation menu on the left to read about the available resources.
 
 ## Example Usage
 
-Here is an example that sets up the following resources:
-
-+ An SSH key.
-+ A virtual server that uses an existing SSH key.
-+ A virtual server that uses an existing SSH key and a Terraform-managed SSH key (created as `test_key_1` in the example below).
-
-Add the following code to a file called `sl.tf` and run the `terraform` command from the same directory:
 
 ```hcl
 # Configure the IBM Cloud Provider
 provider "ibmcloud" {
-    ibmid = "${var.ibmcloud_bmx_user}"
-    ibmid_password = "${var.ibmcloud_bmx_pass}"
+  bluemix_api_key    = "${var.ibmcloud_bmx_api_key}"
+  softlayer_username = "${var.ibmcloud_sl_username}"
+  softlayer_api_key  = "${var.ibmcloud_sl_api_key}"
 }
 
 # Create an SSH key. The SSH key surfaces in the SoftLayer console under Devices > Manage > SSH Keys.
 resource "ibmcloud_infra_ssh_key" "test_key_1" {
-    label = "test_key_1"
-    public_key = "${file(\"~/.ssh/id_rsa_test_key_1.pub\")}"
-    # Windows example:
-    # public_key = "${file(\"C:\ssh\keys\path\id_rsa_test_key_1.pub\")}"
+  label      = "test_key_1"
+  public_key = "${file(\"~/.ssh/id_rsa_test_key_1.pub\")}"
+
+  # Windows example:
+  # public_key = "${file(\"C:\ssh\keys\path\id_rsa_test_key_1.pub\")}"
 }
 
-# Virtual server created with existing SSH key in SoftLayer \
-# Inventory not created using this Terraform template.
-resource "ibmcloud_infra_virtual_guest" "my_server_1" {
-    hostname = "host-a.example.com"
-    domain = "example.com"
-    ssh_key_ids = [123456]
-    os_reference_code = "DEBIAN_7_64"
-    datacenter = "ams01"
-    network_speed = 10
-    cores = 1
-    memory = 1024
-}
-
-# Virtual server created with both previously-existing and \
-# Terraform-managed resources.
+# Virtual server created with above ssh key
 resource "ibmcloud_infra_virtual_guest" "my_server_2" {
-    hostname = "host-b.example.com"
-    domain = "example.com"
-    ssh_keys = [123456, "${ibmcloud_infra_ssh_key.test_key_1.id}"]
-    os_reference_code = "CENTOS_6_64"
-    datacenter = "ams01"
-    network_speed = 10
-    cores = 1
-    memory = 1024
+  hostname          = "host-b.example.com"
+  domain            = "example.com"
+  ssh_keys          = [123456, "${ibmcloud_infra_ssh_key.test_key_1.id}"]
+  os_reference_code = "CENTOS_6_64"
+  datacenter        = "ams01"
+  network_speed     = 10
+  cores             = 1
+  memory            = 1024
+}
+
+# Read details of IBM Bluemix Space
+data "ibmcloud_cf_space" "space" {
+  space = "${var.space}"
+  org   = "${var.org}"
+}
+
+# Create Cloud Foundry Service Instance
+resource "ibmcloud_cf_service_instance" "service" {
+  name       = "${var.instance_name}"
+  space_guid = "${data.ibmcloud_cf_space.space.id}"
+  service    = "cleardb"
+  plan       = "spark"
+  tags       = ["cluster-service", "cluster-bind"]
 }
 ```
 
@@ -74,21 +70,23 @@ The IBM Cloud provider offers a flexible means of providing credentials for auth
 
 ### Static credentials ###
 
-Static credentials can be provided by adding an `ibmid` and `ibmid_password` in-line in the IBM Cloud provider block:
+Static credentials can be provided by adding an `bluemix_api_key`, `softlayer_username`, `softlayer_api_key` in-line in the IBM Cloud provider block:
 
 Usage:
 
 ```
 provider "ibmcloud" {
-    ibmid = ""
-    ibmid_password = ""
+    bluemix_api_key = ""
+    softlayer_username = ""
+    softlayer_api_key = ""
+
 }
 ```
 
 
 ### Environment variables
 
-You can provide your credentials via the `IBMID` and `IBMID_PASSWORD` environment variables, representing your IBM ID, IBM ID password respectively.  
+You can provide your credentials via the `BM_API_KEY`, `SL_USERNAME` and `SL_API_KEY` environment variables, representing your Bluemix API Key, SoftLayer Username and SoftLayer API Key respectively.  
 
 ```
 provider "ibmcloud" {}
@@ -97,25 +95,38 @@ provider "ibmcloud" {}
 Usage:
 
 ```
-$ export IBMID="ibmid"
-$ export IBMID_PASSWORD="password"
+$ export BM_API_KEY="bmx_api_key"
+$ export SL_USERNAME="sl_username"
+$ export SL_API_KEY="sl_api_key"
 $ terraform plan
 ```
+
+### Skip Service Configuration
+See `skip_service_configuration` in the Argument Reference below.
+
+The below configuration will direct the provider to not configure the softlayer client and hence
+not complain if softlayer_username and softlayer_api_key are missing in the provider.
+
+provider "ibmcloud" {
+    skip_service_configuration = ["softlayer"]
+}
+
 
 ## Argument Reference
 
 The following arguments are supported in the `provider` block:
 
-* `ibmid` - (Optional) The IBM ID used to log into IBM services and applications. The IBM ID must be provided, but it can also be sourced from the `IBMID` environment variable.
+* `bluemix_api_key` - (Optional) The Bluemix API Key. It must be provided, but it can also be sourced from the `BM_API_KEY` or `BLUEMIX_API_KEY` environment variable. The former variable has higher precedence. 
 
-* `ibmid_password` - (Optional) The password for the IBM ID. The password must be provided, but it can also be sourced from the `IBMID_PASSWORD` environment variable.
+* `bluemix_timeout` - (Optional) The timeout, expressed in seconds, for the SoftLayer API key. It can also be sourced from the `BM_TIMEOUT`  or `BLUEMIX_TIMEOUT` environment variable. The former variable has higher precedence. Default value: `60`.
+
+* `softlayer_username` - (Optional) The SoftLayer user name. It must be provided, but it can also be sourced from the `SL_USERNAME` or `SOFTLAYER_USERNAME` environment variable. The former variable has higher precedence. 
+
+* `softlayer_api_key` - (Optional) The SoftLayer user name. It must be provided, but it can also be sourced from the `SL_API_KEY` or `SOFTLAYER_API_KEY` environment variable. The former variable has higher precedence. 
+
+* `softlayer_timeout` - (Optional) The timeout, expressed in seconds, for the SoftLayer API key. It can also be sourced from the `SL_TIMEOUT`  or `SOFTLAYER_TIMEOUT` environment variable. The former variable has higher precedence. Default value: `60`.
 
 * `region` - (Optional) The Bluemix region. It can also be sourced from the `BM_REGION` or `BLUEMIX_REGION` environment variable. The former variable has higher precedence. Default value: `us-south`.
 
-* `softlayer_timeout` - (Optional) The timeout, expressed in seconds, for the SoftLayer API. It can also be sourced from the `SL_TIMEOUT`  or `SOFTLAYER_TIMEOUT` environment variable. The former variable has higher precedence. Default value: `60`.
+* `skip_service_configuration` - (Optional, Set) The options allows one to skip configuring the provider for IBM Cloud services which the user may not create. Supported values are - `bluemix` and `softlayer`. This is useful  when a user has credentials for only a particular service for example SoftLayer. In that case provider will not complain about the absence of `bluemix_api_key`.
 
-* `bluemix_timeout` - (Optional) The timeout, expressed in seconds, for the Bluemix API. It can also be sourced from the `BM_TIMEOUT`  or `BLUEMIX_TIMEOUT` environment variable. The former variable has higher precedence. Default value: `60`.
-
-* `softlayer_account_number` - (Optional) The SoftLayer account number. It can also be sourced from the `SL_ACCOUNT_NUMBER`  or `SOFTLAYER_ACCOUNT_NUMBER` environment variable. The former variable has higher precedence.
-Currently, the provider accepts only account numbers for which 2FA is not enabled.
-If the account number is not provided, the provider works with the default SoftLayer account number and resources are created with the same default account.

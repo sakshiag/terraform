@@ -44,16 +44,13 @@ func TestProvider_impl(t *testing.T) {
 }
 
 func testAccPreCheck(t *testing.T) {
-
-	requiredEnv := map[string]string{
-		"ibmid":    "IBMID",
-		"password": "IBMID_PASSWORD",
+	if v := os.Getenv("BM_API_KEY"); v == "" {
+		t.Fatal("BM_API_KEY must be set for acceptance tests")
 	}
-
-	for _, param := range []string{"ibmid", "ibmid_password"} {
-		value, _ := testAccProvider.Schema[param].DefaultFunc()
-		if value == "" {
-			t.Fatalf("%s must be set for acceptance test", requiredEnv[param])
-		}
+	if v := os.Getenv("SL_API_KEY"); v == "" {
+		t.Fatal("SL_API_KEY must be set for acceptance tests")
+	}
+	if v := os.Getenv("SL_USERNAME"); v == "" {
+		t.Fatal("SL_USERNAME must be set for acceptance tests")
 	}
 }

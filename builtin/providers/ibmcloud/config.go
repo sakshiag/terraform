@@ -2,23 +2,26 @@ package ibmcloud
 
 import (
 	"log"
+	"os"
 	"time"
 
+	"github.com/hashicorp/terraform/helper/schema"
 	slsession "github.com/softlayer/softlayer-go/session"
 
+	bluemix "github.com/IBM-Bluemix/bluemix-go"
 	"github.com/IBM-Bluemix/bluemix-go/api/account/accountv2"
 	"github.com/IBM-Bluemix/bluemix-go/api/cf/cfv2"
 	"github.com/IBM-Bluemix/bluemix-go/api/k8scluster/k8sclusterv1"
 	bxsession "github.com/IBM-Bluemix/bluemix-go/session"
 )
 
-//Config stores user provider input config and the API endpoints
-type Config struct {
-	//The IBM ID
-	IBMID string
-	//Password fo the IBM ID
-	IBMIDPassword string
+//SoftlayerRestEndpoint rest endpoint of SoftLayer
+const SoftlayerRestEndpoint = "https://api.softlayer.com/rest/v3"
 
+//Config stores user provider input
+type Config struct {
+	//BluemixAPIKey is the Bluemix api key
+	BluemixAPIKey string
 	//Bluemix region
 	Region string
 	//Bluemix API timeout
@@ -26,15 +29,18 @@ type Config struct {
 
 	//Softlayer end point url
 	SoftLayerEndpointURL string
-	//SoftlayerXMLRPCEndpoint endpoint
-	SoftlayerXMLRPCEndpoint string
+
 	//Softlayer API timeout
 	SoftLayerTimeout time.Duration
-	// Softlayer Account Number
-	SoftLayerAccountNumber string
 
-	//IAM endpoint
-	IAMEndpoint string
+	// Softlayer User Name
+	SoftLayerUserName string
+
+	// Softlayer API Key
+	SoftLayerAPIKey string
+
+	//SkipServiceConfig is a set of services whose configuration is to be skipped. Valid values could be bluemix, softlayer etc
+	SkipServiceConfig *schema.Set
 
 	//Retry Count for API calls
 	//Unexposed in the schema at this point as they are used only during session creation for a few calls
@@ -43,6 +49,15 @@ type Config struct {
 	RetryCount int
 	//Constant Retry Delay for API calls
 	RetryDelay time.Duration
+}
+
+//Session stores the information required for communication with the SoftLayer and Bluemix API
+type Session struct {
+	// SoftLayerSesssion is the the SoftLayer session used to connect to the SoftLayer API
+	SoftLayerSession *slsession.Session
+
+	// BluemixSession is the the Bluemix session used to connect to the Bluemix API
+	BluemixSession *bxsession.Session
 }
 
 // ClientSession  contains  Bluemix/SoftLayer session and clients
@@ -65,7 +80,6 @@ type ClientSession interface {
 	BluemixAcccountClient() accountv2.Accounts
 }
 
-//clientSession implements the ClientSession interface
 type clientSession struct {
 	session *Session
 
@@ -157,7 +171,15 @@ func (c *Config) ClientSession() (interface{}, error) {
 		return nil, err
 	}
 
-	cfClient, err := cfv2.NewClient(sess.BluemixSession)
+	if sess.BluemixSession == nil {
+		log.Println("Skipping Bluemix Clients configuration")
+		session := clientSession{
+			session: sess,
+		}
+		return session, nil
+	}
+
+	cfClient, err := cfv2.New(sess.BluemixSession)
 
 	if err != nil {
 		return nil, err
@@ -170,20 +192,20 @@ func (c *Config) ClientSession() (interface{}, error) {
 	serviceKeysAPI := cfClient.ServiceKeys()
 	serviceOfferringAPI := cfClient.ServiceOfferings()
 
-	accClient, err := accountv2.NewClient(sess.BluemixSession)
+	accClient, err := accountv2.New(sess.BluemixSession)
 	if err != nil {
 		log.Fatal(err)
 	}
 	accountAPI := accClient.Accounts()
 
-	clusterClient, err := k8sclusterv1.NewClient(sess.BluemixSession)
+	clusterClient, err := k8sclusterv1.New(sess.BluemixSession)
 	if err != nil {
 		log.Fatal(err)
 	}
 	clustersAPI := clusterClient.Clusters()
 	clusterWorkerAPI := clusterClient.Workers()
 	clusterSubnetsAPI := clusterClient.Subnets()
-	clusterWebhookAPI := clusterClient.Webhooks()
+	clusterWebhookAPI := clusterClient.WebHooks()
 
 	session := clientSession{
 		session: sess,
@@ -199,8 +221,43 @@ func (c *Config) ClientSession() (interface{}, error) {
 		cfServicePlanClient:      servicePlanAPI,
 		cfServiceOfferingsClient: serviceOfferringAPI,
 		cfSpaceClient:            spaceAPI,
-		bluemixAccountClient:     accountAPI,
+
+		bluemixAccountClient: accountAPI,
 	}
 
 	return session, err
+}
+
+func newSession(c *Config) (*Session, error) {
+	ibmcloudSession := &Session{}
+	skipBluemix, skipSoftLayer := c.SkipServiceConfig.Contains("bluemix"), c.SkipServiceConfig.Contains("softlayer")
+	if !skipSoftLayer {
+		log.Println("Configuring SoftLayer Session ")
+		softlayerSession := &slsession.Session{
+			Endpoint: c.SoftLayerEndpointURL,
+			Timeout:  c.SoftLayerTimeout,
+			UserName: c.SoftLayerUserName,
+			APIKey:   c.SoftLayerAPIKey,
+			Debug:    os.Getenv("TF_LOG") != "",
+		}
+		ibmcloudSession.SoftLayerSession = softlayerSession
+	}
+	if !skipBluemix {
+		log.Println("Configuring Bluemix Session")
+		var sess *bxsession.Session
+		bmxConfig := &bluemix.Config{
+			BluemixAPIKey: c.BluemixAPIKey,
+			Debug:         os.Getenv("TF_LOG") != "",
+			HTTPTimeout:   c.BluemixTimeout,
+			Region:        c.Region,
+			RetryDelay:    &c.RetryDelay,
+			MaxRetries:    &c.RetryCount,
+		}
+		sess, err := bxsession.New(bmxConfig)
+		if err != nil {
+			return nil, err
+		}
+		ibmcloudSession.BluemixSession = sess
+	}
+	return ibmcloudSession, nil
 }

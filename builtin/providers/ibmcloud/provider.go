@@ -3,7 +3,6 @@ package ibmcloud
 import (
 	"time"
 
-	"github.com/IBM-Bluemix/bluemix-go/endpoints"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
 )
@@ -12,23 +11,11 @@ import (
 func Provider() terraform.ResourceProvider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
-			"ibmid": {
+			"bluemix_api_key": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "The IBM ID.",
-				DefaultFunc: schema.EnvDefaultFunc("IBMID", ""),
-			},
-			"ibmid_password": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Description: "The password for the IBM ID.",
-				DefaultFunc: schema.EnvDefaultFunc("IBMID_PASSWORD", ""),
-			},
-			"region": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Description: "The Bluemix Region (for example 'us-south').",
-				DefaultFunc: schema.MultiEnvDefaultFunc([]string{"BM_REGION", "BLUEMIX_REGION"}, "us-south"),
+				Description: "The Bluemix API Key",
+				DefaultFunc: schema.MultiEnvDefaultFunc([]string{"BM_API_KEY", "BLUEMIX_API_KEY"}, ""),
 			},
 			"bluemix_timeout": {
 				Type:        schema.TypeInt,
@@ -36,17 +23,36 @@ func Provider() terraform.ResourceProvider {
 				Description: "The timeout (in seconds) to set for any Bluemix API calls made.",
 				DefaultFunc: schema.MultiEnvDefaultFunc([]string{"BM_TIMEOUT", "BLUEMIX_TIMEOUT"}, 60),
 			},
+			"region": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "The Bluemix Region (for example 'us-south').",
+				DefaultFunc: schema.MultiEnvDefaultFunc([]string{"BM_REGION", "BLUEMIX_REGION"}, "us-south"),
+			},
+			"softlayer_api_key": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "The SoftLayer API Key",
+				DefaultFunc: schema.MultiEnvDefaultFunc([]string{"SL_API_KEY", "SOFTLAYER_API_KEY"}, ""),
+			},
+			"softlayer_username": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "The SoftLayer user name",
+				DefaultFunc: schema.MultiEnvDefaultFunc([]string{"SL_USERNAME", "SOFTLAYER_USERNAME"}, ""),
+			},
 			"softlayer_timeout": {
 				Type:        schema.TypeInt,
 				Optional:    true,
 				Description: "The timeout (in seconds) to set for any SoftLayer API calls made.",
 				DefaultFunc: schema.MultiEnvDefaultFunc([]string{"SL_TIMEOUT", "SOFTLAYER_TIMEOUT"}, 60),
 			},
-			"softlayer_account_number": {
-				Type:        schema.TypeString,
+			"skip_service_configuration": {
+				Type:        schema.TypeSet,
 				Optional:    true,
-				Description: "The SoftLayer IMS account number linked with IBM ID.",
-				DefaultFunc: schema.MultiEnvDefaultFunc([]string{"SL_ACCOUNT_NUMBER", "SOFTLAYER_ACCOUNT_NUMBER"}, ""),
+				Description: "IBM Cloud has many services. At times you may not need to interact with some of them. This paramter allows to skip configuring clients for those",
+				Elem:        &schema.Schema{Type: schema.TypeString},
+				Set:         schema.HashString,
 			},
 		},
 
@@ -104,27 +110,27 @@ func Provider() terraform.ResourceProvider {
 }
 
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
+	bluemixAPIKey := d.Get("bluemix_api_key").(string)
+	softlayerUsername := d.Get("softlayer_username").(string)
+	softlayerAPIKey := d.Get("softlayer_api_key").(string)
 	softlayerTimeout := d.Get("softlayer_timeout").(int)
 	bluemixTimeout := d.Get("bluemix_timeout").(int)
-
 	region := d.Get("region").(string)
-	endpointLocator := endpoints.NewEndpointLocator(region)
-	iamEndpoint, err := endpointLocator.IAMEndpoint()
-	if err != nil {
-		return nil, err
-	}
+
+	skipServiceConfig := d.Get("skip_service_configuration").(*schema.Set)
+
 	config := Config{
-		IBMID:                   d.Get("ibmid").(string),
-		IBMIDPassword:           d.Get("ibmid_password").(string),
-		Region:                  d.Get("region").(string),
-		BluemixTimeout:          time.Duration(bluemixTimeout) * time.Second,
-		SoftLayerTimeout:        time.Duration(softlayerTimeout) * time.Second,
-		SoftLayerAccountNumber:  d.Get("softlayer_account_number").(string),
-		IAMEndpoint:             iamEndpoint,
-		RetryCount:              3,
-		RetryDelay:              30 * time.Millisecond,
-		SoftLayerEndpointURL:    SoftlayerRestEndpoint,
-		SoftlayerXMLRPCEndpoint: SoftlayerXMLRPCEndpoint,
+		BluemixAPIKey:        bluemixAPIKey,
+		Region:               region,
+		BluemixTimeout:       time.Duration(bluemixTimeout) * time.Second,
+		SoftLayerTimeout:     time.Duration(softlayerTimeout) * time.Second,
+		SoftLayerUserName:    softlayerUsername,
+		SoftLayerAPIKey:      softlayerAPIKey,
+		SkipServiceConfig:    skipServiceConfig,
+		RetryCount:           3,
+		RetryDelay:           30 * time.Millisecond,
+		SoftLayerEndpointURL: SoftlayerRestEndpoint,
 	}
+
 	return config.ClientSession()
 }

@@ -3,6 +3,7 @@ package ibmcloud
 import (
 	"fmt"
 
+	"github.com/IBM-Bluemix/bluemix-go/bmxerror"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -12,6 +13,7 @@ func resourceIBMCloudCfServiceInstance() *schema.Resource {
 		Read:     resourceIBMCloudCfServiceInstanceRead,
 		Update:   resourceIBMCloudCfServiceInstanceUpdate,
 		Delete:   resourceIBMCloudCfServiceInstanceDelete,
+		Exists:   resourceIBMCloudCfServiceInstanceExists,
 		Importer: &schema.ResourceImporter{},
 
 		Schema: map[string]*schema.Schema{
@@ -111,10 +113,10 @@ func resourceIBMCloudCfServiceInstanceCreate(d *schema.ResourceData, meta interf
 }
 
 func resourceIBMCloudCfServiceInstanceRead(d *schema.ResourceData, meta interface{}) error {
-	serviceRepo := meta.(ClientSession).CloudFoundryServiceInstanceClient()
+	serviceClient := meta.(ClientSession).CloudFoundryServiceInstanceClient()
 	serviceGUID := d.Id()
 
-	service, err := serviceRepo.Get(serviceGUID)
+	service, err := serviceClient.Get(serviceGUID)
 	if err != nil {
 		return fmt.Errorf("Error retrieving service: %s", err)
 	}
@@ -126,7 +128,7 @@ func resourceIBMCloudCfServiceInstanceRead(d *schema.ResourceData, meta interfac
 }
 
 func resourceIBMCloudCfServiceInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
-	serviceRepo := meta.(ClientSession).CloudFoundryServiceInstanceClient()
+	serviceClient := meta.(ClientSession).CloudFoundryServiceInstanceClient()
 
 	serviceGUID := d.Id()
 
@@ -163,7 +165,7 @@ func resourceIBMCloudCfServiceInstanceUpdate(d *schema.ResourceData, meta interf
 		tags = getServiceTags(d)
 	}
 
-	_, err := serviceRepo.Update(name, serviceGUID, planguid, parameters, tags)
+	_, err := serviceClient.Update(name, serviceGUID, planguid, parameters, tags)
 	if err != nil {
 		return fmt.Errorf("Error updating service: %s", err)
 	}
@@ -172,11 +174,11 @@ func resourceIBMCloudCfServiceInstanceUpdate(d *schema.ResourceData, meta interf
 }
 
 func resourceIBMCloudCfServiceInstanceDelete(d *schema.ResourceData, meta interface{}) error {
-	serviceRepo := meta.(ClientSession).CloudFoundryServiceInstanceClient()
+	serviceClient := meta.(ClientSession).CloudFoundryServiceInstanceClient()
 
 	id := d.Id()
 
-	err := serviceRepo.Delete(id)
+	err := serviceClient.Delete(id)
 	if err != nil {
 		return fmt.Errorf("Error deleting service: %s", err)
 	}
@@ -184,6 +186,22 @@ func resourceIBMCloudCfServiceInstanceDelete(d *schema.ResourceData, meta interf
 	d.SetId("")
 
 	return nil
+}
+func resourceIBMCloudCfServiceInstanceExists(d *schema.ResourceData, meta interface{}) (bool, error) {
+	serviceClient := meta.(ClientSession).CloudFoundryServiceInstanceClient()
+	serviceGUID := d.Id()
+
+	service, err := serviceClient.Get(serviceGUID)
+	if err != nil {
+		if apiErr, ok := err.(bmxerror.RequestFailure); ok {
+			if apiErr.StatusCode() == 404 {
+				return false, nil
+			}
+		}
+		return false, fmt.Errorf("Error communicating with the API: %s", err)
+	}
+
+	return service.Metadata.GUID == serviceGUID, nil
 }
 
 func getServiceTags(d *schema.ResourceData) []string {

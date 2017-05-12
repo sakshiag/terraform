@@ -21,11 +21,12 @@ func dataSourceIBMCloudCfAccount() *schema.Resource {
 }
 
 func dataSourceIBMCloudCfAccountRead(d *schema.ResourceData, meta interface{}) error {
+	bmxSess := meta.(ClientSession).BluemixSession()
 	or := meta.(ClientSession).BluemixAcccountClient()
 
 	orgGUID := d.Get("org_guid").(string)
 
-	account, err := or.FindByOrg(orgGUID)
+	account, err := or.FindByOrg(orgGUID, bmxSess.Config.Region)
 	if err != nil {
 		return fmt.Errorf("Error retrieving organisation: %s", err)
 	}

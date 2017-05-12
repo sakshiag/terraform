@@ -94,6 +94,7 @@ func resourceIBMCloudClusterBindServiceCreate(d *schema.ResourceData, meta inter
 	if err != nil {
 		return err
 	}
+	//Fix me Id would be typically the returned ID from the API, proabably SecretName should be used
 	d.SetId(clusterNameID)
 	d.Set("service_instance_name_id", serviceInstanceNameID)
 	d.Set("namespace_id", namespaceID)
@@ -112,12 +113,18 @@ func resourceIBMCloudClusterBindServiceDelete(d *schema.ResourceData, meta inter
 	client := meta.(ClientSession).ClusterClient()
 	clusterID := d.Id()
 	namespace := d.Get("namespace_id").(string)
-	serviceInstanceNameId := d.Get("service_instance_name_id").(string)
+	serviceInstanceNameID := d.Get("service_instance_name_id").(string)
 	targetEnv := getClusterTargetHeader(d)
 
-	err := client.UnBindService(clusterID, namespace, serviceInstanceNameId, targetEnv)
+	err := client.UnBindService(clusterID, namespace, serviceInstanceNameID, targetEnv)
 	if err != nil {
 		return fmt.Errorf("Error unbinding service: %s", err)
 	}
 	return nil
 }
+
+//Pure Aramda API not available, we can still find by using k8s api
+/*
+func resourceIBMCloudClusterBindServiceExists(d *schema.ResourceData, meta interface{}) (bool, error) {
+
+}*/

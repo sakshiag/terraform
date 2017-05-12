@@ -7,6 +7,7 @@ import (
 	"time"
 
 	v1 "github.com/IBM-Bluemix/bluemix-go/api/k8scluster/k8sclusterv1"
+	"github.com/IBM-Bluemix/bluemix-go/bmxerror"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -25,10 +26,12 @@ const (
 
 func resourceIBMCloudArmadaCluster() *schema.Resource {
 	return &schema.Resource{
-		Create:   resourceIBMCloudArmadaClusterCreate,
-		Read:     resourceIBMCloudArmadaClusterRead,
-		Update:   resourceIBMCloudArmadaClusterUpdate,
-		Delete:   resourceIBMCloudArmadaClusterDelete,
+		Create: resourceIBMCloudArmadaClusterCreate,
+		Read:   resourceIBMCloudArmadaClusterRead,
+		Update: resourceIBMCloudArmadaClusterUpdate,
+		Delete: resourceIBMCloudArmadaClusterDelete,
+		Exists: resourceIBMCloudArmadaClusterExists,
+
 		Importer: &schema.ResourceImporter{},
 
 		Schema: map[string]*schema.Schema{
@@ -481,4 +484,20 @@ func workerStateRefreshFunc(client v1.Workers, instanceID string, d *schema.Reso
 		}
 		return workerFields, workerAvailable, nil
 	}
+}
+
+func resourceIBMCloudArmadaClusterExists(d *schema.ResourceData, meta interface{}) (bool, error) {
+	targetEnv := getClusterTargetHeader(d)
+	client := meta.(ClientSession).ClusterClient()
+	clusterID := d.Id()
+	cls, err := client.Find(clusterID, targetEnv)
+	if err != nil {
+		if apiErr, ok := err.(bmxerror.RequestFailure); ok {
+			if apiErr.StatusCode() == 404 {
+				return false, nil
+			}
+		}
+		return false, fmt.Errorf("Error communicating with the API: %s", err)
+	}
+	return cls.ID == clusterID, nil
 }

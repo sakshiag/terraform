@@ -3,6 +3,7 @@ package ibmcloud
 import (
 	"fmt"
 
+	"github.com/IBM-Bluemix/bluemix-go/bmxerror"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -11,6 +12,7 @@ func resourceIBMCloudCfServiceKey() *schema.Resource {
 		Create:   resourceIBMCloudCfServiceKeyCreate,
 		Read:     resourceIBMCloudCfServiceKeyRead,
 		Delete:   resourceIBMCloudCfServiceKeyDelete,
+		Exists:   resourceIBMCloudCfServiceKeyExists,
 		Importer: &schema.ResourceImporter{},
 
 		Schema: map[string]*schema.Schema{
@@ -43,7 +45,7 @@ func resourceIBMCloudCfServiceKey() *schema.Resource {
 }
 
 func resourceIBMCloudCfServiceKeyCreate(d *schema.ResourceData, meta interface{}) error {
-	serviceRepo := meta.(ClientSession).CloudFoundryServiceKeyClient()
+	serviceClient := meta.(ClientSession).CloudFoundryServiceKeyClient()
 	name := d.Get("name").(string)
 	serviceInstanceGUID := d.Get("service_instance_guid").(string)
 	var parameters map[string]interface{}
@@ -52,7 +54,7 @@ func resourceIBMCloudCfServiceKeyCreate(d *schema.ResourceData, meta interface{}
 		parameters = parameters.(map[string]interface{})
 	}
 
-	serviceKey, err := serviceRepo.Create(serviceInstanceGUID, name, parameters)
+	serviceKey, err := serviceClient.Create(serviceInstanceGUID, name, parameters)
 	if err != nil {
 		return fmt.Errorf("Error creating service key: %s", err)
 	}
@@ -63,10 +65,10 @@ func resourceIBMCloudCfServiceKeyCreate(d *schema.ResourceData, meta interface{}
 }
 
 func resourceIBMCloudCfServiceKeyRead(d *schema.ResourceData, meta interface{}) error {
-	serviceRepo := meta.(ClientSession).CloudFoundryServiceKeyClient()
+	serviceClient := meta.(ClientSession).CloudFoundryServiceKeyClient()
 	serviceKeyGUID := d.Id()
 
-	serviceKey, err := serviceRepo.Get(serviceKeyGUID)
+	serviceKey, err := serviceClient.Get(serviceKeyGUID)
 	if err != nil {
 		return fmt.Errorf("Error retrieving service key: %s", err)
 	}
@@ -76,11 +78,11 @@ func resourceIBMCloudCfServiceKeyRead(d *schema.ResourceData, meta interface{}) 
 }
 
 func resourceIBMCloudCfServiceKeyDelete(d *schema.ResourceData, meta interface{}) error {
-	serviceRepo := meta.(ClientSession).CloudFoundryServiceKeyClient()
+	serviceClient := meta.(ClientSession).CloudFoundryServiceKeyClient()
 
 	serviceKeyGUID := d.Id()
 
-	err := serviceRepo.Delete(serviceKeyGUID)
+	err := serviceClient.Delete(serviceKeyGUID)
 	if err != nil {
 		return fmt.Errorf("Error deleting service key: %s", err)
 	}
@@ -88,4 +90,21 @@ func resourceIBMCloudCfServiceKeyDelete(d *schema.ResourceData, meta interface{}
 	d.SetId("")
 
 	return nil
+}
+
+func resourceIBMCloudCfServiceKeyExists(d *schema.ResourceData, meta interface{}) (bool, error) {
+	serviceClient := meta.(ClientSession).CloudFoundryServiceKeyClient()
+	serviceKeyGUID := d.Id()
+
+	serviceKey, err := serviceClient.Get(serviceKeyGUID)
+	if err != nil {
+		if apiErr, ok := err.(bmxerror.RequestFailure); ok {
+			if apiErr.StatusCode() == 404 {
+				return false, nil
+			}
+		}
+		return false, fmt.Errorf("Error communicating with the API: %s", err)
+	}
+
+	return serviceKey.Metadata.GUID == serviceKeyGUID, nil
 }
