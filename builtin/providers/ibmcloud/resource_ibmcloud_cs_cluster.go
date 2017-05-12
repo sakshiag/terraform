@@ -13,10 +13,8 @@ import (
 )
 
 const (
-	clusterAvailable  = "available"
 	clusterNormal     = "normal"
-	workerAvailable   = "available"
-	workerNormalState = "normal"
+	workerNormal      = "normal"
 	workerReadyState  = "Ready"
 	workerDeleteState = "deleted"
 
@@ -26,12 +24,11 @@ const (
 
 func resourceIBMCloudArmadaCluster() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceIBMCloudArmadaClusterCreate,
-		Read:   resourceIBMCloudArmadaClusterRead,
-		Update: resourceIBMCloudArmadaClusterUpdate,
-		Delete: resourceIBMCloudArmadaClusterDelete,
-		Exists: resourceIBMCloudArmadaClusterExists,
-
+		Create:   resourceIBMCloudArmadaClusterCreate,
+		Read:     resourceIBMCloudArmadaClusterRead,
+		Update:   resourceIBMCloudArmadaClusterUpdate,
+		Delete:   resourceIBMCloudArmadaClusterDelete,
+		Exists:   resourceIBMCloudArmadaClusterExists,
 		Importer: &schema.ResourceImporter{},
 
 		Schema: map[string]*schema.Schema{
@@ -61,8 +58,9 @@ func resourceIBMCloudArmadaCluster() *schema.Resource {
 							Computed: true,
 						},
 						"action": {
-							Type:     schema.TypeString,
-							Optional: true,
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validateAllowedStringValue([]string{"add", "reboot", "reload"}),
 						},
 					},
 				},
@@ -137,8 +135,9 @@ func resourceIBMCloudArmadaCluster() *schema.Resource {
 							Required: true,
 						},
 						"type": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:         schema.TypeString,
+							Required:     true,
+							ValidateFunc: validateAllowedStringValue([]string{"slack"}),
 						},
 						"url": {
 							Type:     schema.TypeString,
@@ -206,6 +205,16 @@ func resourceIBMCloudArmadaClusterCreate(d *schema.ResourceData, meta interface{
 	if err != nil {
 		return err
 	}
+	d.SetId(cls.ID)
+	//wait for cluster availability
+	_, err = WaitForClusterAvailable(d, meta, targetEnv)
+	//wait for worker  availability
+	_, err = WaitForWorkerAvailable(d, meta, targetEnv)
+	if err != nil {
+		return fmt.Errorf(
+			"Error waiting for workers of cluster (%s) to become ready: %s", d.Id(), err)
+	}
+
 	subnetClient := meta.(ClientSession).ClusterSubnetClient()
 	subnetIDs := d.Get("subnet_id").(*schema.Set)
 	for _, subnetID := range subnetIDs.List() {
@@ -228,21 +237,30 @@ func resourceIBMCloudArmadaClusterCreate(d *schema.ResourceData, meta interface{
 		webhookClient.Add(cls.ID, webhook, targetEnv)
 
 	}
-	d.SetId(cls.ID)
-	//wait for cluster availability
-	_, err = WaitForClusterAvailable(d, meta, targetEnv)
+
+	workersInfo := []map[string]string{}
+	workerClient := meta.(ClientSession).ClusterWorkerClient()
+	workerFields, err := workerClient.List(cls.ID, targetEnv)
+	if err != nil {
+		return err
+	}
+	//Create a map with worker name and id
+	for i, e := range workers {
+		pack := e.(map[string]interface{})
+		var worker = map[string]string{
+			"name":   pack["name"].(string),
+			"id":     workerFields[i].ID,
+			"action": pack["action"].(string),
+		}
+		workersInfo = append(workersInfo, worker)
+	}
+	d.Set("workers", workersInfo)
 
 	if err != nil {
 		return fmt.Errorf(
 			"Error waiting for cluster (%s) to become ready: %s", d.Id(), err)
 	}
 
-	//wait for worker  availability
-	_, err = WaitForWorkerAvailable(d, meta, targetEnv)
-	if err != nil {
-		return fmt.Errorf(
-			"Error waiting for workers of cluster (%s) to become ready: %s", d.Id(), err)
-	}
 	return resourceIBMCloudArmadaClusterRead(d, meta)
 }
 
@@ -258,28 +276,6 @@ func resourceIBMCloudArmadaClusterRead(d *schema.ResourceData, meta interface{})
 		return fmt.Errorf("Error retrieving armada cluster: %s", err)
 	}
 
-	workers := d.Get("workers").([]interface{})
-
-	workersInfo := []map[string]string{}
-	workerClient := meta.(ClientSession).ClusterWorkerClient()
-	workerFields, err := workerClient.List(clusterID, targetEnv)
-	if err != nil {
-		return err
-	}
-	//Create a map with worker name and id
-	//TODO - How do we know the name associated with the worker id retrieved from client.GetWokers
-	for i, e := range workers {
-		pack := e.(map[string]interface{})
-		if strings.Compare(workerFields[i].State, "deleted") != 0 {
-			var worker = map[string]string{
-				"name":   pack["name"].(string),
-				"id":     workerFields[i].ID,
-				"action": pack["action"].(string),
-			}
-			workersInfo = append(workersInfo, worker)
-		}
-	}
-	d.Set("workers", workersInfo)
 	d.Set("name", cls.Name)
 	d.Set("server_url", cls.ServerURL)
 	d.Set("ingress_hostname", cls.IngressHostname)
@@ -293,27 +289,21 @@ func resourceIBMCloudArmadaClusterUpdate(d *schema.ResourceData, meta interface{
 
 	targetEnv := getClusterTargetHeader(d)
 
-	client := meta.(ClientSession).ClusterClient()
 	subnetClient := meta.(ClientSession).ClusterSubnetClient()
 	webhookClient := meta.(ClientSession).ClusterWebHooksClient()
 	workerClient := meta.(ClientSession).ClusterWorkerClient()
 
 	clusterID := d.Id()
-	_, err := client.Find(clusterID, targetEnv)
-	if err != nil {
-		return fmt.Errorf("Error retrieving armada cluster: %s", err)
-	}
+	workersInfo := []map[string]string{}
 	if d.HasChange("workers") {
 		oldWorkers, newWorkers := d.GetChange("workers")
 		oldWorker := oldWorkers.([]interface{})
 		newWorker := newWorkers.([]interface{})
-		log.Println("workers changed", "oldworker", oldWorker, "newworker", newWorker)
 		for _, nW := range newWorker {
 			newPack := nW.(map[string]interface{})
 			exists := false
 			for _, oW := range oldWorker {
 				oldPack := oW.(map[string]interface{})
-				log.Println("workers changed3", newPack["name"].(string), oldPack["name"].(string))
 				if strings.Compare(newPack["name"].(string), oldPack["name"].(string)) == 0 {
 					exists = true
 					if strings.Compare(newPack["action"].(string), oldPack["action"].(string)) != 0 {
@@ -321,35 +311,59 @@ func resourceIBMCloudArmadaClusterUpdate(d *schema.ResourceData, meta interface{
 							Action: newPack["action"].(string),
 						}
 						workerClient.Update(clusterID, oldPack["id"].(string), params, targetEnv)
+						var worker = map[string]string{
+							"name":   newPack["name"].(string),
+							"id":     newPack["id"].(string),
+							"action": newPack["action"].(string),
+						}
+						workersInfo = append(workersInfo, worker)
+					} else {
+						var worker = map[string]string{
+							"name":   oldPack["name"].(string),
+							"id":     oldPack["id"].(string),
+							"action": oldPack["action"].(string),
+						}
+						workersInfo = append(workersInfo, worker)
 					}
 				}
 			}
-			log.Println("workers changed2", exists)
 			if !exists {
 				params := v1.WorkerParam{
 					Action: "add",
 					Count:  1,
 				}
-				workerClient.Add(clusterID, params, targetEnv)
+				err := workerClient.Add(clusterID, params, targetEnv)
+				if err != nil {
+					return fmt.Errorf("Error adding worker to cluster")
+				}
+				id, err := getID(d, meta, clusterID, oldWorker, workersInfo)
+				if err != nil {
+					return fmt.Errorf("Error getting id of worker")
+				}
+				var worker = map[string]string{
+					"name":   newPack["name"].(string),
+					"id":     id,
+					"action": newPack["action"].(string),
+				}
+				workersInfo = append(workersInfo, worker)
 			}
 		}
-		//wait for new workers to available
-		//TODO - Can we not put WaitForWorkerAvailable after all client.DeleteWorker
-		WaitForWorkerAvailable(d, meta, targetEnv)
 		for _, oW := range oldWorker {
 			oldPack := oW.(map[string]interface{})
 			exists := false
 			for _, nW := range newWorker {
 				newPack := nW.(map[string]interface{})
-				if strings.Compare(oldPack["name"].(string), newPack["name"].(string)) == 0 {
-					exists = true
-				}
+				exists = exists || (strings.Compare(oldPack["name"].(string), newPack["name"].(string)) == 0)
 			}
 			if !exists {
 				workerClient.Delete(clusterID, oldPack["id"].(string), targetEnv)
 			}
 
 		}
+		//wait for new workers to available
+		//Done - Can we not put WaitForWorkerAvailable after all client.DeleteWorker
+		WaitForWorkerAvailable(d, meta, targetEnv)
+		d.Set("workers", workersInfo)
 	}
 
 	//TODO put webhooks can't deleted in the error message if such case is observed in the chnages
@@ -390,7 +404,7 @@ func resourceIBMCloudArmadaClusterUpdate(d *schema.ResourceData, meta interface{
 				}
 			}
 			if !exists {
-				err = subnetClient.AddSubnet(clusterID, nS.(string), targetEnv)
+				err := subnetClient.AddSubnet(clusterID, nS.(string), targetEnv)
 				if err != nil {
 					return err
 				}
@@ -398,6 +412,35 @@ func resourceIBMCloudArmadaClusterUpdate(d *schema.ResourceData, meta interface{
 		}
 	}
 	return resourceIBMCloudArmadaClusterRead(d, meta)
+}
+
+func getID(d *schema.ResourceData, meta interface{}, clusterID string, oldWorkers []interface{}, workerInfo []map[string]string) (string, error) {
+	targetEnv := getClusterTargetHeader(d)
+	workerClient := meta.(ClientSession).ClusterWorkerClient()
+	workerFields, err := workerClient.List(clusterID, targetEnv)
+	if err != nil {
+		return "", err
+	}
+	for _, wF := range workerFields {
+		exists := false
+		for _, oW := range oldWorkers {
+			oldPack := oW.(map[string]interface{})
+			if strings.Compare(wF.ID, oldPack["id"].(string)) == 0 || strings.Compare(wF.State, "deleted") == 0 {
+				exists = true
+			}
+		}
+		if !exists {
+			for i := 0; i < len(workerInfo); i++ {
+				pack := workerInfo[i]
+				exists = exists || (strings.Compare(wF.ID, pack["id"]) == 0)
+			}
+			if !exists {
+				return wF.ID, nil
+			}
+		}
+	}
+
+	return "", fmt.Errorf("Unable to get ID of worker")
 }
 
 func resourceIBMCloudArmadaClusterDelete(d *schema.ResourceData, meta interface{}) error {
@@ -419,7 +462,7 @@ func WaitForClusterAvailable(d *schema.ResourceData, meta interface{}, target *v
 	client := meta.(ClientSession).ClusterClient()
 	stateConf := &resource.StateChangeConf{
 		Pending:    []string{"retry", clusterProvisioning},
-		Target:     []string{clusterAvailable, clusterNormal},
+		Target:     []string{clusterNormal},
 		Refresh:    clusterStateRefreshFunc(client, id, d, target),
 		Timeout:    time.Duration(d.Get("wait_time_minutes").(int)) * time.Minute,
 		Delay:      10 * time.Second,
@@ -437,13 +480,12 @@ func clusterStateRefreshFunc(client v1.Clusters, instanceID string, d *schema.Re
 		}
 		// Check active transactions
 		log.Println("Checking cluster")
-		//TODO it can be in other states different from deploy
-		//better to check if it is not equal to  normal
-		//and then return clusterNormal instead of clusterAvailable
-		if strings.Contains(clusterFields.State, "deploy") {
+		//Check for cluster state to be normal
+		log.Println("Checking cluster state %s", strings.Compare(clusterFields.State, clusterNormal))
+		if strings.Compare(clusterFields.State, clusterNormal) != 0 {
 			return clusterFields, clusterProvisioning, nil
 		}
-		return clusterFields, clusterAvailable, nil
+		return clusterFields, clusterNormal, nil
 	}
 }
 
@@ -455,7 +497,7 @@ func WaitForWorkerAvailable(d *schema.ResourceData, meta interface{}, target *v1
 	workerClient := meta.(ClientSession).ClusterWorkerClient()
 	stateConf := &resource.StateChangeConf{
 		Pending:    []string{"retry", workerProvisioning},
-		Target:     []string{workerAvailable, workerNormalState},
+		Target:     []string{workerNormal},
 		Refresh:    workerStateRefreshFunc(workerClient, id, d, target),
 		Timeout:    time.Duration(d.Get("wait_time_minutes").(int)) * time.Minute,
 		Delay:      10 * time.Second,
@@ -472,17 +514,15 @@ func workerStateRefreshFunc(client v1.Workers, instanceID string, d *schema.Reso
 			return nil, "", fmt.Errorf("Error retrieving workers for cluster: %s", err)
 		}
 		log.Println("Checking workers...")
-		//TODO worker has two fields State and Status , so check for those 2
-		//ID                                                 Public IP        Private IP     Machine Type   State    Status
-		//kube-dal10-pa59705c104c2b4b9b965eb376f6b84837-w1   169.47.241.200   10.177.155.6   free           normal   Ready
+		//Done worker has two fields State and Status , so check for those 2
 		for _, e := range workerFields {
-			if strings.Compare(e.State, workerNormalState) != 0 {
+			if strings.Compare(e.State, workerNormal) != 0 || strings.Compare(e.Status, workerReadyState) != 0 {
 				if strings.Compare(e.State, "deleted") != 0 {
 					return workerFields, workerProvisioning, nil
 				}
 			}
 		}
-		return workerFields, workerAvailable, nil
+		return workerFields, workerNormal, nil
 	}
 }
 
