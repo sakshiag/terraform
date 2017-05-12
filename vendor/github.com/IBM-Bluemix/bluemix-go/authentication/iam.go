@@ -42,9 +42,16 @@ type IAMAuthRepository struct {
 
 //NewIAMAuthRepository ...
 func NewIAMAuthRepository(config *bluemix.Config, client *rest.Client) (*IAMAuthRepository, error) {
-	endpoint, err := config.EndpointLocator.IAMEndpoint()
-	if err != nil {
-		return nil, err
+	var endpoint string
+
+	if config.TokenProviderEndpoint != nil {
+		endpoint = *config.TokenProviderEndpoint
+	} else {
+		var err error
+		endpoint, err = config.EndpointLocator.IAMEndpoint()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &IAMAuthRepository{

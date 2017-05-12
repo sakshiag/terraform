@@ -1,21 +1,65 @@
+// Package rest provides a simple REST client for creating and sending
+// API requests.
+
+// Examples:
+// Creating request
+// 		// GET request
+// 		GetRequest("http://www.example.com").
+// 			Set("Accept", "application/json").
+// 			Query("foo1", "bar1").
+// 			Query("foo2", "bar2")
+//
+// 		// JSON body
+// 		foo = Foo{Bar: "val"}
+// 		PostRequest("http://www.example.com").
+// 			Body(foo)
+
+// 		// String body
+// 		PostRequest("http://www.example.com").
+// 			Body("{\"bar\": \"val\"}")
+
+// 		// Stream body
+// 		PostRequest("http://www.example.com").
+// 			Body(strings.NewReader("abcde"))
+
+// 		// Multipart POST request
+// 		var f *os.File
+// 		PostRequest("http://www.example.com").
+// 			Field("foo", "bar").
+// 			File("file1", File{Name: f.Name(), Content: f}).
+// 			File("file2", File{Name: "1.txt", Content: []byte("abcde"), Type: "text/plain")
+
+// 		// Build to an HTTP request
+// 		GetRequest("http://www.example.com").Build()
+
+// Sending request:
+// 		client := NewClient()
+// 		var foo = struct {
+// 			Bar string
+// 		}{}
+// 		var apiErr = struct {
+// 			Message string
+// 		}{}
+// 		resp, err := client.Do(request, &foo, &apiErr)
 package rest
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
-	"time"
 
 	"github.com/IBM-Bluemix/bluemix-go/bmxerror"
 )
 
+const (
+	//ErrCodeEmptyResponse ...
+	ErrCodeEmptyResponse = "EmptyResponseBody"
+)
+
 //ErrEmptyResponseBody ...
-var ErrEmptyResponseBody = errors.New("empty response body")
-var defaultMaxRetries = 3
-var timeLagBtwReq = 10 * time.Second
+var ErrEmptyResponseBody = bmxerror.New(ErrCodeEmptyResponse, "empty response body")
 
 // Client is a REST client. It's recommend that a client be created with the
 // NewClient() method.
@@ -24,21 +68,12 @@ type Client struct {
 	HTTPClient *http.Client
 	// Defaualt header for all outgoing HTTP requests.
 	DefaultHeader http.Header
-	//Maximum number of retries
-	MaxRetries int
-
-	//Retry delay
-	RetryDelay time.Duration
-
-	Debug bool
 }
 
 // NewClient creates a new REST client.
 func NewClient() *Client {
 	return &Client{
 		HTTPClient: http.DefaultClient,
-		MaxRetries: defaultMaxRetries,
-		RetryDelay: timeLagBtwReq,
 	}
 }
 
@@ -49,67 +84,53 @@ func NewClient() *Client {
 // respv.
 //
 // For non-2XX response, an attempt will be made to unmarshal the response
-// into the value pointed to by errV. If unmarshal failed, an error with status code
-// and response text is returned.
+// into the value pointed to by errV. If unmarshal failed, an ErrorResponse
+// error with status code and response text is returned.
 func (c *Client) Do(r *Request, respV interface{}, errV interface{}) (*http.Response, error) {
-	for i := 0; ; i++ {
-		req, err := c.makeRequest(r)
+	req, err := c.makeRequest(r)
+	if err != nil {
+		return nil, err
+	}
+
+	client := c.HTTPClient
+	if client == nil {
+		client = http.DefaultClient
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return resp, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		raw, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return nil, err
+			return resp, fmt.Errorf("Error reading response: %v", err)
 		}
 
-		client := c.HTTPClient
-		if client == nil {
-			client = http.DefaultClient
-		}
-
-		var resp *http.Response
-		if c.Debug && client.Transport != nil {
-			resp, err = client.Transport.RoundTrip(req)
-		} else {
-			resp, err = client.Do(req)
-		}
-
-		if err != nil {
-			return resp, err
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode < 200 || resp.StatusCode > 299 {
-			remain := c.MaxRetries - i
-			if remain == 0 || (resp.StatusCode > 299 && resp.StatusCode < 500) {
-
-				raw, err := ioutil.ReadAll(resp.Body)
-				if err != nil {
-					return resp, fmt.Errorf("Error reading response: %v", err)
-				}
-
-				if len(raw) > 0 && errV != nil {
-					if json.Unmarshal(raw, errV) == nil {
-						return resp, nil
-					}
-				}
-
-				return resp, bmxerror.NewRequestFailure("", string(raw), resp.StatusCode)
+		if len(raw) > 0 && errV != nil {
+			if json.Unmarshal(raw, errV) == nil {
+				return resp, nil
 			}
-			time.Sleep(c.RetryDelay)
-		} else {
-			if respV != nil {
-				switch respV.(type) {
-				case io.Writer:
-					_, err = io.Copy(respV.(io.Writer), resp.Body)
-				default:
-					err = json.NewDecoder(resp.Body).Decode(respV)
-					if err == io.EOF {
-						err = ErrEmptyResponseBody
-					}
-				}
-			}
+		}
 
-			return resp, err
+		return resp, bmxerror.NewRequestFailure("ServerErrorResponse", string(raw), resp.StatusCode)
+	}
+
+	if respV != nil {
+		switch respV.(type) {
+		case io.Writer:
+			_, err = io.Copy(respV.(io.Writer), resp.Body)
+		default:
+			err = json.NewDecoder(resp.Body).Decode(respV)
+			if err == io.EOF {
+				err = ErrEmptyResponseBody
+			}
 		}
 	}
 
+	return resp, err
 }
 
 func (c *Client) makeRequest(r *Request) (*http.Request, error) {

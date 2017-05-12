@@ -2,15 +2,26 @@ package cfv2
 
 import (
 	"fmt"
-
-	bluemix "github.com/IBM-Bluemix/bluemix-go"
+	"strconv"
 
 	"github.com/IBM-Bluemix/bluemix-go/bmxerror"
+	"github.com/IBM-Bluemix/bluemix-go/client"
 	"github.com/IBM-Bluemix/bluemix-go/rest"
 )
 
 //ErrCodeOrgDoesnotExist ...
 var ErrCodeOrgDoesnotExist = "OrgDoesnotExist"
+
+//Metadata ...
+type Metadata struct {
+	GUID string `json:"guid"`
+	URL  string `json:"url"`
+}
+
+//Resource ...
+type Resource struct {
+	Metadata Metadata
+}
 
 //OrgResource ...
 type OrgResource struct {
@@ -47,32 +58,82 @@ type Organization struct {
 
 //Organizations ...
 type Organizations interface {
+	Create(name string) error
+	List() ([]Organization, error)
 	FindByName(orgName string) (*Organization, error)
+	Delete(guid string, recursive bool) error
+	Update(guid string, newName string) error
 }
 
 type organization struct {
-	client *CFAPIClient
-	config *bluemix.Config
+	client *client.Client
 }
 
-func newOrganizationAPI(c *CFAPIClient) Organizations {
+func newOrganizationAPI(c *client.Client) Organizations {
 	return &organization{
 		client: c,
-		config: c.config,
 	}
 }
 
+func (o *organization) Create(name string) error {
+	body := struct {
+		Name string `json:"name"`
+	}{
+		Name: name,
+	}
+	_, err := o.client.Post("/v2/organizations", body, nil)
+	return err
+}
+
+func (o *organization) Update(guid string, newName string) error {
+	rawURL := fmt.Sprintf("/v2/organizations/%s", guid)
+	body := struct {
+		Name string `json:"name"`
+	}{
+		Name: newName,
+	}
+	_, err := o.client.Put(rawURL, body, nil)
+	return err
+}
+
+func (o *organization) Delete(guid string, recursive bool) error {
+	req := rest.DeleteRequest(fmt.Sprintf("/v2/organizations/%s", guid)).
+		Query("recursive", strconv.FormatBool(recursive))
+
+	path, pathErr := o.url(req)
+	if pathErr != nil {
+		return pathErr
+	}
+
+	_, err := o.client.Delete(path, nil, nil)
+	return err
+}
+
+func (o *organization) List() ([]Organization, error) {
+	req := rest.GetRequest("/v2/organizations")
+	path, err := o.url(req)
+	if err != nil {
+		return []Organization{}, err
+	}
+
+	var orgs []Organization
+	err = o.listOrgResourcesWithPath(path, func(orgResource OrgResource) bool {
+		orgs = append(orgs, orgResource.ToFields())
+		return true
+	})
+	return orgs, err
+}
+
 //FindByName ...
-func (r *organization) FindByName(name string) (*Organization, error) {
-	region := r.config.Region
-	path, err := r.urlOfOrgWithName(name, false)
+func (o *organization) FindByName(name string) (*Organization, error) {
+	path, err := o.urlOfOrgWithName(name, false)
 	if err != nil {
 		return nil, err
 	}
 
 	var org Organization
 	var found bool
-	err = r.listOrgResourcesWithPath(path, func(orgResource OrgResource) bool {
+	err = o.listOrgResourcesWithPath(path, func(orgResource OrgResource) bool {
 		org = orgResource.ToFields()
 		found = true
 		return false
@@ -88,12 +149,12 @@ func (r *organization) FindByName(name string) (*Organization, error) {
 
 	//May not be found and no error
 	return nil, bmxerror.New(ErrCodeOrgDoesnotExist,
-		fmt.Sprintf("Given org %q doesn't exist in the given region %q", name, region))
+		fmt.Sprintf("Given org %q doesn't exist", name))
 
 }
 
-func (r *organization) listOrgResourcesWithPath(path string, cb func(OrgResource) bool) error {
-	_, err := r.client.getPaginated(path, OrgResource{}, func(resource interface{}) bool {
+func (o *organization) listOrgResourcesWithPath(path string, cb func(OrgResource) bool) error {
+	_, err := o.client.GetPaginated(path, OrgResource{}, func(resource interface{}) bool {
 		if orgResource, ok := resource.(OrgResource); ok {
 			return cb(orgResource)
 		}
@@ -102,16 +163,16 @@ func (r *organization) listOrgResourcesWithPath(path string, cb func(OrgResource
 	return err
 }
 
-func (r *organization) urlOfOrgWithName(name string, inline bool) (string, error) {
+func (o *organization) urlOfOrgWithName(name string, inline bool) (string, error) {
 	req := rest.GetRequest("/v2/organizations").Query("q", fmt.Sprintf("name:%s", name))
 
 	if inline {
 		req.Query("inline-relations-depth", "1")
 	}
-	return r.url(req)
+	return o.url(req)
 }
 
-func (r *organization) url(req *rest.Request) (string, error) {
+func (o *organization) url(req *rest.Request) (string, error) {
 	httpReq, err := req.Build()
 	if err != nil {
 		return "", err
