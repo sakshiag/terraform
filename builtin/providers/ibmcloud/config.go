@@ -2,6 +2,7 @@ package ibmcloud
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -13,6 +14,8 @@ import (
 	"github.com/IBM-Bluemix/bluemix-go/api/account/accountv2"
 	"github.com/IBM-Bluemix/bluemix-go/api/cf/cfv2"
 	"github.com/IBM-Bluemix/bluemix-go/api/k8scluster/k8sclusterv1"
+	"github.com/IBM-Bluemix/bluemix-go/bmxerror"
+	"github.com/IBM-Bluemix/bluemix-go/endpoints"
 	bxsession "github.com/IBM-Bluemix/bluemix-go/session"
 )
 
@@ -172,11 +175,12 @@ func (c *Config) ClientSession() (interface{}, error) {
 		return nil, err
 	}
 
+	session := clientSession{
+		session: sess,
+	}
+
 	if sess.BluemixSession == nil {
 		log.Println("Skipping Bluemix Clients configuration")
-		session := clientSession{
-			session: sess,
-		}
 		return session, nil
 	}
 
@@ -199,32 +203,40 @@ func (c *Config) ClientSession() (interface{}, error) {
 	}
 	accountAPI := accClient.Accounts()
 
-	clusterClient, err := k8sclusterv1.New(sess.BluemixSession)
-	if err != nil {
-		return nil, err
+	skipClusterConfig := c.SkipServiceConfig.Contains("cluster")
+
+	if !skipClusterConfig {
+		clusterClient, err := k8sclusterv1.New(sess.BluemixSession)
+		if err != nil {
+			if apiErr, ok := err.(bmxerror.Error); ok {
+				if apiErr.Code() == endpoints.ErrCodeServiceEndpoint {
+					return nil, fmt.Errorf(`Cluster service doesn't exist in the region %q.\nTo remediate the problem please skip the cluster service configuration by specifying "cluster" in skip_service_configuration in the provider block`, c.Region)
+
+				}
+			}
+			return nil, err
+		}
+		clustersAPI := clusterClient.Clusters()
+		clusterWorkerAPI := clusterClient.Workers()
+		clusterSubnetsAPI := clusterClient.Subnets()
+		clusterWebhookAPI := clusterClient.WebHooks()
+
+		session.csClient = clustersAPI
+		session.csSubnet = clusterSubnetsAPI
+		session.csWorker = clusterWorkerAPI
+		session.csWebHook = clusterWebhookAPI
+
+	} else {
+		log.Println("Skipping cluster configuration")
 	}
-	clustersAPI := clusterClient.Clusters()
-	clusterWorkerAPI := clusterClient.Workers()
-	clusterSubnetsAPI := clusterClient.Subnets()
-	clusterWebhookAPI := clusterClient.WebHooks()
 
-	session := clientSession{
-		session: sess,
-
-		csClient:  clustersAPI,
-		csSubnet:  clusterSubnetsAPI,
-		csWorker:  clusterWorkerAPI,
-		csWebHook: clusterWebhookAPI,
-
-		cfOrgClient:              orgAPI,
-		cfServiceInstanceClient:  serviceInstanceAPI,
-		cfServiceKeysClient:      serviceKeysAPI,
-		cfServicePlanClient:      servicePlanAPI,
-		cfServiceOfferingsClient: serviceOfferringAPI,
-		cfSpaceClient:            spaceAPI,
-
-		bluemixAccountClient: accountAPI,
-	}
+	session.cfOrgClient = orgAPI
+	session.cfServiceInstanceClient = serviceInstanceAPI
+	session.cfServiceKeysClient = serviceKeysAPI
+	session.cfServicePlanClient = servicePlanAPI
+	session.cfServiceOfferingsClient = serviceOfferringAPI
+	session.cfSpaceClient = spaceAPI
+	session.bluemixAccountClient = accountAPI
 
 	return session, nil
 }
