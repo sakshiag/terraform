@@ -3,7 +3,6 @@ package kubernetes
 import (
 	"fmt"
 	"log"
-	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform/helper/resource"
@@ -132,13 +131,12 @@ func resourceKubernetesPodRead(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	secretList, err := conn.CoreV1().Secrets(namespace).List(api.ListOptions{})
+	podSpec, err := flattenPodSpec(pod.Spec, conn, namespace)
 	if err != nil {
 		return err
 	}
-	userVolumes := pickUserlVolumes(pod.Spec.Volumes, secretList, namespace)
 
-	err = d.Set("spec", flattenPodSpec(pod.Spec, userVolumes))
+	err = d.Set("spec", podSpec)
 	if err != nil {
 		return err
 	}
@@ -174,37 +172,4 @@ func resourceKubernetesPodExists(d *schema.ResourceData, meta interface{}) (bool
 		log.Printf("[DEBUG] Received error: %#v", err)
 	}
 	return true, err
-}
-
-//Return volumes which were created by user explicitly excluding the volumes created by k8s internally
-func pickUserlVolumes(volumes []api.Volume, secretList *api.SecretList, namespace string) []api.Volume {
-	internalVolumes := make(map[string]struct{})
-	possiblyInternalVolumes := make([]string, 0, len(volumes))
-	for _, v := range volumes {
-		if v.Secret != nil && strings.HasPrefix(v.Name, "default-token-") {
-			possiblyInternalVolumes = append(possiblyInternalVolumes, v.Name)
-		}
-	}
-	for _, v := range possiblyInternalVolumes {
-		for _, s := range secretList.Items {
-			if s.Name != v {
-				continue
-			}
-			for key, val := range s.Annotations {
-				if key == "kubernetes.io/service-account.name" && val == "default" {
-					//guarenteed internal volumes
-					internalVolumes[v] = struct{}{}
-				}
-			}
-		}
-	}
-	userVolumes := make([]api.Volume, 0, len(volumes)-len(internalVolumes))
-	for _, v := range volumes {
-		//Skip the volume which is internal to the k8s
-		if _, ok := internalVolumes[v.Name]; ok {
-			continue
-		}
-		userVolumes = append(userVolumes, v)
-	}
-	return userVolumes
 }

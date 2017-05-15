@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/hashicorp/terraform/helper/schema"
+
 	"k8s.io/kubernetes/pkg/api/resource"
 	apiValidation "k8s.io/kubernetes/pkg/api/validation"
 	utilValidation "k8s.io/kubernetes/pkg/util/validation"
@@ -151,4 +153,36 @@ func validateTerminationGracePeriodSeconds(value interface{}, key string) (ws []
 		es = append(es, fmt.Errorf("%s must be greater than or equal to 0", key))
 	}
 	return
+}
+
+func validateAttributeValueDoesNotContain(searchString string) schema.SchemaValidateFunc {
+	return func(v interface{}, k string) (ws []string, errors []error) {
+		input := v.(string)
+		if !strings.Contains(input, searchString) {
+			errors = append(errors, fmt.Errorf(
+				"%q must not contain %q",
+				k, searchString))
+		}
+		return
+	}
+}
+
+func validateAttributeValueIsFrom(validValues []string) schema.SchemaValidateFunc {
+	return func(v interface{}, k string) (ws []string, errors []error) {
+		input := v.(string)
+		isValid := false
+		for _, s := range validValues {
+			if s == input {
+				isValid = true
+				break
+			}
+		}
+		if !isValid {
+			errors = append(errors, fmt.Errorf(
+				"%q must contain a value from %#v, got %q",
+				k, validValues, input))
+		}
+		return
+
+	}
 }

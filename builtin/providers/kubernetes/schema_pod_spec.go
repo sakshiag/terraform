@@ -54,12 +54,13 @@ func podSpecFields() map[string]*schema.Schema {
 			Type:        schema.TypeList,
 			Description: "ImagePullSecrets is an optional list of references to secrets in the same namespace to use for pulling any of the images used by this PodSpec. If specified, these secrets will be passed to individual puller implementations for them to use. For example, in the case of docker, only DockerConfig type secrets are honored. More info: http://kubernetes.io/docs/user-guide/images#specifying-imagepullsecrets-on-a-pod",
 			Optional:    true,
+			Computed:    true,
 			Elem: &schema.Resource{
 				Schema: map[string]*schema.Schema{
 					"name": {
 						Type:        schema.TypeString,
 						Description: "Name of the referent. More info: http://kubernetes.io/docs/user-guide/identifiers#names",
-						Optional:    true,
+						Required:    true,
 					},
 				},
 			},
@@ -153,6 +154,51 @@ func podSpecFields() map[string]*schema.Schema {
 
 func volumeSchema() *schema.Resource {
 	v := commonVolumeSources()
+
+	v["git_repo"] = &schema.Schema{
+		Type:        schema.TypeList,
+		Description: "GitRepo represents a git repository at a particular revision.",
+		Optional:    true,
+		MaxItems:    1,
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				"directory": {
+					Type:        schema.TypeString,
+					Description: "Target directory name. Must not contain or start with '..'. If '.' is supplied, the volume directory will be the git repository. Otherwise, if specified, the volume will contain the git repository in the subdirectory with the given name.",
+					Optional:    true,
+				},
+				"repository": {
+					Type:         schema.TypeString,
+					Description:  "Repository URL",
+					ValidateFunc: validateAttributeValueDoesNotContain(".."),
+					Optional:     true,
+				},
+				"revision": {
+					Type:        schema.TypeString,
+					Description: "Commit hash for the specified revision.",
+					Optional:    true,
+				},
+			},
+		},
+	}
+
+	v["empty_dir"] = &schema.Schema{
+		Type:        schema.TypeList,
+		Description: "EmptyDir represents a temporary directory that shares a pod's lifetime. More info: http://kubernetes.io/docs/user-guide/volumes#emptydir",
+		Optional:    true,
+		MaxItems:    1,
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				"medium": {
+					Type:         schema.TypeString,
+					Description:  `What type of storage medium should back this directory. The default is "" which means to use the node's default medium. Must be an empty string (default) or Memory. More info: http://kubernetes.io/docs/user-guide/volumes#emptydir`,
+					Optional:     true,
+					Default:      "",
+					ValidateFunc: validateAttributeValueIsFrom([]string{"", "Memory"}),
+				},
+			},
+		},
+	}
 
 	v["persistent_volume_claim"] = &schema.Schema{
 		Type:        schema.TypeList,

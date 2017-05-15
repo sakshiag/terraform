@@ -94,12 +94,14 @@ func resourcesField() map[string]*schema.Schema {
 		"limits": {
 			Type:         schema.TypeMap,
 			Optional:     true,
+			Computed:     true,
 			ValidateFunc: validateResourceList,
 			Description:  "Describes the maximum amount of compute resources allowed. More info: http://kubernetes.io/docs/user-guide/compute-resources/",
 		},
 		"requests": {
 			Type:         schema.TypeMap,
-			Required:     true,
+			Optional:     true,
+			Computed:     true,
 			ValidateFunc: validateResourceList,
 			Description:  "Describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: http://kubernetes.io/docs/user-guide/compute-resources/",
 		},
@@ -382,6 +384,7 @@ func containerFields() map[string]*schema.Schema {
 			Type:        schema.TypeList,
 			Optional:    true,
 			MaxItems:    1,
+			Computed:    true,
 			Description: "Compute Resources required by this container. Cannot be updated. More info: http://kubernetes.io/docs/user-guide/persistent-volumes#resources",
 			Elem: &schema.Resource{
 				Schema: resourcesField(),
@@ -424,7 +427,6 @@ func containerFields() map[string]*schema.Schema {
 		"volume_mounts": {
 			Type:        schema.TypeList,
 			Optional:    true,
-			ForceNew:    true,
 			Description: "Pod volumes to mount into the container's filesystem. Cannot be updated.",
 			Elem: &schema.Resource{
 				Schema: volumeMountFields(),

@@ -208,6 +208,56 @@ func TestAccKubernetesPod_with_container_security_context(t *testing.T) {
 	})
 }
 
+func TestAccKubernetesPod_with_volume_mounts(t *testing.T) {
+	var conf api.Pod
+
+	podName := fmt.Sprintf("tf-acc-test-%s", acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum))
+	secretName := fmt.Sprintf("tf-acc-test-%s", acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum))
+
+	imageName := "nginx:1.7.9"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccKubernetesPodConfigWithVolumeMounts(secretName, podName, imageName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckKubernetesPodExists("kubernetes_pod.test", &conf),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.image", imageName),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.volume_mounts.#", "1"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.volume_mounts.0.mount_path", "/tmp/my_path"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.volume_mounts.0.name", "db"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.volume_mounts.0.read_only", "false"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.volume_mounts.0.sub_path", ""),
+				),
+			},
+		},
+	})
+}
+
+func TestAccKubernetesPod_with_resource_requirements(t *testing.T) {
+	var conf api.Pod
+
+	podName := fmt.Sprintf("tf-acc-test-%s", acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum))
+
+	imageName := "nginx:1.7.9"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccKubernetesPodConfigWithResourceRequirements(podName, imageName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckKubernetesPodExists("kubernetes_pod.test", &conf),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.image", imageName),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckKubernetesPodExists(n string, obj *api.Pod) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -480,5 +530,82 @@ resource "kubernetes_pod" "test" {
 }
 
 
+	`, podName, imageName)
+}
+
+func testAccKubernetesPodConfigWithVolumeMounts(secretName, podName, imageName string) string {
+	return fmt.Sprintf(`
+
+resource "kubernetes_secret" "test" {
+  metadata {
+    name = "%s"
+  }
+
+  data {
+    one = "first"
+  }
+}
+
+resource "kubernetes_pod" "test" {
+  metadata {
+    labels {
+      app = "pod_label"
+    }
+
+    name = "%s"
+  }
+
+  spec {
+    containers {
+      image = "%s"
+      name  = "containername"
+			volume_mounts = [{
+				mount_path = "/tmp/my_path"
+				name  = "db"
+			}]
+    }
+    volumes = [{
+      name = "db"
+      secret = {
+        secret_name = "${kubernetes_secret.test.metadata.0.name}"
+      }
+    }]
+  }
+}
+	`, secretName, podName, imageName)
+}
+
+func testAccKubernetesPodConfigWithResourceRequirements(podName, imageName string) string {
+	return fmt.Sprintf(`
+
+resource "kubernetes_pod" "test" {
+  metadata {
+    labels {
+      app = "pod_label"
+    }
+
+    name = "%s"
+  }
+
+  spec {
+    containers {
+      image = "%s"
+      name  = "containername"
+			//TODO
+			/*
+			resources{
+				limits{
+					cpu = "1"
+					memory = "512Mi"
+				}
+				requests{
+					cpu = "250m"
+					memory = "50Mi"
+				}
+			}
+			*/
+    }
+  }
+}
 	`, podName, imageName)
 }
