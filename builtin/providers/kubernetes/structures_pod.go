@@ -11,7 +11,6 @@ import (
 
 // Flatteners
 
-//volumes excludes the ones internal to k8s
 func flattenPodSpec(in v1.PodSpec, conn *kubernetes.Clientset, namespace string) ([]interface{}, error) {
 	att := make(map[string]interface{})
 	if in.ActiveDeadlineSeconds != nil {
@@ -135,6 +134,18 @@ func flattenVolumes(volumes []v1.Volume, conn *kubernetes.Clientset, namespace s
 		if v.Name != "" {
 			obj["name"] = v.Name
 		}
+		if v.ConfigMap != nil {
+			obj["config_map"] = flattenConfigMapVolumeSource(v.ConfigMap)
+		}
+		if v.GitRepo != nil {
+			obj["git_repo"] = flattenGitRepoVolumeSource(v.GitRepo)
+		}
+		if v.EmptyDir != nil {
+			obj["empty_dir"] = flattenEmptyDirVolumeSource(v.EmptyDir)
+		}
+		if v.DownwardAPI != nil {
+			obj["downward_api"] = flattenDownwardAPIVolumeSource(v.DownwardAPI)
+		}
 		if v.PersistentVolumeClaim != nil {
 			obj["persistent_volume_claim"] = flattenPersistentVolumeClaimVolumeSource(v.PersistentVolumeClaim)
 		}
@@ -206,6 +217,78 @@ func flattenPersistentVolumeClaimVolumeSource(in *v1.PersistentVolumeClaimVolume
 		att["read_only"] = in.ReadOnly
 	}
 
+	return []interface{}{att}
+}
+func flattenGitRepoVolumeSource(in *v1.GitRepoVolumeSource) []interface{} {
+	att := make(map[string]interface{})
+	if in.Directory != "" {
+		att["directory"] = in.Directory
+	}
+
+	att["repository"] = in.Repository
+
+	if in.Revision != "" {
+		att["revision"] = in.Revision
+	}
+	return []interface{}{att}
+}
+
+func flattenDownwardAPIVolumeSource(in *v1.DownwardAPIVolumeSource) []interface{} {
+	att := make(map[string]interface{})
+	if in.DefaultMode != nil {
+		att["default_mode"] = in.DefaultMode
+	}
+	if len(in.Items) > 0 {
+		att["items"] = flattenDownwardAPIVolumeFile(in.Items)
+	}
+	return []interface{}{att}
+}
+
+func flattenDownwardAPIVolumeFile(in []v1.DownwardAPIVolumeFile) []interface{} {
+	att := make([]interface{}, len(in))
+	for i, v := range in {
+		m := map[string]interface{}{}
+		if v.FieldRef != nil {
+			m["field_ref"] = flattenObjectFieldSelector(v.FieldRef)
+		}
+		if v.Mode != nil {
+			m["mode"] = *v.Mode
+		}
+		if v.Path != "" {
+			m["path"] = v.Path
+		}
+		if v.ResourceFieldRef != nil {
+			m["resource_field_ref"] = flattenResourceFieldSelector(v.ResourceFieldRef)
+		}
+		att[i] = m
+	}
+	return att
+}
+
+func flattenConfigMapVolumeSource(in *v1.ConfigMapVolumeSource) []interface{} {
+	att := make(map[string]interface{})
+	if in.DefaultMode != nil {
+		att["default_mode"] = *in.DefaultMode
+	}
+	att["name"] = in.Name
+	if len(in.Items) > 0 {
+		items := make([]interface{}, len(in.Items))
+		for i, v := range in.Items {
+			m := map[string]interface{}{}
+			m["key"] = v.Key
+			m["mode"] = v.Mode
+			m["path"] = v.Path
+			items[i] = m
+		}
+		att["items"] = items
+	}
+
+	return []interface{}{att}
+}
+
+func flattenEmptyDirVolumeSource(in *v1.EmptyDirVolumeSource) []interface{} {
+	att := make(map[string]interface{})
+	att["medium"] = in.Medium
 	return []interface{}{att}
 }
 
@@ -348,6 +431,126 @@ func expandSeLinuxOptions(l []interface{}) *v1.SELinuxOptions {
 	return obj
 }
 
+func expandKeyPath(in []interface{}) []v1.KeyToPath {
+	if len(in) == 0 {
+		return []v1.KeyToPath{}
+	}
+	keyPaths := make([]v1.KeyToPath, len(in))
+	for i, c := range in {
+		p := c.(map[string]interface{})
+		if v, ok := p["key"].(string); ok {
+			keyPaths[i].Key = v
+		}
+		if v, ok := p["mode"].(int); ok {
+			keyPaths[i].Mode = ptrToInt32(int32(v))
+		}
+		if v, ok := p["path"].(string); ok {
+			keyPaths[i].Path = v
+		}
+
+	}
+	return keyPaths
+}
+
+func expandDownwardAPIVolumeFile(in []interface{}) ([]v1.DownwardAPIVolumeFile, error) {
+	var err error
+	if len(in) == 0 {
+		return []v1.DownwardAPIVolumeFile{}, nil
+	}
+	dapivf := make([]v1.DownwardAPIVolumeFile, len(in))
+	for i, c := range in {
+		p := c.(map[string]interface{})
+		if v, ok := p["mode"].(int); ok {
+			dapivf[i].Mode = ptrToInt32(int32(v))
+		}
+		if v, ok := p["path"].(string); ok {
+			dapivf[i].Path = v
+		}
+		if v, ok := p["field_ref"].([]interface{}); ok && len(v) > 0 {
+			dapivf[i].FieldRef, err = expandFieldRef(v)
+			if err != nil {
+				return dapivf, err
+			}
+		}
+		if v, ok := p["resource_field_ref"].([]interface{}); ok && len(v) > 0 {
+			dapivf[i].ResourceFieldRef, err = expandResourceFieldRef(v)
+			if err != nil {
+				return dapivf, err
+			}
+		}
+	}
+	return dapivf, nil
+}
+
+func expandConfigMapVolumeSource(l []interface{}) *v1.ConfigMapVolumeSource {
+	if len(l) == 0 || l[0] == nil {
+		return &v1.ConfigMapVolumeSource{}
+	}
+	in := l[0].(map[string]interface{})
+	obj := &v1.ConfigMapVolumeSource{
+		DefaultMode: ptrToInt32(int32(in["default_mode "].(int))),
+	}
+
+	if v, ok := in["name"].(string); ok {
+		obj.Name = v
+	}
+
+	if v, ok := in["items"].([]interface{}); ok && len(v) > 0 {
+		obj.Items = expandKeyPath(v)
+	}
+
+	return obj
+}
+
+func expandDownwardAPIVolumeSource(l []interface{}) (*v1.DownwardAPIVolumeSource, error) {
+	if len(l) == 0 || l[0] == nil {
+		return &v1.DownwardAPIVolumeSource{}, nil
+	}
+	in := l[0].(map[string]interface{})
+	obj := &v1.DownwardAPIVolumeSource{
+		DefaultMode: ptrToInt32(int32(in["default_mode "].(int))),
+	}
+	if v, ok := in["items"].([]interface{}); ok && len(v) > 0 {
+		var err error
+		obj.Items, err = expandDownwardAPIVolumeFile(v)
+		if err != nil {
+			return obj, err
+		}
+	}
+	return obj, nil
+}
+
+func expandGitRepoVolumeSource(l []interface{}) *v1.GitRepoVolumeSource {
+	if len(l) == 0 || l[0] == nil {
+		return &v1.GitRepoVolumeSource{}
+	}
+	in := l[0].(map[string]interface{})
+	obj := &v1.GitRepoVolumeSource{}
+
+	if v, ok := in["directory"].(string); ok {
+		obj.Directory = v
+	}
+
+	if v, ok := in["repository"].(string); ok {
+		obj.Repository = v
+	}
+	if v, ok := in["revision"].(string); ok {
+		obj.Revision = v
+	}
+	return obj
+}
+
+func expandEmptyDirVolumeSource(l []interface{}) *v1.EmptyDirVolumeSource {
+	if len(l) == 0 || l[0] == nil {
+		return &v1.EmptyDirVolumeSource{}
+	}
+	in := l[0].(map[string]interface{})
+	obj := &v1.EmptyDirVolumeSource{
+		Medium: v1.StorageMedium(in["medium"].(string)),
+	}
+	return obj
+}
+
 func expandPersistentVolumeClaimVolumeSource(l []interface{}) *v1.PersistentVolumeClaimVolumeSource {
 	if len(l) == 0 || l[0] == nil {
 		return &v1.PersistentVolumeClaimVolumeSource{}
@@ -382,6 +585,25 @@ func expandVolumes(volumes []interface{}) ([]v1.Volume, error) {
 		if value, ok := m["name"]; ok {
 			vl[i].Name = value.(string)
 		}
+
+		if value, ok := m["config_map"].([]interface{}); ok && len(value) > 0 {
+			vl[i].ConfigMap = expandConfigMapVolumeSource(value)
+		}
+		if value, ok := m["git_repo"].([]interface{}); ok && len(value) > 0 {
+			vl[i].GitRepo = expandGitRepoVolumeSource(value)
+		}
+
+		if value, ok := m["empty_dir"].([]interface{}); ok && len(value) > 0 {
+			vl[i].EmptyDir = expandEmptyDirVolumeSource(value)
+		}
+		if value, ok := m["downward_api"].([]interface{}); ok && len(value) > 0 {
+			var err error
+			vl[i].DownwardAPI, err = expandDownwardAPIVolumeSource(value)
+			if err != nil {
+				return vl, err
+			}
+		}
+
 		if value, ok := m["persistent_volume_claim"].([]interface{}); ok && len(value) > 0 {
 			vl[i].PersistentVolumeClaim = expandPersistentVolumeClaimVolumeSource(value)
 		}
@@ -464,6 +686,11 @@ func patchPodSpec(pathPrefix, prefix string, d *schema.ResourceData) (PatchOpera
 				Path:  pathPrefix + "/containers/" + strconv.Itoa(i) + "/image",
 				Value: v.Image,
 			})
+			ops = append(ops, &ReplaceOperation{
+				Path:  pathPrefix + "/containers/" + strconv.Itoa(i) + "/name",
+				Value: v.Name,
+			})
+
 		}
 
 	}

@@ -120,6 +120,16 @@ func validateResourceList(value interface{}, key string) (ws []string, es []erro
 	return
 }
 
+func validateResourceQuantity(value interface{}, key string) (ws []string, es []error) {
+	if v, ok := value.(string); ok {
+		_, err := resource.ParseQuantity(v)
+		if err != nil {
+			es = append(es, fmt.Errorf("%s.%s : %s", key, v, err))
+		}
+	}
+	return
+}
+
 func validatePositiveInteger(value interface{}, key string) (ws []string, es []error) {
 	v := value.(int)
 	if v <= 0 {
@@ -167,7 +177,7 @@ func validateAttributeValueDoesNotContain(searchString string) schema.SchemaVali
 	}
 }
 
-func validateAttributeValueIsFrom(validValues []string) schema.SchemaValidateFunc {
+func validateAttributeValueIsIn(validValues []string) schema.SchemaValidateFunc {
 	return func(v interface{}, k string) (ws []string, errors []error) {
 		input := v.(string)
 		isValid := false

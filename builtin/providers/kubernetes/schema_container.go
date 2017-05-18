@@ -92,18 +92,53 @@ func handlerFields() map[string]*schema.Schema {
 func resourcesField() map[string]*schema.Schema {
 	return map[string]*schema.Schema{
 		"limits": {
-			Type:         schema.TypeMap,
-			Optional:     true,
-			Computed:     true,
-			ValidateFunc: validateResourceList,
-			Description:  "Describes the maximum amount of compute resources allowed. More info: http://kubernetes.io/docs/user-guide/compute-resources/",
+			Type:        schema.TypeList,
+			Optional:    true,
+			Computed:    true,
+			MaxItems:    1,
+			Description: "Describes the maximum amount of compute resources allowed. More info: http://kubernetes.io/docs/user-guide/compute-resources/",
+			Elem: &schema.Resource{
+				Schema: map[string]*schema.Schema{
+					"cpu": {
+						Type:             schema.TypeString,
+						Optional:         true,
+						Computed:         true,
+						ValidateFunc:     validateResourceQuantity,
+						DiffSuppressFunc: suppressEquivalentResourceQuantity,
+					},
+					"memory": {
+						Type:             schema.TypeString,
+						Optional:         true,
+						Computed:         true,
+						ValidateFunc:     validateResourceQuantity,
+						DiffSuppressFunc: suppressEquivalentResourceQuantity,
+					},
+				},
+			},
 		},
 		"requests": {
-			Type:         schema.TypeMap,
-			Optional:     true,
-			Computed:     true,
-			ValidateFunc: validateResourceList,
-			Description:  "Describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: http://kubernetes.io/docs/user-guide/compute-resources/",
+			Type:     schema.TypeList,
+			Optional: true,
+			Computed: true,
+			MaxItems: 1,
+			Elem: &schema.Resource{
+				Schema: map[string]*schema.Schema{
+					"cpu": {
+						Type:             schema.TypeString,
+						Optional:         true,
+						Computed:         true,
+						ValidateFunc:     validateResourceQuantity,
+						DiffSuppressFunc: suppressEquivalentResourceQuantity,
+					},
+					"memory": {
+						Type:             schema.TypeString,
+						Optional:         true,
+						Computed:         true,
+						ValidateFunc:     validateResourceQuantity,
+						DiffSuppressFunc: suppressEquivalentResourceQuantity,
+					},
+				},
+			},
 		},
 	}
 }
@@ -246,9 +281,8 @@ func containerFields() map[string]*schema.Schema {
 									Elem: &schema.Resource{
 										Schema: map[string]*schema.Schema{
 											"container_name": {
-												Type:        schema.TypeString,
-												Optional:    true,
-												Description: "Container name: required for volumes, optional for env vars",
+												Type:     schema.TypeString,
+												Optional: true,
 											},
 											"resource": {
 												Type:        schema.TypeString,

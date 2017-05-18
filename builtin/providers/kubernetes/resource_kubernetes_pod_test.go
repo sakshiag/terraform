@@ -252,6 +252,35 @@ func TestAccKubernetesPod_with_resource_requirements(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckKubernetesPodExists("kubernetes_pod.test", &conf),
 					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.image", imageName),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.resources.0.requests.0.memory", "50Mi"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.resources.0.requests.0.cpu", "250m"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.resources.0.limits.0.memory", "512Mi"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.resources.0.limits.0.cpu", "500m"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccKubernetesPod_with_empty_dir_volumes(t *testing.T) {
+	var conf api.Pod
+
+	podName := fmt.Sprintf("tf-acc-test-%s", acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum))
+	imageName := "nginx:1.7.9"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccKubernetesPodConfigWithEmptyDirVolumes(podName, imageName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckKubernetesPodExists("kubernetes_pod.test", &conf),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.image", imageName),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.volume_mounts.#", "1"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.volume_mounts.0.mount_path", "/cache"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.containers.0.volume_mounts.0.name", "cache-volume"),
+					resource.TestCheckResourceAttr("kubernetes_pod.test", "spec.0.volumes.0.empty_dir.0.medium", "Memory"),
 				),
 			},
 		},
@@ -591,20 +620,51 @@ resource "kubernetes_pod" "test" {
     containers {
       image = "%s"
       name  = "containername"
-			//TODO
-			/*
+		
 			resources{
 				limits{
-					cpu = "1"
+					cpu = "0.5"
 					memory = "512Mi"
 				}
 				requests{
 					cpu = "250m"
-					memory = "50Mi"
+				  memory = "50Mi"
 				}
 			}
-			*/
+			
     }
+  }
+}
+	`, podName, imageName)
+}
+
+func testAccKubernetesPodConfigWithEmptyDirVolumes(podName, imageName string) string {
+	return fmt.Sprintf(`
+
+resource "kubernetes_pod" "test" {
+  metadata {
+    labels {
+      app = "pod_label"
+    }
+
+    name = "%s"
+  }
+
+  spec {
+    containers {
+      image = "%s"
+      name  = "containername"
+		  volume_mounts{
+    	   mount_path =  "/cache"
+         name =  "cache-volume"
+			}
+    }
+		volumes{
+			name = "cache-volume"
+			empty_dir = {
+				medium = "Memory"
+			}
+		}
   }
 }
 	`, podName, imageName)

@@ -155,6 +155,52 @@ func podSpecFields() map[string]*schema.Schema {
 func volumeSchema() *schema.Resource {
 	v := commonVolumeSources()
 
+	v["config_map"] = &schema.Schema{
+		Type:        schema.TypeList,
+		Description: "ConfigMap represents a configMap that should populate this volume",
+		Optional:    true,
+		MaxItems:    1,
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				"items": {
+					Type:        schema.TypeList,
+					Description: `If unspecified, each key-value pair in the Data field of the referenced ConfigMap will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the ConfigMap, the volume setup will error. Paths must be relative and may not contain the '..' path or start with '..'.`,
+					Optional:    true,
+					Elem: &schema.Resource{
+						Schema: map[string]*schema.Schema{
+							"key": {
+								Type:        schema.TypeString,
+								Optional:    true,
+								Description: "The key to project.",
+							},
+							"mode": {
+								Type:        schema.TypeInt,
+								Optional:    true,
+								Description: `Optional: mode bits to use on this file, must be a value between 0 and 0777. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.`,
+							},
+							"path": {
+								Type:         schema.TypeString,
+								Optional:     true,
+								ValidateFunc: validateAttributeValueDoesNotContain(".."),
+								Description:  `The relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.`,
+							},
+						},
+					},
+				},
+				"default_mode": {
+					Type:        schema.TypeInt,
+					Description: "Optional: mode bits to use on created files by default. Must be a value between 0 and 0777. Defaults to 0644. Directories within the path are not affected by this setting. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.",
+					Optional:    true,
+				},
+				"name": {
+					Type:        schema.TypeString,
+					Description: "Name of the referent. More info: http://kubernetes.io/docs/user-guide/identifiers#names",
+					Optional:    true,
+				},
+			},
+		},
+	}
+
 	v["git_repo"] = &schema.Schema{
 		Type:        schema.TypeList,
 		Description: "GitRepo represents a git repository at a particular revision.",
@@ -163,20 +209,99 @@ func volumeSchema() *schema.Resource {
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
 				"directory": {
-					Type:        schema.TypeString,
-					Description: "Target directory name. Must not contain or start with '..'. If '.' is supplied, the volume directory will be the git repository. Otherwise, if specified, the volume will contain the git repository in the subdirectory with the given name.",
-					Optional:    true,
+					Type:         schema.TypeString,
+					Description:  "Target directory name. Must not contain or start with '..'. If '.' is supplied, the volume directory will be the git repository. Otherwise, if specified, the volume will contain the git repository in the subdirectory with the given name.",
+					Optional:     true,
+					ValidateFunc: validateAttributeValueDoesNotContain(".."),
 				},
 				"repository": {
-					Type:         schema.TypeString,
-					Description:  "Repository URL",
-					ValidateFunc: validateAttributeValueDoesNotContain(".."),
-					Optional:     true,
+					Type:        schema.TypeString,
+					Description: "Repository URL",
+					Optional:    true,
 				},
 				"revision": {
 					Type:        schema.TypeString,
 					Description: "Commit hash for the specified revision.",
 					Optional:    true,
+				},
+			},
+		},
+	}
+	v["downward_api"] = &schema.Schema{
+		Type:        schema.TypeList,
+		Description: "DownwardAPI represents downward API about the pod that should populate this volume",
+		Optional:    true,
+		MaxItems:    1,
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				"default_mode": {
+					Type:        schema.TypeInt,
+					Description: "Optional: mode bits to use on created files by default. Must be a value between 0 and 0777. Defaults to 0644. Directories within the path are not affected by this setting. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.",
+					Optional:    true,
+				},
+				"items": {
+					Type:        schema.TypeList,
+					Description: `If unspecified, each key-value pair in the Data field of the referenced ConfigMap will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the ConfigMap, the volume setup will error. Paths must be relative and may not contain the '..' path or start with '..'.`,
+					Optional:    true,
+					Elem: &schema.Resource{
+						Schema: map[string]*schema.Schema{
+							"field_ref": {
+								Type:        schema.TypeList,
+								Required:    true,
+								MaxItems:    1,
+								Description: "Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.",
+								Elem: &schema.Resource{
+									Schema: map[string]*schema.Schema{
+										"api_version": {
+											Type:        schema.TypeString,
+											Optional:    true,
+											Default:     "v1",
+											Description: `Version of the schema the FieldPath is written in terms of, defaults to "v1".`,
+										},
+										"field_path": {
+											Type:        schema.TypeString,
+											Optional:    true,
+											Description: "Path of the field to select in the specified API version",
+										},
+									},
+								},
+							},
+							"mode": {
+								Type:        schema.TypeInt,
+								Optional:    true,
+								Description: `Optional: mode bits to use on this file, must be a value between 0 and 0777. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.`,
+							},
+							"path": {
+								Type:         schema.TypeString,
+								Required:     true,
+								ValidateFunc: validateAttributeValueDoesNotContain(".."),
+								Description:  `Path is the relative path name of the file to be created. Must not be absolute or contain the '..' path. Must be utf-8 encoded. The first item of the relative path must not start with '..'`,
+							},
+							"resource_field_ref": {
+								Type:        schema.TypeList,
+								Optional:    true,
+								MaxItems:    1,
+								Description: "Selects a resource of the container: only resources limits and requests (limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.",
+								Elem: &schema.Resource{
+									Schema: map[string]*schema.Schema{
+										"container_name": {
+											Type:     schema.TypeString,
+											Required: true,
+										},
+										"quantity": {
+											Type:     schema.TypeString,
+											Optional: true,
+										},
+										"resource": {
+											Type:        schema.TypeString,
+											Required:    true,
+											Description: "Resource to select",
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
@@ -194,7 +319,7 @@ func volumeSchema() *schema.Resource {
 					Description:  `What type of storage medium should back this directory. The default is "" which means to use the node's default medium. Must be an empty string (default) or Memory. More info: http://kubernetes.io/docs/user-guide/volumes#emptydir`,
 					Optional:     true,
 					Default:      "",
-					ValidateFunc: validateAttributeValueIsFrom([]string{"", "Memory"}),
+					ValidateFunc: validateAttributeValueIsIn([]string{"", "Memory"}),
 				},
 			},
 		},

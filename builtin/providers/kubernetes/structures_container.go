@@ -183,7 +183,7 @@ func flattenConfigMapKeyRef(in *v1.ConfigMapKeySelector) []interface{} {
 	return []interface{}{att}
 }
 
-func flattenFieldRef(in *v1.ObjectFieldSelector) []interface{} {
+func flattenObjectFieldSelector(in *v1.ObjectFieldSelector) []interface{} {
 	att := make(map[string]interface{})
 
 	if in.APIVersion != "" {
@@ -195,7 +195,7 @@ func flattenFieldRef(in *v1.ObjectFieldSelector) []interface{} {
 	return []interface{}{att}
 }
 
-func flattenResourceFieldRef(in *v1.ResourceFieldSelector) []interface{} {
+func flattenResourceFieldSelector(in *v1.ResourceFieldSelector) []interface{} {
 	att := make(map[string]interface{})
 
 	if in.ContainerName != "" {
@@ -226,13 +226,13 @@ func flattenValueFrom(in *v1.EnvVarSource) []interface{} {
 		att["config_map_key_ref"] = flattenConfigMapKeyRef(in.ConfigMapKeyRef)
 	}
 	if in.ResourceFieldRef != nil {
-		att["resource_field_ref"] = flattenResourceFieldRef(in.ResourceFieldRef)
+		att["resource_field_ref"] = flattenResourceFieldSelector(in.ResourceFieldRef)
 	}
 	if in.SecretKeyRef != nil {
 		att["secret_key_ref"] = flattenSecretKeyRef(in.SecretKeyRef)
 	}
 	if in.FieldRef != nil {
-		att["field_ref"] = flattenFieldRef(in.FieldRef)
+		att["field_ref"] = flattenObjectFieldSelector(in.FieldRef)
 	}
 	return []interface{}{att}
 }
@@ -243,7 +243,7 @@ func flattenContainerVolumeMounts(in []v1.VolumeMount, conn *kubernetes.Clientse
 		return nil, err
 	}
 
-	volumeMounts := pickVolumeMounts(in, secretList, namespace)
+	volumeMounts := pickUserVolumeMounts(in, secretList, namespace)
 
 	att := make([]interface{}, len(volumeMounts))
 	for i, v := range volumeMounts {
@@ -305,15 +305,15 @@ func flattenContainerPorts(in []v1.ContainerPort) []interface{} {
 	return att
 }
 
-func flattenContainerResourceRequirements(in v1.ResourceRequirements) []interface{} {
+func flattenContainerResourceRequirements(in v1.ResourceRequirements) ([]interface{}, error) {
 	att := make(map[string]interface{})
 	if len(in.Limits) > 0 {
-		att["limits"] = flattenResourceList(in.Limits)
+		att["limits"] = []interface{}{flattenResourceList(in.Limits)}
 	}
 	if len(in.Requests) > 0 {
-		att["requests"] = flattenResourceList(in.Requests)
+		att["requests"] = []interface{}{flattenResourceList(in.Requests)}
 	}
-	return []interface{}{att}
+	return []interface{}{att}, nil
 }
 
 func flattenContainers(in []v1.Container, conn *kubernetes.Clientset, namespace string) ([]interface{}, error) {
@@ -336,11 +336,12 @@ func flattenContainers(in []v1.Container, conn *kubernetes.Clientset, namespace 
 		c["tty"] = v.TTY
 		c["working_dir"] = v.WorkingDir
 
-		if len(v.Resources.Limits) == 0 && len(v.Resources.Requests) == 0 {
-			c["resources"] = []interface{}{}
-		} else {
-			c["resources"] = flattenContainerResourceRequirements(v.Resources)
+		res, err := flattenContainerResourceRequirements(v.Resources)
+		if err != nil {
+			return nil, err
 		}
+
+		c["resources"] = res
 		if v.LivenessProbe != nil {
 			c["liveness_probe"] = flattenProbe(v.LivenessProbe)
 		}
@@ -397,7 +398,7 @@ func expandContainers(ctrs []interface{}) ([]v1.Container, error) {
 		if v, ok := ctr["resources"].([]interface{}); ok && len(v) > 0 {
 
 			var err error
-			cs[i].Resources, err = expandResourceRequirements(v)
+			cs[i].Resources, err = expandContainerResourceRequirements(v)
 			if err != nil {
 				return cs, err
 			}
@@ -816,7 +817,7 @@ func expandEnvValueFrom(r []interface{}) (*v1.EnvVarSource, error) {
 }
 
 //Return volumes mounts which were created by user explicitly excluding those created by k8s internally
-func pickVolumeMounts(volumeMounts []v1.VolumeMount, secretList *v1.SecretList, namespace string) []v1.VolumeMount {
+func pickUserVolumeMounts(volumeMounts []v1.VolumeMount, secretList *v1.SecretList, namespace string) []v1.VolumeMount {
 	internalVolumeMounts := make(map[string]struct{})
 	possiblyInternalVolumeMounts := make([]string, 0, len(volumeMounts))
 	for _, v := range volumeMounts {
@@ -846,4 +847,43 @@ func pickVolumeMounts(volumeMounts []v1.VolumeMount, secretList *v1.SecretList, 
 		userVolumeMount = append(userVolumeMount, v)
 	}
 	return userVolumeMount
+}
+
+func expandContainerResourceRequirements(l []interface{}) (v1.ResourceRequirements, error) {
+	if len(l) == 0 || l[0] == nil {
+		return v1.ResourceRequirements{}, nil
+	}
+	in := l[0].(map[string]interface{})
+	obj := v1.ResourceRequirements{}
+
+	fn := func(in []interface{}) (v1.ResourceList, error) {
+		for _, c := range in {
+			p := c.(map[string]interface{})
+			if p["cpu"] == "" {
+				delete(p, "cpu")
+			}
+			if p["memory"] == "" {
+				delete(p, "memory")
+			}
+			return expandMapToResourceList(p)
+		}
+		return nil, nil
+	}
+
+	var err error
+	if v, ok := in["limits"].([]interface{}); ok && len(v) > 0 {
+		obj.Limits, err = fn(v)
+		if err != nil {
+			return obj, err
+		}
+	}
+
+	if v, ok := in["requests"].([]interface{}); ok && len(v) > 0 {
+		obj.Requests, err = fn(v)
+		if err != nil {
+			return obj, err
+		}
+	}
+
+	return obj, nil
 }
