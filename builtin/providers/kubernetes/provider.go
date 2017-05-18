@@ -94,6 +94,7 @@ func Provider() terraform.ResourceProvider {
 			"kubernetes_resource_quota":          resourceKubernetesResourceQuota(),
 			"kubernetes_pod":                     resourceKubernetesPod(),
 			"kubernetes_secret":                  resourceKubernetesSecret(),
+			"kubernetes_service":                 resourceKubernetesService(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
