@@ -205,6 +205,47 @@ func TestAccIBMCloudInfraVirtualGuest_PostInstallScriptUri(t *testing.T) {
 	})
 }
 
+func TestAccIBMCloudInfraVirtualGuest_With_Network_Storage_Access(t *testing.T) {
+	var guest datatypes.Virtual_Guest
+	hostname := acctest.RandString(16)
+	domain := "storage.tfmvmuat.ibm.com"
+
+	configInstance := "ibmcloud_infra_virtual_guest.terraform-vsi-storage-access"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccIBMCloudInfraVirtualGuestDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccessToStoragesBasic(hostname, domain),
+				Check: resource.ComposeTestCheckFunc(
+					// image_id value is hardcoded. If it's valid then virtual guest will be created well
+					testAccIBMCloudInfraVirtualGuestExists("ibmcloud_infra_virtual_guest.terraform-vsi-storage-access", &guest),
+					resource.TestCheckResourceAttr(
+						configInstance, "hostname", hostname),
+					resource.TestCheckResourceAttr(
+						configInstance, "domain", domain),
+					resource.TestCheckResourceAttr(
+						configInstance, "datacenter", "wdc04"),
+					resource.TestCheckResourceAttr(
+						configInstance, "hourly_billing", "true"),
+					resource.TestCheckResourceAttr(
+						configInstance, "storage_ids.#", "2"),
+				),
+			},
+			{
+				Config: testAccessToStoragesUpdate(hostname, domain),
+				Check: resource.ComposeTestCheckFunc(
+					// image_id value is hardcoded. If it's valid then virtual guest will be created well
+					testAccIBMCloudInfraVirtualGuestExists("ibmcloud_infra_virtual_guest.terraform-vsi-storage-access", &guest),
+					resource.TestCheckResourceAttr(
+						configInstance, "storage_ids.#", "1"),
+				),
+			},
+		},
+	})
+}
+
 func testAccIBMCloudInfraVirtualGuestDestroy(s *terraform.State) error {
 	service := services.GetVirtualGuestService(testAccProvider.Meta().(ClientSession).SoftLayerSession())
 
@@ -375,5 +416,90 @@ resource "ibmcloud_infra_virtual_guest" "terraform-acceptance-test-disks" {
     image_id = %s
     disks = [25, 10]
 }`, hostname, domain, imageID)
+
+}
+
+const fsConfig1 = `
+resource "ibmcloud_infra_file_storage" "fs1" {
+  type              = "Endurance"
+  datacenter        = "wdc04"
+  capacity          = 20
+  iops              = 0.25
+  snapshot_capacity = 10
+
+  lifecycle {
+    ignore_changes = ["allowed_virtual_guest_ids"]
+  }
+}
+
+`
+
+const bsConfig1 = `resource "ibmcloud_infra_block_storage" "bs" {
+  type              = "Endurance"
+  datacenter        = "wdc04"
+  capacity          = 20
+  iops              = 0.25
+  snapshot_capacity = 10
+  os_format_type    = "Linux"
+  lifecycle {
+    ignore_changes = ["allowed_virtual_guest_ids"]
+  }
+}
+`
+
+const fsConfig2 = `resource "ibmcloud_infra_file_storage" "fs2" {
+  type              = "Endurance"
+  datacenter        = "wdc04"
+  capacity          = 20
+  iops              = 0.25
+  snapshot_capacity = 10
+  lifecycle {
+    ignore_changes = ["allowed_virtual_guest_ids"]
+  }
+}
+
+`
+
+func testAccessToStoragesBasic(hostname, domain string) string {
+	config := fmt.Sprintf(`
+resource "ibmcloud_infra_virtual_guest" "terraform-vsi-storage-access" {
+    hostname = "%s"
+    domain = "%s"
+    datacenter = "wdc04"
+    network_speed = 10
+    hourly_billing = true
+	storage_ids = ["${ibmcloud_infra_file_storage.fs1.id}", "${ibmcloud_infra_block_storage.bs.id}"]
+    cores = 1
+    memory = 1024
+    local_disk = false
+    os_reference_code = "DEBIAN_7_64"
+    disks = [25, 10]
+}
+%s
+%s
+
+`, hostname, domain, fsConfig1, bsConfig1)
+	return config
+}
+
+func testAccessToStoragesUpdate(hostname, domain string) string {
+	return fmt.Sprintf(`
+resource "ibmcloud_infra_virtual_guest" "terraform-vsi-storage-access" {
+    hostname = "%s"
+    domain = "%s"
+    datacenter = "wdc04"
+    network_speed = 10
+    hourly_billing = true
+	storage_ids = ["${ibmcloud_infra_file_storage.fs2.id}"]
+    cores = 1
+    memory = 1024
+    local_disk = false
+    os_reference_code = "DEBIAN_7_64"
+    disks = [25, 10]
+}
+
+%s
+
+`, hostname, domain, fsConfig2)
 
 }

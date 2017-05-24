@@ -23,6 +23,8 @@ import (
 	"github.com/softlayer/softlayer-go/sl"
 )
 
+type operation string
+
 const (
 	staticIPRouted = "STATIC_IP_ROUTED"
 
@@ -35,6 +37,12 @@ const (
 
 	virtualGuestAvailable    = "available"
 	virtualGuestProvisioning = "provisioning"
+
+	networkStorageMassAccessControlModificationException = "SoftLayer_Exception_Network_Storage_Group_MassAccessControlModification"
+	retryDelayForModifyingStorageAccess                  = 10 * time.Second
+
+	addAccessToStorageList    = operation("ALLOW")
+	removeAccessToStorageList = operation("REMOVE")
 )
 
 func resourceIBMCloudInfraVirtualGuest() *schema.Resource {
@@ -61,6 +69,15 @@ func resourceIBMCloudInfraVirtualGuest() *schema.Resource {
 						return true
 					}
 					return o == n
+				},
+			},
+
+			"storage_ids": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeInt},
+				Set: func(v interface{}) int {
+					return v.(int)
 				},
 			},
 
@@ -602,9 +619,15 @@ func resourceIBMCloudInfraVirtualGuestCreate(d *schema.ResourceData, meta interf
 			return err
 		}
 	}
-
+	//Set storage ids
+	if storageIdsSet := d.Get("storage_ids").(*schema.Set); len(storageIdsSet.List()) > 0 {
+		storageIds := expandIntList(storageIdsSet.List())
+		err := modifyAccessToStorageList(addAccessToStorageList, storageIds, id, meta)
+		if err != nil {
+			return err
+		}
+	}
 	// wait for machine availability
-
 	_, err = WaitForVirtualGuestAvailable(d, meta)
 
 	if err != nil {
@@ -627,6 +650,7 @@ func resourceIBMCloudInfraVirtualGuestRead(d *schema.ResourceData, meta interfac
 		"hostname,domain,startCpus,maxMemory,dedicatedAccountHostOnlyFlag,operatingSystemReferenceCode,blockDeviceTemplateGroup[id]," +
 			"primaryIpAddress,primaryBackendIpAddress,privateNetworkOnlyFlag," +
 			"hourlyBillingFlag,localDiskFlag," +
+			"allowedNetworkStorage," +
 			"userData[value],tagReferences[id,tag[name]]," +
 			"datacenter[id,name,longName]," +
 			"primaryNetworkComponent[networkVlan[id]," +
@@ -736,6 +760,11 @@ func resourceIBMCloudInfraVirtualGuestRead(d *schema.ResourceData, meta interfac
 		d.Set("tags", tags)
 	}
 
+	storages := result.AllowedNetworkStorage
+	if len(storages) > 0 {
+		d.Set("storage_ids", flattenStorageID(storages))
+	}
+
 	// Set connection info
 	connInfo := map[string]string{"type": "ssh"}
 	if !*result.PrivateNetworkOnlyFlag && result.PrimaryIpAddress != nil {
@@ -815,6 +844,27 @@ func resourceIBMCloudInfraVirtualGuestUpdate(d *schema.ResourceData, meta interf
 		err := setGuestTags(id, tags, meta)
 		if err != nil {
 			return err
+		}
+	}
+	if d.HasChange("storage_ids") {
+		o, n := d.GetChange("storage_ids")
+		os := o.(*schema.Set)
+		ns := n.(*schema.Set)
+
+		remove := expandIntList(os.Difference(ns).List())
+		add := expandIntList(ns.Difference(os).List())
+
+		if len(add) > 0 {
+			err = modifyAccessToStorageList(addAccessToStorageList, add, id, meta)
+			if err != nil {
+				return err
+			}
+		}
+		if len(remove) > 0 {
+			err = modifyAccessToStorageList(removeAccessToStorageList, remove, id, meta)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -1075,6 +1125,52 @@ func setGuestTags(id int, tags string, meta interface{}) error {
 	_, err := service.Id(id).SetTags(sl.String(tags))
 	if err != nil {
 		return fmt.Errorf("Could not set tags on virtual guest %d", id)
+	}
+	return nil
+}
+
+func modifyAccessToStorageList(op operation, storageIds []int, id int, meta interface{}) error {
+	service := services.GetVirtualGuestService(meta.(ClientSession).SoftLayerSession())
+	storageService := services.GetNetworkStorageService(meta.(ClientSession).SoftLayerSession())
+	storages := make([]datatypes.Network_Storage, len(storageIds))
+
+	for i, storageID := range storageIds {
+		var err error
+		storages[i], err = storageService.Id(storageID).GetObject()
+		if err != nil {
+			return err
+		}
+	}
+	switch op {
+	case addAccessToStorageList:
+		for {
+			_, err := service.Id(id).AllowAccessToNetworkStorageList(storages)
+			if err != nil {
+				if apiErr, ok := err.(sl.Error); ok && apiErr.Exception == networkStorageMassAccessControlModificationException {
+					log.Printf("[DEBUG]  Allow access to storage failed with error %q. Will retry again after %q", err, retryDelayForModifyingStorageAccess)
+					time.Sleep(retryDelayForModifyingStorageAccess)
+					continue
+				}
+				return fmt.Errorf("Could not authorize Virtual Guest %d, access to the following storages %q, %q", id, storageIds, err)
+			}
+			log.Printf("[INFO] VSI authorized to access %q", storageIds)
+			break
+		}
+
+	case removeAccessToStorageList:
+		for {
+			_, err := service.Id(id).RemoveAccessToNetworkStorageList(storages)
+			if err != nil {
+				if apiErr, ok := err.(sl.Error); ok && apiErr.Exception == networkStorageMassAccessControlModificationException {
+					log.Printf("[DEBUG]  Remove access to storage failed with error %q. Will retry again after %q", err, retryDelayForModifyingStorageAccess)
+					time.Sleep(retryDelayForModifyingStorageAccess)
+					continue
+				}
+				return fmt.Errorf("Could not remove Virtual Guest %d, access to the following storages %q, %q", id, storageIds, err)
+			}
+			log.Printf("[INFO] VSI's access to %q have been removed", storageIds)
+			break
+		}
 	}
 	return nil
 }
