@@ -74,7 +74,9 @@ type ClientSession interface {
 	ClusterSubnetClient() k8sclusterv1.Subnets
 	ClusterWebHooksClient() k8sclusterv1.Webhooks
 
+	CloudFoundryAppClient() cfv2.Apps
 	CloudFoundryOrgClient() cfv2.Organizations
+	CloudFoundryServiceBindingClient() cfv2.ServiceBindings
 	CloudFoundryServiceInstanceClient() cfv2.ServiceInstances
 	CloudFoundryServicePlanClient() cfv2.ServicePlans
 	CloudFoundryServiceKeyClient() cfv2.ServiceKeys
@@ -96,10 +98,12 @@ type clientSession struct {
 	csSubnet  k8sclusterv1.Subnets
 	csWebHook k8sclusterv1.Webhooks
 
+	cfAppClient              cfv2.Apps
 	cfOrgClient              cfv2.Organizations
 	cfServiceInstanceClient  cfv2.ServiceInstances
 	cfSpaceClient            cfv2.Spaces
 	cfSpaceQuotaClient       cfv2.SpaceQuotas
+	cfServiceBindingClient   cfv2.ServiceBindings
 	cfServicePlanClient      cfv2.ServicePlans
 	cfServiceKeysClient      cfv2.ServiceKeys
 	cfServiceOfferingsClient cfv2.ServiceOfferings
@@ -128,6 +132,16 @@ func (sess clientSession) CloudFoundrySpaceClient() cfv2.Spaces {
 // CloudFoundrySpaceQuotaClient providers Cloud Foundary space quota APIs
 func (sess clientSession) CloudFoundrySpaceQuotaClient() cfv2.SpaceQuotas {
 	return sess.cfSpaceQuotaClient
+}
+
+// CloudFoundryAppClient providers Cloud Foundary app APIs
+func (sess clientSession) CloudFoundryAppClient() cfv2.Apps {
+	return sess.cfAppClient
+}
+
+// CloudFoundryServiceBindingClient providers Cloud Foundary service binding APIs
+func (sess clientSession) CloudFoundryServiceBindingClient() cfv2.ServiceBindings {
+	return sess.cfServiceBindingClient
 }
 
 // CloudFoundryServiceInstanceClient providers Cloud Foundary service APIs
@@ -218,8 +232,10 @@ func (c *Config) ClientSession() (interface{}, error) {
 		return nil, err
 	}
 
+	appAPI := cfClient.Apps()
 	orgAPI := cfClient.Organizations()
 	spaceAPI := cfClient.Spaces()
+	serviceBindingAPI := cfClient.ServiceBindings()
 	serviceInstanceAPI := cfClient.ServiceInstances()
 	servicePlanAPI := cfClient.ServicePlans()
 	serviceKeysAPI := cfClient.ServiceKeys()
@@ -261,7 +277,9 @@ func (c *Config) ClientSession() (interface{}, error) {
 		log.Println("Skipping cluster configuration")
 	}
 
+	session.cfAppClient = appAPI
 	session.cfOrgClient = orgAPI
+	session.cfServiceBindingClient = serviceBindingAPI
 	session.cfServiceInstanceClient = serviceInstanceAPI
 	session.cfServiceKeysClient = serviceKeysAPI
 	session.cfServicePlanClient = servicePlanAPI
