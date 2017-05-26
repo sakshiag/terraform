@@ -60,6 +60,7 @@ func Provider() terraform.ResourceProvider {
 			"ibmcloud_cf_account":           dataSourceIBMCloudCfAccount(),
 			"ibmcloud_cf_domain":            dataSourceIBMCloudCfDomain(),
 			"ibmcloud_cf_org":               dataSourceIBMCloudCfOrg(),
+			"ibmcloud_cf_route":             dataSourceIBMCloudCfRoute(),
 			"ibmcloud_cf_service_instance":  dataSourceIBMCloudCfServiceInstance(),
 			"ibmcloud_cf_service_key":       dataSourceIBMCloudCfServiceKey(),
 			"ibmcloud_cf_service_plan":      dataSourceIBMCloudCfServicePlan(),

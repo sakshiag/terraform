@@ -11,6 +11,12 @@ import (
 	"github.com/IBM-Bluemix/bluemix-go/trace"
 )
 
+//AppState ...
+type AppState struct {
+	PackageState  string
+	InstanceState string
+}
+
 const (
 	//ErrCodeAppDoesnotExist ...
 	ErrCodeAppDoesnotExist = "AppADoesnotExist"
@@ -26,6 +32,12 @@ const (
 
 	//AppPendingState ...
 	AppPendingState = "PENDING"
+
+	//AppFailedState ...
+	AppFailedState = "FAILED"
+
+	//AppUnKnownState ...
+	AppUnKnownState = "UNKNOWN"
 
 	//DefaultRetryDelayForStatusCheck ...
 	DefaultRetryDelayForStatusCheck = 10 * time.Second
@@ -55,15 +67,31 @@ type AppCreateRequest struct {
 	EnvironmentJSON          map[string]interface{} `json:"environment_json,omitempty"`
 }
 
+//AppUpdateRequest ...
+type AppUpdateRequest struct {
+	Name                  string                 `json:"name,omitempty"`
+	Memory                int                    `json:"memory,omitempty"`
+	Instances             int                    `json:"instances,omitempty"`
+	DiskQuota             int                    `json:"disk_quota,omitempty"`
+	SpaceGUID             string                 `json:"space_guid,omitempty"`
+	StackGUID             string                 `json:"stack_guid,omitempty"`
+	State                 string                 `json:"state,omitempty"`
+	DetectedStartCommand  string                 `json:"detected_start_command,omitempty"`
+	Command               string                 `json:"command,omitempty"`
+	BuildPack             string                 `json:"buildpack,omitempty"`
+	HealthCheckType       string                 `json:"health_check_type,omitempty"`
+	HealthCheckTimeout    int                    `json:"health_check_timeout,omitempty"`
+	Diego                 bool                   `json:"diego,omitempty"`
+	EnableSSH             bool                   `json:"enable_ssh,omitempty"`
+	DockerImage           string                 `json:"docker_image,omitempty"`
+	Ports                 []int                  `json:"ports,omitempty"`
+	DockerCredentialsJSON map[string]interface{} `json:"docker_credentials_json,omitempty"`
+	EnvironmentJSON       map[string]interface{} `json:"environment_json,omitempty"`
+}
+
 //AppsStateUpdateRequest ...
 type AppsStateUpdateRequest struct {
 	State string `json:"state"`
-}
-
-//AppMetadata ...
-type AppMetadata struct {
-	GUID string `json:"guid"`
-	URL  string `json:"url"`
 }
 
 //AppEntity ...
@@ -99,8 +127,20 @@ type AppResource struct {
 
 //AppFields ...
 type AppFields struct {
-	Metadata AppMetadata
+	Metadata Metadata
 	Entity   AppEntity
+}
+
+//UploadBitsEntity ...
+type UploadBitsEntity struct {
+	GUID   string `json:"guid"`
+	Status string `json:"status"`
+}
+
+//UploadBitFields ...
+type UploadBitFields struct {
+	Metadata Metadata
+	Entity   UploadBitsEntity
 }
 
 //AppSummaryFields ...
@@ -142,11 +182,11 @@ type Apps interface {
 	Create(appPayload *AppCreateRequest) (*AppFields, error)
 	List() ([]App, error)
 	Get(appGUID string) (*AppFields, error)
-	Update(appGUID string, appPayload *AppCreateRequest) (*AppFields, error)
+	Update(appGUID string, appPayload *AppUpdateRequest) (*AppFields, error)
 	Delete(appGUID string) error
 	FindByName(spaceGUID, name string) (*App, error)
-	Start(appGUID string, timeout time.Duration) (*AppFields, error)
-	Upload(path string, name string) (*AppFields, error)
+	Start(appGUID string, timeout time.Duration) (*AppState, error)
+	Upload(path string, name string) (*UploadBitFields, error)
 	Summary(appGUID string) (*AppSummaryFields, error)
 	Stat(appGUID string) (map[string]AppStats, error)
 	WaitForAppStatus(waitForThisState, appGUID string, timeout time.Duration) (string, error)
@@ -252,7 +292,7 @@ func (r *app) listAppWithPath(path string) ([]App, error) {
 	return apps, err
 }
 
-func (r *app) Upload(appGUID string, zipPath string) (*AppFields, error) {
+func (r *app) Upload(appGUID string, zipPath string) (*UploadBitFields, error) {
 	req := rest.PutRequest(r.client.URL("/v2/apps/"+appGUID+"/bits")).Query("async", "false")
 	file, err := os.Open(zipPath)
 	if err != nil {
@@ -264,20 +304,14 @@ func (r *app) Upload(appGUID string, zipPath string) (*AppFields, error) {
 		Name:    file.Name(),
 		Content: file,
 	}
-
 	req.File("application", f)
 	req.Field("resources", "[]")
-	appFields := &AppFields{}
-
-	_, err = r.client.SendRequest(req, appFields)
-
-	if err != nil {
-		return appFields, err
-	}
-	return appFields, err
+	uploadBitResponse := &UploadBitFields{}
+	_, err = r.client.SendRequest(req, uploadBitResponse)
+	return uploadBitResponse, err
 }
 
-func (r *app) Start(appGUID string, maxWaitTime time.Duration) (*AppFields, error) {
+func (r *app) Start(appGUID string, maxWaitTime time.Duration) (*AppState, error) {
 	payload := AppsStateUpdateRequest{
 		State: AppStartedState,
 	}
@@ -287,18 +321,23 @@ func (r *app) Start(appGUID string, maxWaitTime time.Duration) (*AppFields, erro
 	if err != nil {
 		return nil, err
 	}
+	appState := &AppState{
+		PackageState:  AppPendingState,
+		InstanceState: AppUnKnownState,
+	}
 	if maxWaitTime == 0 {
-		return &appFields, nil
+		appState.PackageState = appFields.Entity.PackageState
+		appState.InstanceState = appFields.Entity.State
+		return appState, nil
 	}
-	_, err = r.WaitForAppStatus(AppStagedState, appGUID, maxWaitTime)
-	if err != nil {
-		return &appFields, err
+	status, err := r.WaitForAppStatus(AppStagedState, appGUID, maxWaitTime/2)
+	appState.PackageState = status
+	if err != nil || status == AppFailedState {
+		return appState, err
 	}
-	_, err = r.WaitForInstanceStatus(AppRunningState, appGUID, maxWaitTime)
-	if err != nil {
-		return &appFields, err
-	}
-	return &appFields, nil
+	status, err = r.WaitForInstanceStatus(AppRunningState, appGUID, maxWaitTime/2)
+	appState.InstanceState = status
+	return appState, nil
 }
 
 func (r *app) Get(appGUID string) (*AppFields, error) {
@@ -358,7 +397,7 @@ func (r *app) List() ([]App, error) {
 
 }
 
-func (r *app) Update(appGUID string, appPayload *AppCreateRequest) (*AppFields, error) {
+func (r *app) Update(appGUID string, appPayload *AppUpdateRequest) (*AppFields, error) {
 	rawURL := fmt.Sprintf("/v2/apps/%s", appGUID)
 	appFields := AppFields{}
 	_, err := r.client.Put(rawURL, appPayload, &appFields)
@@ -377,20 +416,20 @@ func (r *app) Delete(appGUID string) error {
 func (r *app) WaitForAppStatus(waitForThisState, appGUID string, maxWaitTime time.Duration) (string, error) {
 	timeout := time.After(maxWaitTime)
 	tick := time.Tick(DefaultRetryDelayForStatusCheck)
-	var status = AppPendingState
+	status := AppPendingState
 	for {
 		select {
 		case <-timeout:
 			trace.Logger.Printf("Timed out while checking the app status for %q.  Waited for %q for the state to be %q", appGUID, maxWaitTime, waitForThisState)
 			return status, nil
 		case <-tick:
-			apps, err := r.Get(appGUID)
+			appFields, err := r.Get(appGUID)
 			if err != nil {
-				return status, err
+				return "", err
 			}
-			status = apps.Entity.PackageState
-			trace.Logger.Println("apps.Entity.PackageState  ===>>> ", apps.Entity.PackageState)
-			if status == waitForThisState {
+			status = appFields.Entity.PackageState
+			trace.Logger.Println("apps.Entity.PackageState  ===>>> ", status)
+			if status == waitForThisState || status == AppFailedState {
 				return status, nil
 			}
 		}
@@ -400,7 +439,7 @@ func (r *app) WaitForAppStatus(waitForThisState, appGUID string, maxWaitTime tim
 func (r *app) WaitForInstanceStatus(waitForThisState, appGUID string, maxWaitTime time.Duration) (string, error) {
 	timeout := time.After(maxWaitTime)
 	tick := time.Tick(DefaultRetryDelayForStatusCheck)
-	var status = "UNKNOWN"
+	status := AppStartedState
 	for {
 		select {
 		case <-timeout:
