@@ -100,12 +100,12 @@ func testAccCheckIBMCloudCFRoute_basic(host string) string {
 			space  = "%s"
 		}
 		
-		data "ibmcloud_cf_domain" "domain" {
+		data "ibmcloud_cf_shared_domain" "domain" {
 			name        = "mybluemix.net"
 		}
 		
 		resource "ibmcloud_cf_route" "route" {
-			domain_guid       = "${data.ibmcloud_cf_domain.domain.id}"
+			domain_guid       = "${data.ibmcloud_cf_shared_domain.domain.id}"
 			space_guid        = "${data.ibmcloud_cf_space.spacedata.id}"
 			host              = "%s"
 			path              = "/app"
@@ -121,12 +121,12 @@ func testAccCheckIBMCloudCFRoute_updatePath(host string) string {
 			space  = "%s"
 		}
 		
-		data "ibmcloud_cf_domain" "domain" {
+		data "ibmcloud_cf_shared_domain" "domain" {
 			name        = "mybluemix.net"
 		}
 		
 		resource "ibmcloud_cf_route" "route" {
-			domain_guid       = "${data.ibmcloud_cf_domain.domain.id}"
+			domain_guid       = "${data.ibmcloud_cf_shared_domain.domain.id}"
 			space_guid        = "${data.ibmcloud_cf_space.spacedata.id}"
 			host              = "%s"
 			path              = "/app1"
@@ -142,12 +142,12 @@ func testAccCheckIBMCloudCFRoute_updateHost(updateHost string) string {
 			space  = "%s"
 		}
 		
-		data "ibmcloud_cf_domain" "domain" {
+		data "ibmcloud_cf_shared_domain" "domain" {
 			name        = "mybluemix.net"
 		}
 		
 		resource "ibmcloud_cf_route" "route" {
-			domain_guid       = "${data.ibmcloud_cf_domain.domain.id}"
+			domain_guid       = "${data.ibmcloud_cf_shared_domain.domain.id}"
 			space_guid        = "${data.ibmcloud_cf_space.spacedata.id}"
 			host              = "%s"
 		}

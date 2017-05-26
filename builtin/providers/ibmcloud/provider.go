@@ -58,11 +58,13 @@ func Provider() terraform.ResourceProvider {
 
 		DataSourcesMap: map[string]*schema.Resource{
 			"ibmcloud_cf_account":           dataSourceIBMCloudCfAccount(),
-			"ibmcloud_cf_domain":            dataSourceIBMCloudCfDomain(),
 			"ibmcloud_cf_org":               dataSourceIBMCloudCfOrg(),
+			"ibmcloud_cf_private_domain":    dataSourceIBMCloudCfPrivateDomain(),
+			"ibmcloud_cf_route":             dataSourceIBMCloudCfRoute(),
 			"ibmcloud_cf_service_instance":  dataSourceIBMCloudCfServiceInstance(),
 			"ibmcloud_cf_service_key":       dataSourceIBMCloudCfServiceKey(),
 			"ibmcloud_cf_service_plan":      dataSourceIBMCloudCfServicePlan(),
+			"ibmcloud_cf_shared_domain":     dataSourceIBMCloudCfSharedDomain(),
 			"ibmcloud_cf_space":             dataSourceIBMCloudCfSpace(),
 			"ibmcloud_cs_cluster":           dataSourceIBMCloudCsCluster(),
 			"ibmcloud_cs_cluster_config":    dataSourceIBMCloudArmadaClusterConfig(),
@@ -77,9 +79,11 @@ func Provider() terraform.ResourceProvider {
 		ResourcesMap: map[string]*schema.Resource{
 
 			"ibmcloud_cf_app":                            resourceIBMCloudCfApp(),
+			"ibmcloud_cf_private_domain":                 resourceIBMCloudCfPrivateDomain(),
 			"ibmcloud_cf_route":                          resourceIBMCloudCfRoute(),
 			"ibmcloud_cf_service_instance":               resourceIBMCloudCfServiceInstance(),
 			"ibmcloud_cf_service_key":                    resourceIBMCloudCfServiceKey(),
+			"ibmcloud_cf_shared_domain":                  resourceIBMCloudCfSharedDomain(),
 			"ibmcloud_cf_space":                          resourceIBMCloudCfSpace(),
 			"ibmcloud_cs_cluster":                        resourceIBMCloudArmadaCluster(),
 			"ibmcloud_cs_cluster_service_bind":           resourceIBMCloudClusterBindService(),

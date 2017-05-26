@@ -65,15 +65,12 @@ func validateRoutePort(v interface{}, k string) (ws []string, errors []error) {
 	return
 }
 
-func validateAppQuota(v interface{}, k string) (ws []string, errors []error) {
-	memoryInMB := float64(v.(int))
+func validateDomainName(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
 
-	// Validate memory to match gigs format
-	remaining := math.Mod(memoryInMB, 1024)
-	if remaining > 0 {
-		suggested := math.Ceil(memoryInMB/1024) * 1024
+	if !(strings.Contains(value, ".")) {
 		errors = append(errors, fmt.Errorf(
-			"Invalid 'memory' value %d megabytes, must be a multiple of 1024 (e.g. use %d)", int(memoryInMB), int(suggested)))
+			"%q (%q) must contain a '.',example.com,foo.example.com", k, value))
 	}
 
 	return
@@ -87,4 +84,17 @@ func validateAppInstance(v interface{}, k string) (ws []string, errors []error) 
 	}
 	return
 
+}
+
+func validateAppQuota(v interface{}, k string) (ws []string, errors []error) {
+	memoryInMB := float64(v.(int))
+
+	// Validate memory to match gigs format
+	remaining := math.Mod(memoryInMB, 1024)
+	if remaining > 0 {
+		suggested := math.Ceil(memoryInMB/1024) * 1024
+		errors = append(errors, fmt.Errorf(
+			"Invalid 'memory' value %d megabytes, must be a multiple of 1024 (e.g. use %d)", int(memoryInMB), int(suggested)))
+	}
+	return
 }
