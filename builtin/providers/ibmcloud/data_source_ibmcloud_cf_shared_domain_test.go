@@ -7,28 +7,28 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
-func TestAccIBMCloudCFDomainDataSource_basic(t *testing.T) {
+func TestAccIBMCloudCFSharedDomainDataSource_basic(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccCheckIBMCloudCFDomainDataSourceConfig(),
+				Config: testAccCheckIBMCloudCFSharedDomainDataSourceConfig(),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet(
-						"data.ibmcloud_cf_domain.testacc_domain", "id"),
+						"data.ibmcloud_cf_shared_domain.testacc_domain", "id"),
 				),
 			},
 		},
 	})
 }
 
-func testAccCheckIBMCloudCFDomainDataSourceConfig() string {
+func testAccCheckIBMCloudCFSharedDomainDataSourceConfig() string {
 	return fmt.Sprintf(`
-
-data "ibmcloud_cf_domain" "testacc_domain" {
-	name = "mybluemix.net"
-}`)
+	
+		data "ibmcloud_cf_shared_domain" "testacc_domain" {
+			name = "mybluemix.net"
+		}`)
 
 }

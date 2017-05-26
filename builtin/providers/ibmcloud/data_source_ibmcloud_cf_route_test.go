@@ -33,12 +33,12 @@ func testAccCheckIBMCloudCFRouteDataSourceConfig(host string) string {
 			space  = "%s"
 		}
 		
-		data "ibmcloud_cf_domain" "domain" {
+		data "ibmcloud_cf_shared_domain" "domain" {
 			name        = "mybluemix.net"
 		}
 		
 		resource "ibmcloud_cf_route" "route" {
-			domain_guid       = "${data.ibmcloud_cf_domain.domain.id}"
+			domain_guid       = "${data.ibmcloud_cf_shared_domain.domain.id}"
 			space_guid        = "${data.ibmcloud_cf_space.spacedata.id}"
 			host              = "%s"
 			path              = "/app"

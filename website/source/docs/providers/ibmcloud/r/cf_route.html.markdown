@@ -19,13 +19,12 @@ data "ibmcloud_cf_space" "spacedata" {
 		org    = "someexample.com"
 	}
 		
-data "ibmcloud_cf_domain" "domain" {
+data "ibmcloud_cf_shared_domain" "domain" {
 		name        = "mybluemix.net"
-		domain_type        =  "shared"
 	}
 		
 resource "ibmcloud_cf_route" "route" {
-		domain_guid       = "${data.ibmcloud_cf_domain.domain.id}"
+		domain_guid       = "${data.ibmcloud_cf_shared_domain.domain.id}"
 		space_guid        = "${data.ibmcloud_cf_space.spacedata.id}"
 		host              = "somehost172"
 		path              = "/app"
@@ -37,7 +36,7 @@ resource "ibmcloud_cf_route" "route" {
 
 The following arguments are supported:
 
-* `domain_guid` - (Required, string) The GUID of the associated domain. The values can be retrieved from data source `ibmcloud_cf_domain`.
+* `domain_guid` - (Required, string) The GUID of the associated domain. The values can be retrieved from data source `ibmcloud_cf_shared_domain`.
 * `space_guid` - (Required, string) The GUID of the space where you want to create the route. The values can be retrieved from data source `ibmcloud_cf_space`.
 * `host` - (Optional, string) The host portion of the route. Required for shared-domains.
 * `port` - (Optional, int) The port of the route. Supported for domains of TCP router groups only.
