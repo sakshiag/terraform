@@ -2,11 +2,17 @@ package ibmcloud
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	v2 "github.com/IBM-Bluemix/bluemix-go/api/cf/cfv2"
 	"github.com/IBM-Bluemix/bluemix-go/bmxerror"
+	"github.com/IBM-Bluemix/bluemix-go/helpers"
 	"github.com/hashicorp/terraform/helper/schema"
+)
+
+const (
+	appStopState = "STOPPED"
 )
 
 func resourceIBMCloudCfApp() *schema.Resource {
@@ -25,22 +31,25 @@ func resourceIBMCloudCfApp() *schema.Resource {
 				Description: "The name for the app",
 			},
 			"memory": {
-				Description: "The amount of memory each instance should have. In megabytes.",
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Default:     512,
+				Description:  "The amount of memory each instance should have. In megabytes.",
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Default:      512,
+				ValidateFunc: validateAppQuota,
 			},
 			"instances": {
-				Description: "The number of instances",
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Default:     2,
+				Description:  "The number of instances",
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Default:      2,
+				ValidateFunc: validateAppInstance,
 			},
 			"disk_quota": {
-				Description: "The maximum amount of disk available to an instance of an app. In megabytes.",
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Default:     1024,
+				Description:  "The maximum amount of disk available to an instance of an app. In megabytes.",
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Default:      1024,
+				ValidateFunc: validateAppQuota,
 			},
 			"space_guid": {
 				Description: "Define space guid to which app belongs",
@@ -54,9 +63,10 @@ func resourceIBMCloudCfApp() *schema.Resource {
 				Optional:    true,
 			},
 			"buildpack": {
-				Description: "Buildpack to build the app. 3 options: a) Blank means autodetection; b) A Git Url pointing to a buildpack; c) Name of an installed buildpack.",
-				Type:        schema.TypeString,
-				Optional:    true,
+				Description:   "Buildpack to build the app. 3 options: a) Blank means autodetection; b) A Git Url pointing to a buildpack; c) Name of an installed buildpack.",
+				Type:          schema.TypeString,
+				Optional:      true,
+				ConflictsWith: []string{"docker_image"},
 			},
 			"diego": {
 				Description: "Use diego to stage and to run when available",
@@ -65,9 +75,10 @@ func resourceIBMCloudCfApp() *schema.Resource {
 				Default:     false,
 			},
 			"docker_image": {
-				Description: "Name of the Docker image containing the app",
-				Type:        schema.TypeString,
-				Optional:    true,
+				Description:   "Name of the Docker image containing the app",
+				Type:          schema.TypeString,
+				Optional:      true,
+				ConflictsWith: []string{"buildpack"},
 			},
 			"docker_credentials_json": {
 				Description: "Docker credentials for pulling docker image.",
@@ -86,14 +97,14 @@ func resourceIBMCloudCfApp() *schema.Resource {
 				Elem:        &schema.Schema{Type: schema.TypeInt},
 			},
 			"route_guid": {
-				Description: "Define the route guid.",
+				Description: "Define the route guid needs to be attached to application.",
 				Type:        schema.TypeSet,
 				Optional:    true,
 				Elem:        &schema.Schema{Type: schema.TypeString},
 				Set:         schema.HashString,
 			},
 			"service_instance_guid": {
-				Description: "Define the service guid.",
+				Description: "Define the service guid needs to be attached to application.",
 				Type:        schema.TypeSet,
 				Optional:    true,
 				Elem:        &schema.Schema{Type: schema.TypeString},
@@ -106,7 +117,7 @@ func resourceIBMCloudCfApp() *schema.Resource {
 				Default:     0,
 			},
 			"app_path": {
-				Description: "Define the path of the zip file of the application",
+				Description: "Define the path of the zip file of the application.",
 				Type:        schema.TypeString,
 				Optional:    true,
 			},
@@ -118,40 +129,56 @@ func resourceIBMCloudCfAppCreate(d *schema.ResourceData, meta interface{}) error
 	appClient := meta.(ClientSession).CloudFoundryAppClient()
 
 	name := d.Get("name").(string)
-	memory := d.Get("memory").(int)
-	instances := d.Get("instances").(int)
-	diskQuota := d.Get("disk_quota").(int)
 	spaceGUID := d.Get("space_guid").(string)
-	command := d.Get("command").(string)
-	buildpack := d.Get("buildpack").(string)
-	diego := d.Get("diego").(bool)
-	dockerImage := d.Get("docker_image").(string)
 
-	p := d.Get("ports").([]interface{})
-	ports := make([]int, len(p))
-	for i := range p {
-		ports[i] = p[i].(int)
+	appCreatePayload := v2.AppRequest{
+		Name:      helpers.String(name),
+		SpaceGUID: helpers.String(spaceGUID),
 	}
 
-	var dockerCredentialsJSON map[string]interface{}
-	dockerCredentialsJSON = d.Get("docker_credentials_json").(map[string]interface{})
+	if memory, ok := d.GetOk("memory"); ok {
+		appCreatePayload.Memory = memory.(int)
+	}
 
-	var environmentJSON map[string]interface{}
-	environmentJSON = d.Get("environment_json").(map[string]interface{})
+	if instances, ok := d.GetOk("instances"); ok {
+		appCreatePayload.Instances = instances.(int)
+	}
 
-	appPayload := &v2.AppCreateRequest{
-		Name:                  name,
-		Memory:                memory,
-		Instances:             instances,
-		DiskQuota:             diskQuota,
-		SpaceGUID:             spaceGUID,
-		Command:               command,
-		BuildPack:             buildpack,
-		Diego:                 diego,
-		DockerImage:           dockerImage,
-		DockerCredentialsJSON: dockerCredentialsJSON,
-		EnvironmentJSON:       environmentJSON,
-		Ports:                 ports,
+	if diskQuota, ok := d.GetOk("disk_quota"); ok {
+		appCreatePayload.DiskQuota = diskQuota.(int)
+	}
+
+	if command, ok := d.GetOk("command"); ok {
+		appCreatePayload.Command = helpers.String(command.(string))
+	}
+
+	if buildpack, ok := d.GetOk("buildpack"); ok {
+		appCreatePayload.BuildPack = helpers.String(buildpack.(string))
+	}
+
+	if diego, ok := d.GetOk("diego"); ok {
+		appCreatePayload.Diego = diego.(bool)
+	}
+
+	if dockerImage, ok := d.GetOk("docker_image"); ok {
+		appCreatePayload.DockerImage = helpers.String(dockerImage.(string))
+	}
+
+	if port, ok := d.GetOk("ports"); ok {
+		p := port.([]interface{})
+		ports := make([]int, len(p))
+		for i := range p {
+			ports[i] = p[i].(int)
+		}
+		appCreatePayload.Ports = helpers.Array(ports)
+	}
+
+	if dockerCredentialsJSON, ok := d.GetOk("docker_credentials_json"); ok {
+		appCreatePayload.DockerCredentialsJSON = helpers.Map(dockerCredentialsJSON.(map[string]interface{}))
+	}
+	if environmentJSON, ok := d.GetOk("environment_json"); ok {
+		appCreatePayload.EnvironmentJSON = helpers.Map(environmentJSON.(map[string]interface{}))
+
 	}
 
 	_, err := appClient.FindByName(spaceGUID, name)
@@ -160,34 +187,31 @@ func resourceIBMCloudCfAppCreate(d *schema.ResourceData, meta interface{}) error
 		return fmt.Errorf("%s already exists", name)
 	}
 
-	fmt.Println("Creating app")
+	log.Println("[INFO] Creating Cloud Foundary Application")
 
-	app, err := appClient.Create(appPayload)
-	fmt.Println(app)
+	app, err := appClient.Create(&appCreatePayload)
+
 	if err != nil {
 		return fmt.Errorf("Error creating app: %s", err)
 	}
 
-	fmt.Println("App is created")
+	log.Println("[INFO] Cloud Foundary Application is created successfully")
 
 	d.SetId(app.Metadata.GUID)
 
-	fmt.Println("")
-
-	fmt.Println("Bind the route with app")
+	log.Println("[INFO] Bind the route with cloud foundary application")
 
 	routeIDs := d.Get("route_guid").(*schema.Set)
 	for _, routeID := range routeIDs.List() {
 		if routeID != "" {
-			bindRoute, err := appClient.BindRoute(app.Metadata.GUID, routeID.(string))
-			fmt.Println(bindRoute)
+			_, err := appClient.BindRoute(app.Metadata.GUID, routeID.(string))
 			if err != nil {
 				return fmt.Errorf("Error binding route %s to  app: %s", routeID.(string), err)
 			}
 		}
 	}
 
-	fmt.Println("Upload the app bits")
+	log.Println("[INFO] Upload the app bits to the cloud foundary application")
 
 	appPath := d.Get("app_path").(string)
 	if appPath != "" {
@@ -197,16 +221,18 @@ func resourceIBMCloudCfAppCreate(d *schema.ResourceData, meta interface{}) error
 		}
 	}
 
-	fmt.Println("Start the app")
+	log.Println("[INFO] Start Cloud Foundary Application")
 
 	waitTimeout := time.Duration(d.Get("wait_timeout").(int)) * time.Minute
 	fmt.Println("time out", waitTimeout)
-	app, err = appClient.Start(app.Metadata.GUID, waitTimeout)
+	_, err = appClient.Start(app.Metadata.GUID, waitTimeout)
 	if err != nil {
 		return fmt.Errorf("Error while starting  app: %s", err)
 	}
 
-	fmt.Println("Bind the service with app")
+	log.Println("[INFO]Cloud Foundary Application has started successfully")
+
+	log.Println("[INFO] Bind the service instance with cloud foundary application")
 
 	sbClient := meta.(ClientSession).CloudFoundryServiceBindingClient()
 
@@ -217,8 +243,7 @@ func resourceIBMCloudCfAppCreate(d *schema.ResourceData, meta interface{}) error
 				ServiceInstanceGUID: serviceID.(string),
 				AppGUID:             app.Metadata.GUID,
 			}
-			sb, err := sbClient.Create(sbPayload)
-			fmt.Println(sb)
+			_, err := sbClient.Create(sbPayload)
 			if err != nil {
 				return fmt.Errorf("Error binding service %s to  app: %s", serviceID.(string), err)
 			}
@@ -252,10 +277,10 @@ func resourceIBMCloudCfAppUpdate(d *schema.ResourceData, meta interface{}) error
 	appClient := meta.(ClientSession).CloudFoundryAppClient()
 	appGUID := d.Id()
 
-	appUpdatePayload := v2.AppUpdateRequest{}
+	appUpdatePayload := v2.AppRequest{}
 
 	if d.HasChange("name") {
-		appUpdatePayload.Name = d.Get("name").(string)
+		appUpdatePayload.Name = helpers.String(d.Get("name").(string))
 	}
 
 	if d.HasChange("memory") {
@@ -271,7 +296,11 @@ func resourceIBMCloudCfAppUpdate(d *schema.ResourceData, meta interface{}) error
 	}
 
 	if d.HasChange("buildpack") {
-		appUpdatePayload.BuildPack = d.Get("buildpack").(string)
+		appUpdatePayload.BuildPack = helpers.String(d.Get("buildpack").(string))
+	}
+
+	if d.HasChange("command") {
+		appUpdatePayload.Command = helpers.String(d.Get("command").(string))
 	}
 
 	if d.HasChange("diego") {
@@ -279,7 +308,7 @@ func resourceIBMCloudCfAppUpdate(d *schema.ResourceData, meta interface{}) error
 	}
 
 	if d.HasChange("environment_json") {
-		appUpdatePayload.EnvironmentJSON = d.Get("environment_json").(map[string]interface{})
+		appUpdatePayload.EnvironmentJSON = helpers.Map(d.Get("environment_json").(map[string]interface{}))
 	}
 
 	if d.HasChange("ports") {
@@ -288,10 +317,11 @@ func resourceIBMCloudCfAppUpdate(d *schema.ResourceData, meta interface{}) error
 		for i := range p {
 			ports[i] = p[i].(int)
 		}
-		appUpdatePayload.Ports = ports
+		appUpdatePayload.Ports = helpers.Array(ports)
 	}
 
-	fmt.Println("Updating the app")
+	log.Println("[INFO] Update cloud foundary application")
+
 	_, err := appClient.Update(appGUID, &appUpdatePayload)
 	if err != nil {
 		return fmt.Errorf("Error updating space: %s", err)
@@ -304,8 +334,8 @@ func resourceIBMCloudCfAppUpdate(d *schema.ResourceData, meta interface{}) error
 		if err != nil {
 			return fmt.Errorf("Error uploading  app: %s", err)
 		}
-		appUpdatePayload := &v2.AppUpdateRequest{
-			State: "STOPPED",
+		appUpdatePayload := &v2.AppRequest{
+			State: helpers.String(appStopState),
 		}
 		_, err := appClient.Update(appGUID, appUpdatePayload)
 		if err != nil {

@@ -2,6 +2,7 @@ package ibmcloud
 
 import (
 	"fmt"
+	"math"
 	"strings"
 
 	"github.com/hashicorp/terraform/helper/schema"
@@ -62,4 +63,28 @@ func validateRoutePort(v interface{}, k string) (ws []string, errors []error) {
 			"%q (%q) must be in the range of 1024 to 65535", k, value))
 	}
 	return
+}
+
+func validateAppQuota(v interface{}, k string) (ws []string, errors []error) {
+	memoryInMB := float64(v.(int))
+
+	// Validate memory to match gigs format
+	remaining := math.Mod(memoryInMB, 1024)
+	if remaining > 0 {
+		suggested := math.Ceil(memoryInMB/1024) * 1024
+		errors = append(errors, fmt.Errorf(
+			"Invalid 'memory' value %d megabytes, must be a multiple of 1024 (e.g. use %d)", int(memoryInMB), int(suggested)))
+	}
+
+	return
+}
+
+func validateAppInstance(v interface{}, k string) (ws []string, errors []error) {
+	instances := v.(int)
+	if instances < 0 {
+		errors = append(errors, fmt.Errorf(
+			"%q (%q) must be greater than 0", k, instances))
+	}
+	return
+
 }
