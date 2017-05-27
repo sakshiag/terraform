@@ -13,7 +13,6 @@ import (
 func TestAccIBMCloudCFApp_Basic(t *testing.T) {
 	var conf cfv2.AppFields
 	name := fmt.Sprintf("terraform_%d", acctest.RandInt())
-	//serviceName := fmt.Sprintf("ter_service_%d", acctest.RandInt())
 	updatedName := fmt.Sprintf("terraform_updated_%d", acctest.RandInt())
 
 	resource.Test(t, resource.TestCase{
@@ -34,7 +33,7 @@ func TestAccIBMCloudCFApp_Basic(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("ibmcloud_cf_app.app", "name", updatedName),
 					resource.TestCheckResourceAttr("ibmcloud_cf_app.app", "instances", "1"),
-					resource.TestCheckResourceAttr("ibmcloud_cf_app.app", "memory", "124"),
+					resource.TestCheckResourceAttr("ibmcloud_cf_app.app", "memory", "128"),
 					resource.TestCheckResourceAttr("ibmcloud_cf_app.app", "disk_quota", "512"),
 				),
 			},
@@ -92,10 +91,9 @@ data "ibmcloud_cf_space" "space" {
 resource "ibmcloud_cf_app" "app" {
 	name = "%s"
 	space_guid = "${data.ibmcloud_cf_space.space.id}"
-	app_path = "/Users/sakshi/Documents/AlchemyProject/go_workspace/src/github.com/IBM-Bluemix/hello.zip"
-	wait_timeout = 90
+	app_path = "test-fixtures/app1.zip"
+	wait_time_minutes = 90
 	buildpack = "sdk-for-nodejs"
-	ports = [9080]
 }`, cfOrganization, cfSpace, name)
 
 }
@@ -104,14 +102,14 @@ func testAccCheckIBMCloudCFAppUpdate(name string) string {
 	return fmt.Sprintf(`
 
 data "ibmcloud_cf_space" "space" {
-  org    = "%s"
+   org    = "%s"
   space  = "%s"
 }
 resource "ibmcloud_cf_app" "app" {
 	name = "%s"
 	space_guid = "${data.ibmcloud_cf_space.space.id}"
-	app_path = "/Users/sakshi/Documents/AlchemyProject/go_workspace/src/github.com/IBM-Bluemix/hello.zip"
-	wait_timeout = 90
+	app_path = "test-fixtures/app1.zip"
+	wait_time_minutes = 90
 	buildpack = "sdk-for-nodejs"
 	instances = 1
 	disk_quota = 512
@@ -120,7 +118,7 @@ resource "ibmcloud_cf_app" "app" {
 	instances = 1
 	disk_quota = 512
 	environment_json = {
-			"test"="test1"
+		"test" = "test1"
 	}
 }`, cfOrganization, cfSpace, name)
 

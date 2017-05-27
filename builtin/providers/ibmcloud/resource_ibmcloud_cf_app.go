@@ -11,10 +11,6 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
-const (
-	appStopState = "STOPPED"
-)
-
 func resourceIBMCloudCfApp() *schema.Resource {
 	return &schema.Resource{
 		Create:   resourceIBMCloudCfAppCreate,
@@ -31,25 +27,22 @@ func resourceIBMCloudCfApp() *schema.Resource {
 				Description: "The name for the app",
 			},
 			"memory": {
-				Description:  "The amount of memory each instance should have. In megabytes.",
-				Type:         schema.TypeInt,
-				Optional:     true,
-				Default:      512,
-				ValidateFunc: validateAppQuota,
+				Description: "The amount of memory each instance should have. In megabytes.",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Computed:    true,
 			},
 			"instances": {
-				Description:  "The number of instances",
-				Type:         schema.TypeInt,
-				Optional:     true,
-				Default:      2,
-				ValidateFunc: validateAppInstance,
+				Description: "The number of instances",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Computed:    true,
 			},
 			"disk_quota": {
-				Description:  "The maximum amount of disk available to an instance of an app. In megabytes.",
-				Type:         schema.TypeInt,
-				Optional:     true,
-				Default:      1024,
-				ValidateFunc: validateAppQuota,
+				Description: "The maximum amount of disk available to an instance of an app. In megabytes.",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Computed:    true,
 			},
 			"space_guid": {
 				Description: "Define space guid to which app belongs",
@@ -63,61 +56,58 @@ func resourceIBMCloudCfApp() *schema.Resource {
 				Optional:    true,
 			},
 			"buildpack": {
-				Description:   "Buildpack to build the app. 3 options: a) Blank means autodetection; b) A Git Url pointing to a buildpack; c) Name of an installed buildpack.",
-				Type:          schema.TypeString,
-				Optional:      true,
-				ConflictsWith: []string{"docker_image"},
+				Description: "Buildpack to build the app. 3 options: a) Blank means autodetection; b) A Git Url pointing to a buildpack; c) Name of an installed buildpack.",
+				Type:        schema.TypeString,
+				Optional:    true,
 			},
 			"diego": {
 				Description: "Use diego to stage and to run when available",
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Default:     false,
-			},
-			"docker_image": {
-				Description:   "Name of the Docker image containing the app",
-				Type:          schema.TypeString,
-				Optional:      true,
-				ConflictsWith: []string{"buildpack"},
-			},
-			"docker_credentials_json": {
-				Description: "Docker credentials for pulling docker image.",
-				Type:        schema.TypeMap,
-				Optional:    true,
+				Computed:    true,
 			},
 			"environment_json": {
-				Description: "Key/value pairs of all the environment variables to run in your app. Does not include any system or service variables.t",
+				Description: "Key/value pairs of all the environment variables to run in your app. Does not include any system or service variables.",
 				Type:        schema.TypeMap,
 				Optional:    true,
 			},
 			"ports": {
 				Description: "Ports on which application may listen. Overwrites previously configured ports. Ports must be in range 1024-65535. Supported for Diego only.",
-				Type:        schema.TypeList,
+				Type:        schema.TypeSet,
 				Optional:    true,
+				Computed:    true,
 				Elem:        &schema.Schema{Type: schema.TypeInt},
+				Set: func(v interface{}) int {
+					return v.(int)
+				},
 			},
 			"route_guid": {
-				Description: "Define the route guid needs to be attached to application.",
+				Description: "Define the route guids which should be bound to the application.",
 				Type:        schema.TypeSet,
 				Optional:    true,
 				Elem:        &schema.Schema{Type: schema.TypeString},
 				Set:         schema.HashString,
 			},
 			"service_instance_guid": {
-				Description: "Define the service guid needs to be attached to application.",
+				Description: "Define the service instance guids that should be bound to this application.",
 				Type:        schema.TypeSet,
 				Optional:    true,
 				Elem:        &schema.Schema{Type: schema.TypeString},
 				Set:         schema.HashString,
 			},
-			"wait_timeout": {
-				Description: "Define timeout to wait for the app to start",
+			"wait_time_minutes": {
+				Description: "Define timeout to wait for the app to start. Default is no wait",
 				Type:        schema.TypeInt,
 				Optional:    true,
 				Default:     0,
 			},
 			"app_path": {
-				Description: "Define the path of the zip file of the application.",
+				Description: "Define the  path of the zip file of the application.",
+				Type:        schema.TypeString,
+				Optional:    true,
+			},
+			"app_version": {
+				Description: "Version of the application",
 				Type:        schema.TypeString,
 				Optional:    true,
 			},
@@ -156,35 +146,19 @@ func resourceIBMCloudCfAppCreate(d *schema.ResourceData, meta interface{}) error
 		appCreatePayload.BuildPack = helpers.String(buildpack.(string))
 	}
 
-	if diego, ok := d.GetOk("diego"); ok {
-		appCreatePayload.Diego = diego.(bool)
-	}
+	appCreatePayload.Diego = d.Get("diego").(bool)
 
-	if dockerImage, ok := d.GetOk("docker_image"); ok {
-		appCreatePayload.DockerImage = helpers.String(dockerImage.(string))
-	}
-
-	if port, ok := d.GetOk("ports"); ok {
-		p := port.([]interface{})
-		ports := make([]int, len(p))
-		for i := range p {
-			ports[i] = p[i].(int)
-		}
-		appCreatePayload.Ports = helpers.Array(ports)
-	}
-
-	if dockerCredentialsJSON, ok := d.GetOk("docker_credentials_json"); ok {
-		appCreatePayload.DockerCredentialsJSON = helpers.Map(dockerCredentialsJSON.(map[string]interface{}))
+	if portSet := d.Get("ports").(*schema.Set); len(portSet.List()) > 0 {
+		ports := expandIntList(portSet.List())
+		appCreatePayload.Ports = helpers.IntSlice(ports)
 	}
 	if environmentJSON, ok := d.GetOk("environment_json"); ok {
 		appCreatePayload.EnvironmentJSON = helpers.Map(environmentJSON.(map[string]interface{}))
 
 	}
-
 	_, err := appClient.FindByName(spaceGUID, name)
-
 	if err == nil {
-		return fmt.Errorf("%s already exists", name)
+		return fmt.Errorf("%s already exists in the given space %s", name, spaceGUID)
 	}
 
 	log.Println("[INFO] Creating Cloud Foundary Application")
@@ -201,54 +175,56 @@ func resourceIBMCloudCfAppCreate(d *schema.ResourceData, meta interface{}) error
 
 	log.Println("[INFO] Bind the route with cloud foundary application")
 
-	routeIDs := d.Get("route_guid").(*schema.Set)
-	for _, routeID := range routeIDs.List() {
-		if routeID != "" {
+	if v, ok := d.Get("route_guid").(*schema.Set); ok && v.Len() > 0 {
+		for _, routeID := range v.List() {
 			_, err := appClient.BindRoute(app.Metadata.GUID, routeID.(string))
 			if err != nil {
-				return fmt.Errorf("Error binding route %s to  app: %s", routeID.(string), err)
+				return fmt.Errorf("Error binding route %s to app: %s", routeID.(string), err)
+			}
+		}
+	}
+	if v, ok := d.Get("service_instance_guid").(*schema.Set); ok && v.Len() > 0 {
+		sbClient := meta.(ClientSession).CloudFoundryServiceBindingClient()
+		for _, svcID := range v.List() {
+			req := v2.ServiceBindingRequest{
+				ServiceInstanceGUID: svcID.(string),
+				AppGUID:             app.Metadata.GUID,
+			}
+			_, err := sbClient.Create(req)
+			if err != nil {
+				return fmt.Errorf("Error binding service %s to  app: %s", svcID.(string), err)
 			}
 		}
 	}
 
 	log.Println("[INFO] Upload the app bits to the cloud foundary application")
 
-	appPath := d.Get("app_path").(string)
-	if appPath != "" {
-		_, err = appClient.Upload(app.Metadata.GUID, appPath)
+	if appPath, ok := d.GetOk("app_path"); ok {
+		_, err = appClient.Upload(app.Metadata.GUID, appPath.(string))
 		if err != nil {
-			return fmt.Errorf("Error uploading  app: %s", err)
+			return fmt.Errorf("Error uploading app bits: %s", err)
 		}
 	}
 
 	log.Println("[INFO] Start Cloud Foundary Application")
 
-	waitTimeout := time.Duration(d.Get("wait_timeout").(int)) * time.Minute
-	fmt.Println("time out", waitTimeout)
-	_, err = appClient.Start(app.Metadata.GUID, waitTimeout)
+	waitTimeout := time.Duration(d.Get("wait_time_minutes").(int)) * time.Minute
+
+	status, err := appClient.Start(app.Metadata.GUID, waitTimeout)
 	if err != nil {
 		return fmt.Errorf("Error while starting  app: %s", err)
 	}
-
-	log.Println("[INFO]Cloud Foundary Application has started successfully")
-
-	log.Println("[INFO] Bind the service instance with cloud foundary application")
-
-	sbClient := meta.(ClientSession).CloudFoundryServiceBindingClient()
-
-	serviceIDs := d.Get("service_instance_guid").(*schema.Set)
-	for _, serviceID := range serviceIDs.List() {
-		if serviceID != "" {
-			sbPayload := v2.ServiceBindingRequest{
-				ServiceInstanceGUID: serviceID.(string),
-				AppGUID:             app.Metadata.GUID,
-			}
-			_, err := sbClient.Create(sbPayload)
-			if err != nil {
-				return fmt.Errorf("Error binding service %s to  app: %s", serviceID.(string), err)
-			}
+	//If you are explcity told to wait till the application has started
+	if waitTimeout != 0 {
+		if status.PackageState != v2.AppStagedState {
+			return fmt.Errorf("Applications couldn't be staged  %s", err)
+		}
+		if status.InstanceState != v2.AppRunningState {
+			return fmt.Errorf("Applications instances  %s", err)
 		}
 	}
+
+	log.Printf("[INFO]Cloud Foundary Application: %s has started successfully", name)
 
 	return resourceIBMCloudCfAppRead(d, meta)
 }
@@ -268,7 +244,28 @@ func resourceIBMCloudCfAppRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("instances", appData.Entity.Instances)
 	d.Set("space_guid", appData.Entity.SpaceGUID)
 	d.Set("disk_quota", appData.Entity.DiskQuota)
-	d.Set("ports", appData.Entity.Ports)
+	d.Set("ports", flattenPort(appData.Entity.Ports))
+	d.Set("command", appData.Entity.Command)
+	d.Set("buildpack", appData.Entity.BuildPack)
+	d.Set("diego", appData.Entity.Diego)
+	d.Set("environment_json", appData.Entity.EnvironmentJSON)
+
+	route, err := appClient.ListRoutes(appGUID)
+	if err != nil {
+		return err
+	}
+	if len(route) > 0 {
+		d.Set("route_guid", flattenRoute(route))
+	}
+
+	svcBindings, err := appClient.ListServiceBindings(appGUID)
+	if err != nil {
+		return err
+	}
+	if len(route) > 0 {
+		d.Set("service_instance_guid", flattenServiceBindings(svcBindings))
+	}
+
 	return nil
 
 }
@@ -312,36 +309,36 @@ func resourceIBMCloudCfAppUpdate(d *schema.ResourceData, meta interface{}) error
 	}
 
 	if d.HasChange("ports") {
-		p := d.Get("ports").([]interface{})
-		ports := make([]int, len(p))
-		for i := range p {
-			ports[i] = p[i].(int)
+		portSet := d.Get("ports").(*schema.Set)
+		if portSet.Len() == 0 {
+			return fmt.Errorf("ports field can't be updated to have 0 elements")
 		}
-		appUpdatePayload.Ports = helpers.Array(ports)
+		ports := expandIntList(portSet.List())
+
+		appUpdatePayload.Ports = helpers.IntSlice(ports)
 	}
 
 	log.Println("[INFO] Update cloud foundary application")
 
 	_, err := appClient.Update(appGUID, &appUpdatePayload)
 	if err != nil {
-		return fmt.Errorf("Error updating space: %s", err)
+		return fmt.Errorf("Error updating application: %s", err)
 	}
 
-	var appPath string
 	if d.HasChange("app_path") {
-		appPath = d.Get("app_path").(string)
+		appPath := d.Get("app_path").(string)
 		_, err = appClient.Upload(appGUID, appPath)
 		if err != nil {
 			return fmt.Errorf("Error uploading  app: %s", err)
 		}
 		appUpdatePayload := &v2.AppRequest{
-			State: helpers.String(appStopState),
+			State: helpers.String(v2.AppStoppedState),
 		}
 		_, err := appClient.Update(appGUID, appUpdatePayload)
 		if err != nil {
-			return fmt.Errorf("Error updating space: %s", err)
+			return fmt.Errorf("Error updating application: %s", err)
 		}
-		waitTimeout := time.Duration(d.Get("wait_timeout").(int)) * time.Minute
+		waitTimeout := time.Duration(d.Get("wait_time_minutes").(int)) * time.Minute
 		_, err = appClient.Start(appGUID, waitTimeout)
 		if err != nil {
 			return fmt.Errorf("Error while starting  app: %s", err)
@@ -350,18 +347,18 @@ func resourceIBMCloudCfAppUpdate(d *schema.ResourceData, meta interface{}) error
 	}
 
 	if d.HasChange("route_guid") {
-		oldroutes, newroutes := d.GetChange("route_guid")
-		oldRoute := oldroutes.(*schema.Set)
-		newRoute := newroutes.(*schema.Set)
+		ors, nrs := d.GetChange("route_guid")
+		or := ors.(*schema.Set)
+		nr := nrs.(*schema.Set)
 
-		remove := expandStringList(oldRoute.Difference(newRoute).List())
-		add := expandStringList(newRoute.Difference(oldRoute).List())
+		remove := expandStringList(or.Difference(nr).List())
+		add := expandStringList(nr.Difference(or).List())
 
 		if len(add) > 0 {
 			for i := range add {
 				_, err = appClient.BindRoute(appGUID, add[i])
 				if err != nil {
-					return fmt.Errorf("Error while binding route : %s", err)
+					return fmt.Errorf("Error while binding route %q to application %s: %q", add[i], appGUID, err)
 				}
 			}
 		}
@@ -369,7 +366,7 @@ func resourceIBMCloudCfAppUpdate(d *schema.ResourceData, meta interface{}) error
 			for i := range remove {
 				err = appClient.UnBindRoute(appGUID, remove[i])
 				if err != nil {
-					return fmt.Errorf("Error while unbinding route: %s", err)
+					return fmt.Errorf("Error while un-binding route %q from application %s: %q", add[i], appGUID, err)
 				}
 			}
 		}
@@ -377,22 +374,22 @@ func resourceIBMCloudCfAppUpdate(d *schema.ResourceData, meta interface{}) error
 	}
 
 	if d.HasChange("service_instance_guid") {
-		oldServices, newServices := d.GetChange("service_instance_guid")
-		oldService := oldServices.(*schema.Set)
-		newService := newServices.(*schema.Set)
-		remove := expandStringList(oldService.Difference(newService).List())
-		add := expandStringList(newService.Difference(oldService).List())
+		oss, nss := d.GetChange("service_instance_guid")
+		os := oss.(*schema.Set)
+		ns := nss.(*schema.Set)
+		remove := expandStringList(os.Difference(ns).List())
+		add := expandStringList(ns.Difference(os).List())
 
 		if len(add) > 0 {
+			sbClient := meta.(ClientSession).CloudFoundryServiceBindingClient()
 			for i := range add {
-				sbClient := meta.(ClientSession).CloudFoundryServiceBindingClient()
 				sbPayload := v2.ServiceBindingRequest{
 					ServiceInstanceGUID: add[i],
 					AppGUID:             appGUID,
 				}
 				_, err = sbClient.Create(sbPayload)
 				if err != nil {
-					return fmt.Errorf("Error while binding service: %s", err)
+					return fmt.Errorf("Error while binding service instance %s to application %s: %q", add[i], appGUID, err)
 				}
 
 			}
@@ -401,7 +398,7 @@ func resourceIBMCloudCfAppUpdate(d *schema.ResourceData, meta interface{}) error
 			for i := range remove {
 				err = appClient.DeleteServiceBinding(appGUID, remove[i])
 				if err != nil {
-					return fmt.Errorf("Error while unbinding  service : %s", err)
+					return fmt.Errorf("Error while binding route %s to application %s: %q", remove[i], appGUID, err)
 				}
 			}
 		}

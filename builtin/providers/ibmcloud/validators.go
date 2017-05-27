@@ -2,7 +2,6 @@ package ibmcloud
 
 import (
 	"fmt"
-	"math"
 	"strings"
 
 	"github.com/hashicorp/terraform/helper/schema"
@@ -57,12 +56,23 @@ func validateRoutePath(v interface{}, k string) (ws []string, errors []error) {
 }
 
 func validateRoutePort(v interface{}, k string) (ws []string, errors []error) {
-	value := v.(int)
-	if (value < 1024) || (value > 65535) {
-		errors = append(errors, fmt.Errorf(
-			"%q (%q) must be in the range of 1024 to 65535", k, value))
+	return validatePortRange(1024, 65535)(v, k)
+}
+
+func validateAppPort(v interface{}, k string) (ws []string, errors []error) {
+	return validatePortRange(1024, 65535)(v, k)
+}
+
+func validatePortRange(start, end int) func(v interface{}, k string) (ws []string, errors []error) {
+	f := func(v interface{}, k string) (ws []string, errors []error) {
+		value := v.(int)
+		if (value < start) || (value > end) {
+			errors = append(errors, fmt.Errorf(
+				"%q (%q) must be in the range of %d to %d", k, value, start, end))
+		}
+		return
 	}
-	return
+	return f
 }
 
 func validateDomainName(v interface{}, k string) (ws []string, errors []error) {
@@ -84,17 +94,4 @@ func validateAppInstance(v interface{}, k string) (ws []string, errors []error) 
 	}
 	return
 
-}
-
-func validateAppQuota(v interface{}, k string) (ws []string, errors []error) {
-	memoryInMB := float64(v.(int))
-
-	// Validate memory to match gigs format
-	remaining := math.Mod(memoryInMB, 1024)
-	if remaining > 0 {
-		suggested := math.Ceil(memoryInMB/1024) * 1024
-		errors = append(errors, fmt.Errorf(
-			"Invalid 'memory' value %d megabytes, must be a multiple of 1024 (e.g. use %d)", int(memoryInMB), int(suggested)))
-	}
-	return
 }
