@@ -38,6 +38,11 @@ func validateAllowedStringValue(validValues []string) schema.SchemaValidateFunc 
 
 func validateRoutePath(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(string)
+	//Somehow API allows this
+	if value == "" {
+		return
+	}
+
 	if (len(value) < 2) || (len(value) > 128) {
 		errors = append(errors, fmt.Errorf(
 			"%q (%q) must contain from 2 to 128 characters ", k, value))
@@ -68,7 +73,7 @@ func validatePortRange(start, end int) func(v interface{}, k string) (ws []strin
 		value := v.(int)
 		if (value < start) || (value > end) {
 			errors = append(errors, fmt.Errorf(
-				"%q (%q) must be in the range of %d to %d", k, value, start, end))
+				"%q (%d) must be in the range of %d to %d", k, value, start, end))
 		}
 		return
 	}
