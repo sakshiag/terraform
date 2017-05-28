@@ -9,6 +9,7 @@ import (
 	"github.com/IBM-Bluemix/bluemix-go/bmxerror"
 	"github.com/IBM-Bluemix/bluemix-go/helpers"
 	"github.com/hashicorp/terraform/helper/schema"
+	homedir "github.com/mitchellh/go-homedir"
 )
 
 func resourceIBMCloudCfApp() *schema.Resource {
@@ -196,7 +197,11 @@ func resourceIBMCloudCfAppCreate(d *schema.ResourceData, meta interface{}) error
 
 	if appPath, ok := d.GetOk("app_path"); ok {
 		log.Println("[INFO] Upload the app bits to the cloud foundary application")
-		_, err = appClient.Upload(app.Metadata.GUID, appPath.(string))
+		appZipLoc, err := homedir.Expand(appPath.(string))
+		if err != nil {
+			return err
+		}
+		_, err = appClient.Upload(app.Metadata.GUID, appZipLoc)
 		if err != nil {
 			return fmt.Errorf("Error uploading app bits: %s", err)
 		}
@@ -208,7 +213,7 @@ func resourceIBMCloudCfAppCreate(d *schema.ResourceData, meta interface{}) error
 	if err != nil {
 		return fmt.Errorf("Error while starting  app: %s", err)
 	}
-	//If you are explcity told to wait till the application has started
+	//If you are explcity told to wait till the application  instances are running
 	if waitTimeout != 0 {
 		if status.PackageState != v2.AppStagedState {
 			return fmt.Errorf("Applications couldn't be staged  %s", err)
@@ -320,15 +325,18 @@ func resourceIBMCloudCfAppUpdate(d *schema.ResourceData, meta interface{}) error
 	}
 
 	if d.HasChange("app_path") {
-		appPath := d.Get("app_path").(string)
-		_, err = appClient.Upload(appGUID, appPath)
+		appZipLoc, err := homedir.Expand(d.Get("app_path").(string))
+		if err != nil {
+			return err
+		}
+		_, err = appClient.Upload(appGUID, appZipLoc)
 		if err != nil {
 			return fmt.Errorf("Error uploading  app: %s", err)
 		}
 		appUpdatePayload := &v2.AppRequest{
 			State: helpers.String(v2.AppStoppedState),
 		}
-		_, err := appClient.Update(appGUID, appUpdatePayload)
+		_, err = appClient.Update(appGUID, appUpdatePayload)
 		if err != nil {
 			return fmt.Errorf("Error updating application status to %s %s", v2.AppStoppedState, err)
 		}
@@ -337,7 +345,6 @@ func resourceIBMCloudCfAppUpdate(d *schema.ResourceData, meta interface{}) error
 		if err != nil {
 			return fmt.Errorf("Error while starting application : %s", err)
 		}
-
 	}
 
 	if d.HasChange("route_guid") {
@@ -374,8 +381,9 @@ func resourceIBMCloudCfAppUpdate(d *schema.ResourceData, meta interface{}) error
 		remove := expandStringList(os.Difference(ns).List())
 		add := expandStringList(ns.Difference(os).List())
 
+		sbClient := meta.(ClientSession).CloudFoundryServiceBindingClient()
+
 		if len(add) > 0 {
-			sbClient := meta.(ClientSession).CloudFoundryServiceBindingClient()
 			for i := range add {
 				sbPayload := v2.ServiceBindingRequest{
 					ServiceInstanceGUID: add[i],
@@ -389,11 +397,25 @@ func resourceIBMCloudCfAppUpdate(d *schema.ResourceData, meta interface{}) error
 			}
 		}
 		if len(remove) > 0 {
-			for i := range remove {
-				err = appClient.DeleteServiceBinding(appGUID, remove[i])
-				if err != nil {
-					return fmt.Errorf("Error while un-binding service instance %s to application %s: %q", remove[i], appGUID, err)
-				}
+			appFilters, err := new(v2.Filter).Name("app_guid").Eq(appGUID).Build()
+			if err != nil {
+				return err
+			}
+			svcFilters, err := new(v2.Filter).Name("service_instance_guid").In(remove...).Build()
+			if err != nil {
+				return err
+			}
+			bindings, err := sbClient.List(appFilters, svcFilters)
+			if err != nil {
+				return err
+			}
+			sbIds := make([]string, len(bindings))
+			for i, sb := range bindings {
+				sbIds[i] = sb.GUID
+			}
+			err = appClient.DeleteServiceBindings(appGUID, sbIds...)
+			if err != nil {
+				return fmt.Errorf("Error while un-binding service instances %s to application %s: %q", remove, appGUID, err)
 			}
 		}
 
@@ -406,7 +428,22 @@ func resourceIBMCloudCfAppDelete(d *schema.ResourceData, meta interface{}) error
 	appClient := meta.(ClientSession).CloudFoundryAppClient()
 	id := d.Id()
 
-	err := appClient.Delete(id)
+	sbs, err := appClient.ListServiceBindings(id)
+	if err != nil {
+		return err
+	}
+
+	sbIds := make([]string, len(sbs))
+	for i, sb := range sbs {
+		sbIds[i] = sb.GUID
+	}
+
+	err = appClient.DeleteServiceBindings(id, sbIds...)
+	if err != nil {
+		return err
+	}
+
+	err = appClient.Delete(id)
 	if err != nil {
 		return fmt.Errorf("Error deleting app: %s", err)
 	}

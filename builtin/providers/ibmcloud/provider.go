@@ -57,6 +57,7 @@ func Provider() terraform.ResourceProvider {
 		},
 
 		DataSourcesMap: map[string]*schema.Resource{
+			"ibmcloud_cf_app":               dataSourceIBMCloudCfApp(),
 			"ibmcloud_cf_account":           dataSourceIBMCloudCfAccount(),
 			"ibmcloud_cf_org":               dataSourceIBMCloudCfOrg(),
 			"ibmcloud_cf_private_domain":    dataSourceIBMCloudCfPrivateDomain(),

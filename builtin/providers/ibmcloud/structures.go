@@ -67,7 +67,7 @@ func stringSliceToSet(in []string) *schema.Set {
 func flattenServiceBindings(in []cfv2.ServiceBinding) *schema.Set {
 	vs := make([]string, len(in))
 	for i, v := range in {
-		vs[i] = v.GUID
+		vs[i] = v.ServiceInstanceGUID
 	}
 	return newStringSet(schema.HashString, vs)
 }
