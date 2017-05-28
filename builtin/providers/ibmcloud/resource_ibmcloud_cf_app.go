@@ -36,7 +36,7 @@ func resourceIBMCloudCfApp() *schema.Resource {
 				Description: "The number of instances",
 				Type:        schema.TypeInt,
 				Optional:    true,
-				Computed:    true,
+				Default:     1,
 			},
 			"disk_quota": {
 				Description: "The maximum amount of disk available to an instance of an app. In megabytes.",
@@ -162,9 +162,7 @@ func resourceIBMCloudCfAppCreate(d *schema.ResourceData, meta interface{}) error
 	}
 
 	log.Println("[INFO] Creating Cloud Foundary Application")
-
 	app, err := appClient.Create(&appCreatePayload)
-
 	if err != nil {
 		return fmt.Errorf("Error creating app: %s", err)
 	}
@@ -173,9 +171,8 @@ func resourceIBMCloudCfAppCreate(d *schema.ResourceData, meta interface{}) error
 
 	d.SetId(app.Metadata.GUID)
 
-	log.Println("[INFO] Bind the route with cloud foundary application")
-
 	if v, ok := d.Get("route_guid").(*schema.Set); ok && v.Len() > 0 {
+		log.Println("[INFO] Bind the route with cloud foundary application")
 		for _, routeID := range v.List() {
 			_, err := appClient.BindRoute(app.Metadata.GUID, routeID.(string))
 			if err != nil {
@@ -192,14 +189,13 @@ func resourceIBMCloudCfAppCreate(d *schema.ResourceData, meta interface{}) error
 			}
 			_, err := sbClient.Create(req)
 			if err != nil {
-				return fmt.Errorf("Error binding service %s to  app: %s", svcID.(string), err)
+				return fmt.Errorf("Error binding service instance %s to  app: %s", svcID.(string), err)
 			}
 		}
 	}
 
-	log.Println("[INFO] Upload the app bits to the cloud foundary application")
-
 	if appPath, ok := d.GetOk("app_path"); ok {
+		log.Println("[INFO] Upload the app bits to the cloud foundary application")
 		_, err = appClient.Upload(app.Metadata.GUID, appPath.(string))
 		if err != nil {
 			return fmt.Errorf("Error uploading app bits: %s", err)
@@ -207,9 +203,7 @@ func resourceIBMCloudCfAppCreate(d *schema.ResourceData, meta interface{}) error
 	}
 
 	log.Println("[INFO] Start Cloud Foundary Application")
-
 	waitTimeout := time.Duration(d.Get("wait_time_minutes").(int)) * time.Minute
-
 	status, err := appClient.Start(app.Metadata.GUID, waitTimeout)
 	if err != nil {
 		return fmt.Errorf("Error while starting  app: %s", err)
@@ -220,7 +214,7 @@ func resourceIBMCloudCfAppCreate(d *schema.ResourceData, meta interface{}) error
 			return fmt.Errorf("Applications couldn't be staged  %s", err)
 		}
 		if status.InstanceState != v2.AppRunningState {
-			return fmt.Errorf("Applications instances  %s", err)
+			return fmt.Errorf("Applications instances  couldn't be started %s", err)
 		}
 	}
 
@@ -235,7 +229,7 @@ func resourceIBMCloudCfAppRead(d *schema.ResourceData, meta interface{}) error {
 
 	appData, err := appClient.Get(appGUID)
 	if err != nil {
-		return fmt.Errorf("Error retrieving app: %s", err)
+		return fmt.Errorf("Error retrieving app details %s : %s", appGUID, err)
 	}
 
 	d.SetId(appData.Metadata.GUID)
@@ -336,12 +330,12 @@ func resourceIBMCloudCfAppUpdate(d *schema.ResourceData, meta interface{}) error
 		}
 		_, err := appClient.Update(appGUID, appUpdatePayload)
 		if err != nil {
-			return fmt.Errorf("Error updating application: %s", err)
+			return fmt.Errorf("Error updating application status to %s %s", v2.AppStoppedState, err)
 		}
 		waitTimeout := time.Duration(d.Get("wait_time_minutes").(int)) * time.Minute
 		_, err = appClient.Start(appGUID, waitTimeout)
 		if err != nil {
-			return fmt.Errorf("Error while starting  app: %s", err)
+			return fmt.Errorf("Error while starting application : %s", err)
 		}
 
 	}
@@ -398,7 +392,7 @@ func resourceIBMCloudCfAppUpdate(d *schema.ResourceData, meta interface{}) error
 			for i := range remove {
 				err = appClient.DeleteServiceBinding(appGUID, remove[i])
 				if err != nil {
-					return fmt.Errorf("Error while binding route %s to application %s: %q", remove[i], appGUID, err)
+					return fmt.Errorf("Error while un-binding service instance %s to application %s: %q", remove[i], appGUID, err)
 				}
 			}
 		}
