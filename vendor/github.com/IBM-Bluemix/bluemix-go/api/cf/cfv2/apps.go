@@ -7,6 +7,7 @@ import (
 
 	"github.com/IBM-Bluemix/bluemix-go/bmxerror"
 	"github.com/IBM-Bluemix/bluemix-go/client"
+	"github.com/IBM-Bluemix/bluemix-go/helpers"
 	"github.com/IBM-Bluemix/bluemix-go/rest"
 	"github.com/IBM-Bluemix/bluemix-go/trace"
 )
@@ -33,6 +34,9 @@ const (
 	//AppPendingState ...
 	AppPendingState = "PENDING"
 
+	//AppStoppedState ...
+	AppStoppedState = "STOPPED"
+
 	//AppFailedState ...
 	AppFailedState = "FAILED"
 
@@ -43,80 +47,56 @@ const (
 	DefaultRetryDelayForStatusCheck = 10 * time.Second
 )
 
-//AppCreateRequest ...
-type AppCreateRequest struct {
-	Name                     string                 `json:"name"`
-	Memory                   int                    `json:"memory,omitempty"`
-	Instances                int                    `json:"instances,omitempty"`
-	DiskQuota                int                    `json:"disk_quota,omitempty"`
-	SpaceGUID                string                 `json:"space_guid"`
-	StackGUID                string                 `json:"stack_guid,omitempty"`
-	State                    string                 `json:"state,omitempty"`
-	DetectedStartCommand     string                 `json:"detected_start_command,omitempty"`
-	Command                  string                 `json:"command,omitempty"`
-	BuildPack                string                 `json:"buildpack,omitempty"`
-	HealthCheckType          string                 `json:"health_check_type,omitempty"`
-	HealthCheckTimeout       int                    `json:"health_check_timeout,omitempty"`
-	Diego                    bool                   `json:"diego,omitempty"`
-	EnableSSH                bool                   `json:"enable_ssh,omitempty"`
-	DockerImage              string                 `json:"docker_image,omitempty"`
-	StagingFailedReason      string                 `json:"staging_failed_reason,omitempty"`
-	StagingFailedDescription string                 `json:"staging_failed_description,omitempty"`
-	Ports                    []int                  `json:"ports,omitempty"`
-	DockerCredentialsJSON    map[string]interface{} `json:"docker_credentials_json,omitempty"`
-	EnvironmentJSON          map[string]interface{} `json:"environment_json,omitempty"`
-}
-
-//AppUpdateRequest ...
-type AppUpdateRequest struct {
-	Name                  string                 `json:"name,omitempty"`
-	Memory                int                    `json:"memory,omitempty"`
-	Instances             int                    `json:"instances,omitempty"`
-	DiskQuota             int                    `json:"disk_quota,omitempty"`
-	SpaceGUID             string                 `json:"space_guid,omitempty"`
-	StackGUID             string                 `json:"stack_guid,omitempty"`
-	State                 string                 `json:"state,omitempty"`
-	DetectedStartCommand  string                 `json:"detected_start_command,omitempty"`
-	Command               string                 `json:"command,omitempty"`
-	BuildPack             string                 `json:"buildpack,omitempty"`
-	HealthCheckType       string                 `json:"health_check_type,omitempty"`
-	HealthCheckTimeout    int                    `json:"health_check_timeout,omitempty"`
-	Diego                 bool                   `json:"diego,omitempty"`
-	EnableSSH             bool                   `json:"enable_ssh,omitempty"`
-	DockerImage           string                 `json:"docker_image,omitempty"`
-	Ports                 []int                  `json:"ports,omitempty"`
-	DockerCredentialsJSON map[string]interface{} `json:"docker_credentials_json,omitempty"`
-	EnvironmentJSON       map[string]interface{} `json:"environment_json,omitempty"`
-}
-
-//AppsStateUpdateRequest ...
-type AppsStateUpdateRequest struct {
-	State string `json:"state"`
+//AppRequest ...
+type AppRequest struct {
+	Name                     *string                 `json:"name,omitempty"`
+	Memory                   int                     `json:"memory,omitempty"`
+	Instances                int                     `json:"instances,omitempty"`
+	DiskQuota                int                     `json:"disk_quota,omitempty"`
+	SpaceGUID                *string                 `json:"space_guid,omitempty"`
+	StackGUID                *string                 `json:"stack_guid,omitempty"`
+	State                    *string                 `json:"state,omitempty"`
+	DetectedStartCommand     *string                 `json:"detected_start_command,omitempty"`
+	Command                  *string                 `json:"command,omitempty"`
+	BuildPack                *string                 `json:"buildpack,omitempty"`
+	HealthCheckType          *string                 `json:"health_check_type,omitempty"`
+	HealthCheckTimeout       int                     `json:"health_check_timeout,omitempty"`
+	Diego                    bool                    `json:"diego,omitempty"`
+	EnableSSH                bool                    `json:"enable_ssh,omitempty"`
+	DockerImage              *string                 `json:"docker_image,omitempty"`
+	StagingFailedReason      *string                 `json:"staging_failed_reason,omitempty"`
+	StagingFailedDescription *string                 `json:"staging_failed_description,omitempty"`
+	Ports                    *[]int                  `json:"ports,omitempty"`
+	DockerCredentialsJSON    *map[string]interface{} `json:"docker_credentials_json,omitempty"`
+	EnvironmentJSON          *map[string]interface{} `json:"environment_json,omitempty"`
 }
 
 //AppEntity ...
 type AppEntity struct {
-	Name                     string `json:"name"`
-	SpaceGUID                string `json:"space_guid"`
-	StackGUID                string `json:"stack_guid"`
-	State                    string `json:"state"`
-	PackageState             string `json:"package_state"`
-	Memory                   int    `json:"memory"`
-	Instances                int    `json:"instances"`
-	DiskQuota                int    `json:"disk_quota"`
-	Version                  string `json:"version"`
-	Command                  string `json:"command"`
-	Console                  bool   `json:"console"`
-	Debug                    string `json:"debug"`
-	StagingTaskID            string `json:"staging_task_id"`
-	HealthCheckType          string `json:"health_check_type"`
-	HealthCheckTimeout       string `json:"health_check_timeout"`
-	StagingFailedReason      string `json:"staging_failed_reason"`
-	StagingFailedDescription string `json:"staging_failed_description"`
-	Diego                    bool   `json:"diego"`
-	DockerImage              string `json:"docker_image"`
-	EnableSSH                bool   `json:"enable_ssh"`
-	Ports                    []int  `json:"ports"`
+	Name                     string                 `json:"name"`
+	SpaceGUID                string                 `json:"space_guid"`
+	StackGUID                string                 `json:"stack_guid"`
+	State                    string                 `json:"state"`
+	PackageState             string                 `json:"package_state"`
+	Memory                   int                    `json:"memory"`
+	Instances                int                    `json:"instances"`
+	DiskQuota                int                    `json:"disk_quota"`
+	Version                  string                 `json:"version"`
+	BuildPack                *string                `json:"buildpack"`
+	Command                  *string                `json:"command"`
+	Console                  bool                   `json:"console"`
+	Debug                    *string                `json:"debug"`
+	StagingTaskID            string                 `json:"staging_task_id"`
+	HealthCheckType          string                 `json:"health_check_type"`
+	HealthCheckTimeout       *int                   `json:"health_check_timeout"`
+	StagingFailedReason      string                 `json:"staging_failed_reason"`
+	StagingFailedDescription string                 `json:"staging_failed_description"`
+	Diego                    bool                   `json:"diego"`
+	DockerImage              *string                `json:"docker_image"`
+	EnableSSH                bool                   `json:"enable_ssh"`
+	Ports                    []int                  `json:"ports"`
+	DockerCredentialsJSON    map[string]interface{} `json:"docker_credentials_json"`
+	EnvironmentJSON          map[string]interface{} `json:"environment_json"`
 }
 
 //AppResource ...
@@ -162,27 +142,65 @@ func (resource AppResource) ToFields() App {
 	entity := resource.Entity
 
 	return App{
-		GUID:      resource.Metadata.GUID,
-		Name:      entity.Name,
-		SpaceGUID: entity.SpaceGUID,
-		StackGUID: entity.StackGUID,
+		GUID:               resource.Metadata.GUID,
+		Name:               entity.Name,
+		SpaceGUID:          entity.SpaceGUID,
+		StackGUID:          entity.StackGUID,
+		State:              entity.State,
+		PackageState:       entity.PackageState,
+		Memory:             entity.Memory,
+		Instances:          entity.Instances,
+		DiskQuota:          entity.DiskQuota,
+		Version:            entity.Version,
+		BuildPack:          entity.BuildPack,
+		Command:            entity.Command,
+		Console:            entity.Console,
+		Debug:              entity.Debug,
+		StagingTaskID:      entity.StagingTaskID,
+		HealthCheckType:    entity.HealthCheckType,
+		HealthCheckTimeout: entity.HealthCheckTimeout,
+		Diego:              entity.Diego,
+		DockerImage:        entity.DockerImage,
+		EnableSSH:          entity.EnableSSH,
+		Ports:              entity.Ports,
+		DockerCredentialsJSON: entity.DockerCredentialsJSON,
+		EnvironmentJSON:       entity.EnvironmentJSON,
 	}
 }
 
 //App model
 type App struct {
-	GUID      string
-	Name      string
-	SpaceGUID string
-	StackGUID string
+	Name                  string
+	SpaceGUID             string
+	GUID                  string
+	StackGUID             string
+	State                 string
+	PackageState          string
+	Memory                int
+	Instances             int
+	DiskQuota             int
+	Version               string
+	BuildPack             *string
+	Command               *string
+	Console               bool
+	Debug                 *string
+	StagingTaskID         string
+	HealthCheckType       string
+	HealthCheckTimeout    *int
+	Diego                 bool
+	DockerImage           *string
+	EnableSSH             bool
+	Ports                 []int
+	DockerCredentialsJSON map[string]interface{}
+	EnvironmentJSON       map[string]interface{}
 }
 
 //Apps ...
 type Apps interface {
-	Create(appPayload *AppCreateRequest) (*AppFields, error)
+	Create(appPayload *AppRequest) (*AppFields, error)
 	List() ([]App, error)
 	Get(appGUID string) (*AppFields, error)
-	Update(appGUID string, appPayload *AppUpdateRequest) (*AppFields, error)
+	Update(appGUID string, appPayload *AppRequest) (*AppFields, error)
 	Delete(appGUID string) error
 	FindByName(spaceGUID, name string) (*App, error)
 	Start(appGUID string, timeout time.Duration) (*AppState, error)
@@ -199,8 +217,8 @@ type Apps interface {
 	UnBindRoute(appGUID, routeGUID string) error
 
 	//Service bindings
-	DeleteServiceBinding(appGUID, servicebindingGUID string) error
 	ListServiceBindings(appGUID string) ([]ServiceBinding, error)
+	DeleteServiceBindings(appGUID string, bindingGUIDs ...string) error
 }
 
 type app struct {
@@ -233,7 +251,7 @@ func (r *app) FindByName(spaceGUID string, name string) (*App, error) {
 	return &apps[0], nil
 }
 
-func (r *app) Create(appPayload *AppCreateRequest) (*AppFields, error) {
+func (r *app) Create(appPayload *AppRequest) (*AppFields, error) {
 	rawURL := "/v2/apps?async=true"
 	appFields := AppFields{}
 	_, err := r.client.Post(rawURL, appPayload, &appFields)
@@ -274,10 +292,13 @@ func (r *app) UnBindRoute(appGUID, routeGUID string) error {
 	return err
 }
 
-func (r *app) DeleteServiceBinding(appGUID, sbGUID string) error {
-	rawURL := fmt.Sprintf("/v2/apps/%s/service_bindings/%s", appGUID, sbGUID)
-	_, err := r.client.Delete(rawURL)
-	return err
+func (r *app) DeleteServiceBindings(appGUID string, sbGUIDs ...string) error {
+	for _, g := range sbGUIDs {
+		rawURL := fmt.Sprintf("/v2/apps/%s/service_bindings/%s", appGUID, g)
+		_, err := r.client.Delete(rawURL)
+		return err
+	}
+	return nil
 }
 
 func (r *app) listAppWithPath(path string) ([]App, error) {
@@ -312,8 +333,8 @@ func (r *app) Upload(appGUID string, zipPath string) (*UploadBitFields, error) {
 }
 
 func (r *app) Start(appGUID string, maxWaitTime time.Duration) (*AppState, error) {
-	payload := AppsStateUpdateRequest{
-		State: AppStartedState,
+	payload := AppRequest{
+		State: helpers.String(AppStartedState),
 	}
 	rawURL := fmt.Sprintf("/v2/apps/%s", appGUID)
 	appFields := AppFields{}
@@ -397,7 +418,7 @@ func (r *app) List() ([]App, error) {
 
 }
 
-func (r *app) Update(appGUID string, appPayload *AppUpdateRequest) (*AppFields, error) {
+func (r *app) Update(appGUID string, appPayload *AppRequest) (*AppFields, error) {
 	rawURL := fmt.Sprintf("/v2/apps/%s", appGUID)
 	appFields := AppFields{}
 	_, err := r.client.Put(rawURL, appPayload, &appFields)
@@ -481,16 +502,4 @@ func (r *app) ListServiceBindings(appGUID string) ([]ServiceBinding, error) {
 		return nil, err
 	}
 	return sb, nil
-}
-
-func listServiceBindingWithPath(c *client.Client, path string) ([]ServiceBinding, error) {
-	var sb []ServiceBinding
-	_, err := c.GetPaginated(path, ServiceBindingResource{}, func(resource interface{}) bool {
-		if sbResource, ok := resource.(ServiceBindingResource); ok {
-			sb = append(sb, sbResource.ToFields())
-			return true
-		}
-		return false
-	})
-	return sb, err
 }

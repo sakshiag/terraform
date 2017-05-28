@@ -38,6 +38,11 @@ func validateAllowedStringValue(validValues []string) schema.SchemaValidateFunc 
 
 func validateRoutePath(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(string)
+	//Somehow API allows this
+	if value == "" {
+		return
+	}
+
 	if (len(value) < 2) || (len(value) > 128) {
 		errors = append(errors, fmt.Errorf(
 			"%q (%q) must contain from 2 to 128 characters ", k, value))
@@ -56,12 +61,23 @@ func validateRoutePath(v interface{}, k string) (ws []string, errors []error) {
 }
 
 func validateRoutePort(v interface{}, k string) (ws []string, errors []error) {
-	value := v.(int)
-	if (value < 1024) || (value > 65535) {
-		errors = append(errors, fmt.Errorf(
-			"%q (%q) must be in the range of 1024 to 65535", k, value))
+	return validatePortRange(1024, 65535)(v, k)
+}
+
+func validateAppPort(v interface{}, k string) (ws []string, errors []error) {
+	return validatePortRange(1024, 65535)(v, k)
+}
+
+func validatePortRange(start, end int) func(v interface{}, k string) (ws []string, errors []error) {
+	f := func(v interface{}, k string) (ws []string, errors []error) {
+		value := v.(int)
+		if (value < start) || (value > end) {
+			errors = append(errors, fmt.Errorf(
+				"%q (%d) must be in the range of %d to %d", k, value, start, end))
+		}
+		return
 	}
-	return
+	return f
 }
 
 func validateDomainName(v interface{}, k string) (ws []string, errors []error) {
@@ -73,4 +89,14 @@ func validateDomainName(v interface{}, k string) (ws []string, errors []error) {
 	}
 
 	return
+}
+
+func validateAppInstance(v interface{}, k string) (ws []string, errors []error) {
+	instances := v.(int)
+	if instances < 0 {
+		errors = append(errors, fmt.Errorf(
+			"%q (%q) must be greater than 0", k, instances))
+	}
+	return
+
 }

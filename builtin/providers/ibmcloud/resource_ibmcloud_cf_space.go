@@ -3,7 +3,9 @@ package ibmcloud
 import (
 	"fmt"
 
+	"github.com/IBM-Bluemix/bluemix-go/api/cf/cfv2"
 	"github.com/IBM-Bluemix/bluemix-go/bmxerror"
+	"github.com/IBM-Bluemix/bluemix-go/helpers"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -40,18 +42,20 @@ func resourceIBMCloudCfSpace() *schema.Resource {
 }
 
 func resourceIBMCloudCfSpaceCreate(d *schema.ResourceData, meta interface{}) error {
+	spaceClient := meta.(ClientSession).CloudFoundrySpaceClient()
 	orgClient := meta.(ClientSession).CloudFoundryOrgClient()
 	org := d.Get("org").(string)
+	name := d.Get("name").(string)
+
+	req := cfv2.SpaceCreateRequest{
+		Name: name,
+	}
 
 	orgFields, err := orgClient.FindByName(org)
 	if err != nil {
 		return fmt.Errorf("Error retrieving org: %s", err)
 	}
-
-	spaceClient := meta.(ClientSession).CloudFoundrySpaceClient()
-	name := d.Get("name").(string)
-
-	var spaceQuotaGUID string
+	req.OrgGUID = orgFields.GUID
 
 	if spaceQuota, ok := d.GetOk("space_quota"); ok {
 		spaceQuotaClient := meta.(ClientSession).CloudFoundrySpaceQuotaClient()
@@ -59,10 +63,10 @@ func resourceIBMCloudCfSpaceCreate(d *schema.ResourceData, meta interface{}) err
 		if err != nil {
 			return fmt.Errorf("Error retrieving space quota: %s", err)
 		}
-		spaceQuotaGUID = quota.GUID
+		req.SpaceQuotaGUID = quota.GUID
 	}
 
-	space, err := spaceClient.Create(name, orgFields.GUID, spaceQuotaGUID)
+	space, err := spaceClient.Create(req)
 	if err != nil {
 		return fmt.Errorf("Error creating space: %s", err)
 	}
@@ -84,14 +88,14 @@ func resourceIBMCloudCfSpaceRead(d *schema.ResourceData, meta interface{}) error
 
 func resourceIBMCloudCfSpaceUpdate(d *schema.ResourceData, meta interface{}) error {
 	spaceClient := meta.(ClientSession).CloudFoundrySpaceClient()
-	spaceGUID := d.Id()
+	id := d.Id()
 
-	var name string
+	req := cfv2.SpaceUpdateRequest{}
 	if d.HasChange("name") {
-		name = d.Get("name").(string)
+		req.Name = helpers.String(d.Get("name").(string))
 	}
 
-	_, err := spaceClient.Update(name, spaceGUID)
+	_, err := spaceClient.Update(id, req)
 	if err != nil {
 		return fmt.Errorf("Error updating space: %s", err)
 	}

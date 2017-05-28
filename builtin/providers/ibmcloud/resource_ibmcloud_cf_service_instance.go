@@ -3,7 +3,9 @@ package ibmcloud
 import (
 	"fmt"
 
+	"github.com/IBM-Bluemix/bluemix-go/api/cf/cfv2"
 	"github.com/IBM-Bluemix/bluemix-go/bmxerror"
+	"github.com/IBM-Bluemix/bluemix-go/helpers"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -72,8 +74,16 @@ func resourceIBMCloudCfServiceInstance() *schema.Resource {
 }
 
 func resourceIBMCloudCfServiceInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+	serviceInst := meta.(ClientSession).CloudFoundryServiceInstanceClient()
 	serviceName := d.Get("service").(string)
 	plan := d.Get("plan").(string)
+	name := d.Get("name").(string)
+	spaceGUID := d.Get("space_guid").(string)
+
+	svcInst := cfv2.ServiceInstanceCreateRequest{
+		Name:      name,
+		SpaceGUID: spaceGUID,
+	}
 
 	srOff := meta.(ClientSession).CloudFoundryServiceOfferingClient()
 	serviceOff, err := srOff.FindByLabel(serviceName)
@@ -86,23 +96,17 @@ func resourceIBMCloudCfServiceInstanceCreate(d *schema.ResourceData, meta interf
 	if err != nil {
 		return fmt.Errorf("Error retrieving plan: %s", err)
 	}
-
-	serviceInst := meta.(ClientSession).CloudFoundryServiceInstanceClient()
-
-	name := d.Get("name").(string)
-	spaceGUID := d.Get("space_guid").(string)
-	var parameters map[string]interface{}
-	var tags []string
+	svcInst.PlanGUID = servicePlan.GUID
 
 	if parameters, ok := d.GetOk("parameters"); ok {
-		parameters = parameters.(map[string]interface{})
+		svcInst.Params = parameters.(map[string]interface{})
 	}
 
 	if _, ok := d.GetOk("tags"); ok {
-		tags = getServiceTags(d)
+		svcInst.Tags = getServiceTags(d)
 	}
 
-	service, err := serviceInst.Create(name, servicePlan.GUID, spaceGUID, parameters, tags)
+	service, err := serviceInst.Create(svcInst)
 	if err != nil {
 		return fmt.Errorf("Error creating service: %s", err)
 	}
@@ -123,6 +127,7 @@ func resourceIBMCloudCfServiceInstanceRead(d *schema.ResourceData, meta interfac
 
 	d.Set("service_plan_guid", service.Entity.ServicePlanGUID)
 	d.Set("credentials", service.Entity.Credentials)
+	d.Set("tags", service.Entity.Tags)
 
 	return nil
 }
@@ -132,11 +137,10 @@ func resourceIBMCloudCfServiceInstanceUpdate(d *schema.ResourceData, meta interf
 
 	serviceGUID := d.Id()
 
-	var name, planguid string
-	var parameters map[string]interface{}
-	var tags []string
-
-	name = d.Get("name").(string)
+	updateReq := cfv2.ServiceInstanceUpdateRequest{}
+	if d.HasChange("name") {
+		updateReq.Name = helpers.String(d.Get("name").(string))
+	}
 
 	if d.HasChange("plan") {
 		plan := d.Get("plan").(string)
@@ -152,19 +156,20 @@ func resourceIBMCloudCfServiceInstanceUpdate(d *schema.ResourceData, meta interf
 		if err != nil {
 			return fmt.Errorf("Error retrieving plan: %s", err)
 		}
-		planguid = servicePlan.GUID
+		updateReq.PlanGUID = helpers.String(servicePlan.GUID)
 
 	}
 
 	if d.HasChange("parameters") {
-		parameters = d.Get("parameters").(map[string]interface{})
+		updateReq.Params = d.Get("parameters").(map[string]interface{})
 	}
 
 	if d.HasChange("tags") {
-		tags = getServiceTags(d)
+		tags := getServiceTags(d)
+		updateReq.Tags = &tags
 	}
 
-	_, err := serviceClient.Update(name, serviceGUID, planguid, parameters, tags)
+	_, err := serviceClient.Update(serviceGUID, updateReq)
 	if err != nil {
 		return fmt.Errorf("Error updating service: %s", err)
 	}

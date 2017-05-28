@@ -73,7 +73,7 @@ func resourceIBMCloudCfRouteCreate(d *schema.ResourceData, meta interface{}) err
 	}
 
 	if port, ok := d.GetOk("port"); ok {
-		params.Port = port.(int)
+		params.Port = helpers.Int(port.(int))
 	}
 
 	if path, ok := d.GetOk("path"); ok {
@@ -102,7 +102,9 @@ func resourceIBMCloudCfRouteRead(d *schema.ResourceData, meta interface{}) error
 	d.Set("host", route.Entity.Host)
 	d.Set("space_guid", route.Entity.SpaceGUID)
 	d.Set("domain_guid", route.Entity.DomainGUID)
-	d.Set("port", route.Entity.Port)
+	if route.Entity.Port != nil {
+		d.Set("port", route.Entity.Port)
+	}
 	d.Set("path", route.Entity.Path)
 
 	return nil
@@ -112,7 +114,6 @@ func resourceIBMCloudCfRouteUpdate(d *schema.ResourceData, meta interface{}) err
 	routeClient := meta.(ClientSession).CloudFoundryRouteClient()
 
 	routeGUID := d.Id()
-
 	params := v2.RouteUpdateRequest{}
 
 	if d.HasChange("host") {
@@ -131,7 +132,6 @@ func resourceIBMCloudCfRouteUpdate(d *schema.ResourceData, meta interface{}) err
 	if err != nil {
 		return fmt.Errorf("Error updating route: %s", err)
 	}
-
 	return resourceIBMCloudCfRouteRead(d, meta)
 }
 

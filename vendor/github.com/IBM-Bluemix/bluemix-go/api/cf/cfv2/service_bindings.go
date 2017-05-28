@@ -2,6 +2,7 @@ package cfv2
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/IBM-Bluemix/bluemix-go/client"
 	"github.com/IBM-Bluemix/bluemix-go/rest"
@@ -64,6 +65,7 @@ type ServiceBindings interface {
 	Create(req ServiceBindingRequest) (*ServiceBindingFields, error)
 	Get(guid string) (*ServiceBindingFields, error)
 	Delete(guid string, async bool) error
+	List(filters ...string) ([]ServiceBinding, error)
 }
 
 type serviceBinding struct {
@@ -109,4 +111,34 @@ func (r *serviceBinding) Delete(guid string, async bool) error {
 	path := httpReq.URL.String()
 	_, err = r.client.Delete(path)
 	return err
+}
+
+func (r *serviceBinding) List(filters ...string) ([]ServiceBinding, error) {
+	rawURL := "/v2/service_bindings"
+	req := rest.GetRequest(rawURL)
+	if len(filters) > 0 {
+		req.Query("q", strings.Join(filters, ""))
+	}
+	httpReq, err := req.Build()
+	if err != nil {
+		return nil, err
+	}
+	path := httpReq.URL.String()
+	bindings, err := listServiceBindingWithPath(r.client, path)
+	if err != nil {
+		return nil, err
+	}
+	return bindings, nil
+}
+
+func listServiceBindingWithPath(c *client.Client, path string) ([]ServiceBinding, error) {
+	var sb []ServiceBinding
+	_, err := c.GetPaginated(path, ServiceBindingResource{}, func(resource interface{}) bool {
+		if sbResource, ok := resource.(ServiceBindingResource); ok {
+			sb = append(sb, sbResource.ToFields())
+			return true
+		}
+		return false
+	})
+	return sb, err
 }
