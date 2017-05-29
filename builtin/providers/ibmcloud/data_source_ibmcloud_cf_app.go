@@ -34,34 +34,15 @@ func dataSourceIBMCloudCfApp() *schema.Resource {
 				Type:        schema.TypeInt,
 				Computed:    true,
 			},
-			"command": {
-				Description: "The initial command for the app",
-				Type:        schema.TypeString,
-				Computed:    true,
-			},
 			"buildpack": {
 				Description: "Buildpack to build the app. 3 options: a) Blank means autodetection; b) A Git Url pointing to a buildpack; c) Name of an installed buildpack.",
 				Type:        schema.TypeString,
-				Computed:    true,
-			},
-			"diego": {
-				Description: "Use diego to stage and to run when available",
-				Type:        schema.TypeBool,
 				Computed:    true,
 			},
 			"environment_json": {
 				Description: "Key/value pairs of all the environment variables to run in your app. Does not include any system or service variables.",
 				Type:        schema.TypeMap,
 				Computed:    true,
-			},
-			"ports": {
-				Description: "Ports on which application may listen. Overwrites previously configured ports. Ports must be in range 1024-65535. Supported for Diego only.",
-				Type:        schema.TypeSet,
-				Computed:    true,
-				Elem:        &schema.Schema{Type: schema.TypeInt},
-				Set: func(v interface{}) int {
-					return v.(int)
-				},
 			},
 			"route_guid": {
 				Description: "Define the route guids which should be bound to the application.",
@@ -104,18 +85,10 @@ func dataSourceIBMCloudCfAppRead(d *schema.ResourceData, meta interface{}) error
 
 	d.SetId(app.GUID)
 	d.Set("memory", app.Memory)
-	d.Set("instances", app.Instances)
 	d.Set("disk_quota", app.DiskQuota)
-	d.Set("ports", flattenPort(app.Ports))
-	if app.Command != nil {
-		d.Set("command", app.Command)
-	}
-
 	if app.BuildPack != nil {
 		d.Set("buildpack", app.BuildPack)
 	}
-
-	d.Set("diego", app.Diego)
 	d.Set("environment_json", app.EnvironmentJSON)
 	d.Set("package_state", app.PackageState)
 	d.Set("state", app.State)

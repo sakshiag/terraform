@@ -41,6 +41,14 @@ func TestAccIBMCloudCFApp_Basic(t *testing.T) {
 	})
 }
 
+func TestAccIBMCloudCFApp_with_routes(t *testing.T) {
+
+}
+
+func TestAccIBMCloudCFApp_with_service_instances(t *testing.T) {
+
+}
+
 func testAccCheckIBMCloudCFAppDestroy(s *terraform.State) error {
 
 	appClient := testAccProvider.Meta().(ClientSession).CloudFoundryAppClient()
