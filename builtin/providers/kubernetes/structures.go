@@ -338,6 +338,7 @@ func expandLocalObjectReferenceArray(in []interface{}) []api.LocalObjectReferenc
 	if len(in) < 1 {
 		return att
 	}
+	att = make([]api.LocalObjectReference, len(in))
 	for i, c := range in {
 		p := c.(map[string]interface{})
 		if name, ok := p["name"]; ok {
