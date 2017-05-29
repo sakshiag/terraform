@@ -1319,10 +1319,10 @@
 			"revisionTime": "2016-07-14T17:28:59Z"
 		},
 		{
-			"checksumSHA1": "cSJrzeVJLa9x2xoVqrJLz2Y+l0Y=",
+			"checksumSHA1": "ySg+wxsWmk5AipJDFGGG2JhxIPU=",
 			"path": "github.com/cyberdelia/heroku-go/v3",
-			"revision": "58deda4c1fb0b4803387b29dc916c21887b81954",
-			"revisionTime": "2017-03-06T18:52:00Z"
+			"revision": "84e6d0171b96992458bcbc5609d28b35edf26f00",
+			"revisionTime": "2017-05-16T20:23:11Z"
 		},
 		{
 			"checksumSHA1": "/5cvgU+J4l7EhMXTK76KaCAfOuU=",
@@ -1374,11 +1374,17 @@
 			"revisionTime": "2016-06-17T17:01:58Z"
 		},
 		{
-			"checksumSHA1": "tOlmmumwQ9pCv5cQgs+W7sgPVgU=",
+			"checksumSHA1": "uuenX+nAyhQfYqedBhQ+yhBh1mA=",
 			"comment": "v0.9.0-20-gf75d769",
 			"path": "github.com/digitalocean/godo",
-			"revision": "767976000cc435d38646653b52be9be572727f30",
-			"revisionTime": "2017-02-14T20:43:37Z"
+			"revision": "83908b1ddd666d08a9b020c697b55ae3895be2fd",
+			"revisionTime": "2017-04-26T22:25:10Z"
+		},
+		{
+			"checksumSHA1": "YpWoCsk+u9H5ctWNKKSVPf4b2as=",
+			"path": "github.com/digitalocean/godo/context",
+			"revision": "83908b1ddd666d08a9b020c697b55ae3895be2fd",
+			"revisionTime": "2017-04-26T22:25:10Z"
 		},
 		{
 			"checksumSHA1": "1PlWp7ZA8IBK6J6XcIwRpoSTNoc=",
@@ -1607,10 +1613,10 @@
 			"revisionTime": "2016-11-07T00:24:06Z"
 		},
 		{
-			"checksumSHA1": "xKB/9qxVhWxAERkjZLYfuUBR4P8=",
+			"checksumSHA1": "cuTQkSEiIoMhDhB7xCbYDwDhrgw=",
 			"path": "github.com/gophercloud/gophercloud",
-			"revision": "0f64da0e36de86a0ca1a8f2fc1b0570a0d3f7504",
-			"revisionTime": "2017-03-10T01:59:53Z"
+			"revision": "c5dfe1bc7b150a98b1578bb32f7c138ff9568f1d",
+			"revisionTime": "2017-05-15T02:07:51Z"
 		},
 		{
 			"checksumSHA1": "0KdIjTH5IO8hlIl8kdfI6313GiY=",
@@ -1713,6 +1719,18 @@
 			"path": "github.com/gophercloud/gophercloud/openstack/compute/v2/servers",
 			"revision": "0f64da0e36de86a0ca1a8f2fc1b0570a0d3f7504",
 			"revisionTime": "2017-03-10T01:59:53Z"
+		},
+		{
+			"checksumSHA1": "Mugw0ROrabHNN4nG9YlimPbyENk=",
+			"path": "github.com/gophercloud/gophercloud/openstack/dns/v2/recordsets",
+			"revision": "5a6e13341e63bd202a0da558a2a7187720042676",
+			"revisionTime": "2017-05-22T01:35:44Z"
+		},
+		{
+			"checksumSHA1": "OGb3suDcMij0bnu0r/eQgWAX5Ho=",
+			"path": "github.com/gophercloud/gophercloud/openstack/dns/v2/zones",
+			"revision": "c5dfe1bc7b150a98b1578bb32f7c138ff9568f1d",
+			"revisionTime": "2017-05-15T02:07:51Z"
 		},
 		{
 			"checksumSHA1": "1sVqsZBZBNhDXLY9XzjMkcOkcbg=",
@@ -1823,16 +1841,16 @@
 			"revisionTime": "2017-03-10T01:59:53Z"
 		},
 		{
-			"checksumSHA1": "FKwSMrpQf7b3TcCOQfh+ovoBShA=",
+			"checksumSHA1": "qabBGU1tfT99h1YXyxO9nGxMghE=",
 			"path": "github.com/gophercloud/gophercloud/openstack/networking/v2/extensions/security/groups",
-			"revision": "0f64da0e36de86a0ca1a8f2fc1b0570a0d3f7504",
-			"revisionTime": "2017-03-10T01:59:53Z"
+			"revision": "3027adb1ce72bc52b87b2decccc7852574b90031",
+			"revisionTime": "2017-05-24T13:09:59Z"
 		},
 		{
 			"checksumSHA1": "E/5q7DTCoOD15K1KGFXSwFCGDE4=",
 			"path": "github.com/gophercloud/gophercloud/openstack/networking/v2/extensions/security/rules",
-			"revision": "ce1e02c3ccfdb7fab257340dc4d603ec3035fa11",
-			"revisionTime": "2017-05-08T02:10:49Z"
+			"revision": "3027adb1ce72bc52b87b2decccc7852574b90031",
+			"revisionTime": "2017-05-24T13:09:59Z"
 		},
 		{
 			"checksumSHA1": "zKOhFTL5BDZPMC58ZzZkryjskno=",
@@ -1847,10 +1865,10 @@
 			"revisionTime": "2017-03-10T01:59:53Z"
 		},
 		{
-			"checksumSHA1": "wY0MY7RpX0Z2Y0rMmrAuYS6cHYA=",
+			"checksumSHA1": "mNRf4F3OjUIivhWTPZD/FjJNuCk=",
 			"path": "github.com/gophercloud/gophercloud/openstack/networking/v2/subnets",
-			"revision": "0f64da0e36de86a0ca1a8f2fc1b0570a0d3f7504",
-			"revisionTime": "2017-03-10T01:59:53Z"
+			"revision": "4f943e86d0a2c2e1c5c040e00a1358079c0881a1",
+			"revisionTime": "2017-05-24T02:11:01Z"
 		},
 		{
 			"checksumSHA1": "LtdQKIKKRKe6FOGdBvrBz/bg1Gc=",
@@ -2200,10 +2218,10 @@
 			"revisionTime": "2017-03-08T19:39:51Z"
 		},
 		{
-			"checksumSHA1": "hLWb02UbO5qsAjY/ybjHn/hpTII=",
+			"checksumSHA1": "NWP140S/k5J2L9nLVVgrt9rEh1g=",
 			"path": "github.com/hashicorp/terraform-provider-opc/opc",
-			"revision": "6460e4eec5cffcc804fe9911860df0c13c5d945f",
-			"revisionTime": "2017-05-10T18:47:02Z"
+			"revision": "bf837a8edaadefbac871feb8560faa60f811c8d9",
+			"revisionTime": "2017-05-23T21:46:41Z"
 		},
 		{
 			"checksumSHA1": "2fkVZIzvxIGBLhSiVnkTgGiqpQ4=",
@@ -2236,10 +2254,10 @@
 			"revisionTime": "2016-07-20T23:31:40Z"
 		},
 		{
-			"checksumSHA1": "jq2E42bB0kwKaerHXwJslUea4eM=",
+			"checksumSHA1": "HtxHX0u0oN+aiTN1Pd67Y4ilMdI=",
 			"path": "github.com/henrikhodne/go-librato/librato",
-			"revision": "6e9aa4b1a8a8b735ad14b4f1c9542ef183e82dc2",
-			"revisionTime": "2016-08-11T07:26:26Z"
+			"revision": "1bca649ee479cdfcf2e19f30ecb74b6f23345e5a",
+			"revisionTime": "2017-05-13T14:06:44Z"
 		},
 		{
 			"checksumSHA1": "K6exl2ouL7d8cR2i378EzZOdRVI=",
@@ -3104,10 +3122,10 @@
 			"revisionTime": "2017-05-11T07:54:48Z"
 		},
 		{
-			"checksumSHA1": "1mR4/KWIQEL8rzyDlCR4CRrTqGQ=",
+			"checksumSHA1": "kFgPDwAreL0jsQ7+FoQhRJfbN4I=",
 			"path": "github.com/xanzy/go-gitlab",
-			"revision": "5b756e2fdc9f21fd4791fa1453b8fe01af0f82e2",
-			"revisionTime": "2017-03-22T12:21:15Z"
+			"revision": "e6c11edf9a78fdfa4e0fbbc8263e325b5ae50100",
+			"revisionTime": "2017-05-18T07:32:22Z"
 		},
 		{
 			"checksumSHA1": "iHiMTBffQvWYlOLu3130JXuQpgQ=",
