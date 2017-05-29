@@ -19,7 +19,8 @@ func TestAccIBMCloudInfraVirtualGuestDataSource_basic(t *testing.T) {
 			resource.TestStep{
 				Config: testAccCheckIBMCloudInfraVirtualGuestDataSourceConfigBasic(hostname, domain),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("data.ibmcloud_infra_virtual_guest.tf-vg-ds-acc-test", "status", "RUNNING"),
+					resource.TestCheckResourceAttr("data.ibmcloud_infra_virtual_guest.tf-vg-ds-acc-test", "power_state", "RUNNING"),
+					resource.TestCheckResourceAttr("data.ibmcloud_infra_virtual_guest.tf-vg-ds-acc-test", "status", "ACTIVE"),
 				),
 			},
 		},
