@@ -29,7 +29,6 @@ func TestAccIBMCloudCFAppDataSource_Basic(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.ibmcloud_cf_app.ds", "id"),
 					resource.TestCheckResourceAttr("data.ibmcloud_cf_app.ds", "name", appName),
 					resource.TestCheckResourceAttr("data.ibmcloud_cf_app.ds", "buildpack", "sdk-for-nodejs"),
-					resource.TestCheckResourceAttr("data.ibmcloud_cf_app.ds", "diego", "true"),
 					resource.TestCheckResourceAttr("data.ibmcloud_cf_app.ds", "environment_json.%", "1"),
 					resource.TestCheckResourceAttr("data.ibmcloud_cf_app.ds", "environment_json.test", "test1"),
 					resource.TestCheckResourceAttr("data.ibmcloud_cf_app.ds", "state", "STARTED"),
@@ -81,7 +80,6 @@ resource "ibmcloud_cf_app" "app" {
   service_instance_guid = ["${ibmcloud_cf_service_instance.service.id}"]
   disk_quota            = 512
   memory                = 128
-  ports                 = [9080]
   instances             = 1
   disk_quota            = 512
 
