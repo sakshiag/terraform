@@ -13,16 +13,14 @@ Create, update, or delete CF private domain on IBM Bluemix.
 ## Example Usage
 
 ```hcl
-	
 data "ibmcloud_cf_org" "orgdata" {
-		org    = "someexample.com"
-	}
-		
-resource "ibmcloud_cf_private_domain" "domain" {
-		name              = "foo.com"
-		org_guid          = "${data.ibmcloud_cf_org.orgdata.id}"
-	}
+  org = "someexample.com"
+}
 
+resource "ibmcloud_cf_private_domain" "domain" {
+  name     = "foo.com"
+  org_guid = "${data.ibmcloud_cf_org.orgdata.id}"
+}
 ```
 
 ## Argument Reference

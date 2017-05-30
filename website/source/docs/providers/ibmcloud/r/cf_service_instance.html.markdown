@@ -14,18 +14,17 @@ Crate, update, or delete CF service instances on IBM Bluemix.
 
 ```hcl
 data "ibmcloud_cf_space" "spacedata" {
-  space  = "prod"
-  org    = "somexample.com"
+  space = "prod"
+  org   = "somexample.com"
 }
 
 resource "ibmcloud_cf_service_instance" "service_instance" {
-  name              = "test"
-  space_guid        = "${data.ibmcloud_cf_space.spacedata.id}"
-  service           = "cloudantNoSQLDB"
-  plan              = "Lite"
-  tags              = ["cluster-service", "cluster-bind"]
+  name       = "test"
+  space_guid = "${data.ibmcloud_cf_space.spacedata.id}"
+  service    = "cloudantNoSQLDB"
+  plan       = "Lite"
+  tags       = ["cluster-service", "cluster-bind"]
 }
-
 ```
 
 ## Argument Reference

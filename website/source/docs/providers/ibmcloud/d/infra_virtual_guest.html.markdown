@@ -14,9 +14,9 @@ Import the details of an existing virtual guest as a read-only data source. The 
 
 ```hcl
 data "ibmcloud_infra_virtual_guest" "virtual_guest" {
-	hostname = "jumpbox"
-	domain = "example.com"
-	most_recent = true
+  hostname    = "jumpbox"
+  domain      = "example.com"
+  most_recent = true
 }
 ```
 

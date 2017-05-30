@@ -16,10 +16,10 @@ Import details about the worker node of a Kubernetes cluster as a read-only data
 
 ```hcl
 data "ibmcloud_cs_cluster" "cluster_foo" {
-    worker_id = "dev-mex10-pa70c4414695c041518603bfd0cd6e333a-w1"
-    org_guid = "test"
-	space_guid = "test_space"
-	account_guid = "test_acc"
+  worker_id    = "dev-mex10-pa70c4414695c041518603bfd0cd6e333a-w1"
+  org_guid     = "test"
+  space_guid   = "test_space"
+  account_guid = "test_acc"
 }
 ```
 

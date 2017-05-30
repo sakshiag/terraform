@@ -13,12 +13,10 @@ Create, update, or delete CF shared domain on IBM Bluemix.
 ## Example Usage
 
 ```hcl
-	
 resource "ibmcloud_cf_shared_domain" "domain" {
-		name              = "foo.com"
-		router_group_guid = "3hG5jkjk4k34JH5666"
-	}
-
+  name              = "foo.com"
+  router_group_guid = "3hG5jkjk4k34JH5666"
+}
 ```
 
 ## Argument Reference

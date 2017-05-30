@@ -13,23 +13,21 @@ Create, update, or delete CF route on IBM Bluemix.
 ## Example Usage
 
 ```hcl
-	
 data "ibmcloud_cf_space" "spacedata" {
-		space  = "space"
-		org    = "someexample.com"
-	}
-		
-data "ibmcloud_cf_shared_domain" "domain" {
-		name        = "mybluemix.net"
-	}
-		
-resource "ibmcloud_cf_route" "route" {
-		domain_guid       = "${data.ibmcloud_cf_shared_domain.domain.id}"
-		space_guid        = "${data.ibmcloud_cf_space.spacedata.id}"
-		host              = "somehost172"
-		path              = "/app"
-	}
+  space = "space"
+  org   = "someexample.com"
+}
 
+data "ibmcloud_cf_shared_domain" "domain" {
+  name = "mybluemix.net"
+}
+
+resource "ibmcloud_cf_route" "route" {
+  domain_guid = "${data.ibmcloud_cf_shared_domain.domain.id}"
+  space_guid  = "${data.ibmcloud_cf_space.spacedata.id}"
+  host        = "somehost172"
+  path        = "/app"
+}
 ```
 
 ## Argument Reference

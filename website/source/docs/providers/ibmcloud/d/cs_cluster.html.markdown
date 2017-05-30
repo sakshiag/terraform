@@ -16,10 +16,10 @@ Import the details for a Kubernetes cluster on IBM Bluemix as a read-only data s
 
 ```hcl
 data "ibmcloud_cs_cluster" "cluster_foo" {
-    cluster_name_id = "FOO"
-    org_guid = "test"
-	space_guid = "test_space"
-	account_guid = "test_acc"
+  cluster_name_id = "FOO"
+  org_guid        = "test"
+  space_guid      = "test_space"
+  account_guid    = "test_acc"
 }
 ```
 

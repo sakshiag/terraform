@@ -14,11 +14,11 @@ Import the details of an existing IBM Bluemix account as a read-only data source
 
 ```hcl
 data "ibmcloud_cf_org" "orgData" {
-    org = "example.com"
+  org = "example.com"
 }
 
 data "ibmcloud_cf_account" "accountData" {
-    org_guid = "${data.ibmcloud_cf_org.orgData.id}"
+  org_guid = "${data.ibmcloud_cf_org.orgData.id}"
 }
 ```
 

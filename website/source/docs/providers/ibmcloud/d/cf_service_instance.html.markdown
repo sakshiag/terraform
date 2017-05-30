@@ -14,7 +14,7 @@ Import the details of an existing Cloud Foundry service instance from IBM Bluemi
 
 ```hcl
 data "ibmcloud_cf_service_instance" "serviceInstance" {
-  name    = "mycloudantdb"
+  name = "mycloudantdb"
 }
 ```
 

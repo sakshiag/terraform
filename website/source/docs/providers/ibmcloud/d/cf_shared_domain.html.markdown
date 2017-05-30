@@ -13,11 +13,9 @@ Import the details of an existing IBM Bluemix shared domain as a read-only data 
 ## Example Usage
 
 ```hcl
-
 data "ibmcloud_cf_shared_domain" "shared_domain" {
-	name = "foo.com"
+  name = "foo.com"
 }
-
 ```
 
 ## Argument Reference

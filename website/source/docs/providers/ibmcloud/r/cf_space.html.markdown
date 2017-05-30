@@ -13,13 +13,11 @@ Create, update, or delete CF spaces for IBM Bluemix.
 ## Example Usage
 
 ```hcl
-
 resource "ibmcloud_cf_space" "space" {
-	name = "myspace"
-	org = "myorg"
-	space_quota = "myspacequota"
+  name        = "myspace"
+  org         = "myorg"
+  space_quota = "myspacequota"
 }
-
 ```
 
 ## Argument Reference

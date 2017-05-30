@@ -14,15 +14,13 @@ Create, update, or delete CF service keys for IBM Bluemix.
 
 ```hcl
 data "ibmcloud_cf_service_instance" "service_instance" {
-	name = "mycloudant"
+  name = "mycloudant"
 }
-
 
 resource "ibmcloud_cf_service_key" "serviceKey" {
-	name = "mycloudantkey"
-	service_instance_guid = "${data.ibmcloud_cf_service_instance.service_instance.id}"
+  name                  = "mycloudantkey"
+  service_instance_guid = "${data.ibmcloud_cf_service_instance.service_instance.id}"
 }
-
 ```
 
 ## Argument Reference

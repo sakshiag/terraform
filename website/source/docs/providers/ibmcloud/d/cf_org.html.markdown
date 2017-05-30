@@ -14,7 +14,7 @@ Import the details of an existing IBM Bluemix org as a read-only data source. Th
 
 ```hcl
 data "ibmcloud_cf_org" "orgdata" {
-  org    = "example.com"
+  org = "example.com"
 }
 ```
 

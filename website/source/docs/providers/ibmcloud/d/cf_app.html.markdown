@@ -13,13 +13,10 @@ Import the details of an existing IBM Bluemix app as a read-only data source. Th
 ## Example Usage
 
 ```hcl
-
-	data "ibmcloud_cf_app" "testacc_ds_app" {
-		name = "my-app"
-		space_guid = "${ibmcloud_cf_app.app.space_guid}"
+data "ibmcloud_cf_app" "testacc_ds_app" {
+  name       = "my-app"
+  space_guid = "${ibmcloud_cf_app.app.space_guid}"
 }
-
-
 ```
 
 ## Argument Reference

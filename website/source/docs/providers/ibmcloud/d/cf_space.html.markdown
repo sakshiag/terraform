@@ -14,8 +14,8 @@ Import the details of an existing IBM Bluemix space as a read-only data source. 
 
 ```hcl
 data "ibmcloud_cf_space" "spaceData" {
-  space  = "prod"
-  org    = "someexample.com"
+  space = "prod"
+  org   = "someexample.com"
 }
 ```
 

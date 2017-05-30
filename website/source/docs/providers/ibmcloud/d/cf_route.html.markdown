@@ -13,15 +13,12 @@ Import the details of an existing IBM Bluemix route as a read-only data source. 
 ## Example Usage
 
 ```hcl
-
-	data "ibmcloud_cf_route" "route" {
-		domain_guid       = "${data.ibmcloud_cf_shared_domain.domain.id}"
-		space_guid        = "${data.ibmcloud_cf_space.spacedata.id}"
-		host              = "somehost"
-		path              = "/app"
-	}
-
-
+data "ibmcloud_cf_route" "route" {
+  domain_guid = "${data.ibmcloud_cf_shared_domain.domain.id}"
+  space_guid  = "${data.ibmcloud_cf_space.spacedata.id}"
+  host        = "somehost"
+  path        = "/app"
+}
 ```
 
 ## Argument Reference

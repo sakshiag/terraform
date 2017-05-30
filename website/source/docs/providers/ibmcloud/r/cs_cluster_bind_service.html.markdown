@@ -16,13 +16,13 @@ In the following example, you can bind a service to a cluster.
 
 ```hcl
 resource "ibmcloud_cs_cluster_service_bind" "bind_service" {
-  cluster_name_id          = "cluster_name"
+  cluster_name_id             = "cluster_name"
   service_instance_space_guid = "space_guid"
-  service_instance_name_id = "service_name"
-  namespace_id 			   = "default"
-  org_guid = "test"
-  space_guid = "test_space"
-  account_guid = "test_account"
+  service_instance_name_id    = "service_name"
+  namespace_id                = "default"
+  org_guid                    = "test"
+  space_guid                  = "test_space"
+  account_guid                = "test_account"
 }
 ```
 

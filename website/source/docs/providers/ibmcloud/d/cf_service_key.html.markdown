@@ -14,7 +14,7 @@ Import the details of an existing Cloud Foundry service key from IBM Bluemix as 
 
 ```hcl
 data "ibmcloud_cf_service_key" "serviceKeydata" {
-  name  = "mycloudantdbKey"
+  name                  = "mycloudantdbKey"
   service_instance_name = "mycloudantdb"
 }
 ```

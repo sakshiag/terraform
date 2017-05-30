@@ -14,7 +14,7 @@ Import the details of an existing Cloud Foundry service plan from IBM Bluemix as
 
 ```hcl
 data "ibmcloud_cf_service_plan" "service_plan" {
-  service  = "cleardb"
+  service = "cleardb"
   plan    = "spark"
 }
 ```
