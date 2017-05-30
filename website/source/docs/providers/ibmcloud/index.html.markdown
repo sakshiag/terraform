@@ -118,13 +118,13 @@ provider "ibmcloud" {
 
 The following arguments are supported in the `provider` block:
 
-* `bluemix_api_key` - (Optional) The Bluemix API Key. It must be provided, but it can also be sourced from the `BM_API_KEY` or `BLUEMIX_API_KEY` environment variable. The former variable has higher precedence. 
+* `bluemix_api_key` - (Optional) The Bluemix API Key. It must be provided, but it can also be sourced from the `BM_API_KEY` or `BLUEMIX_API_KEY` environment variable. The former variable has higher precedence. This key is required to provision any resource which are Cloud Foundry related or IBM Container service related, basically those with _ibmcloud_cf_ or _ibmcloud_cs_ prefix in the them. For example , _ibmcloud_cf_app_ and _ibmcloud_cs_cluster_.
 
 * `bluemix_timeout` - (Optional) The timeout, expressed in seconds, for the SoftLayer API key. It can also be sourced from the `BM_TIMEOUT`  or `BLUEMIX_TIMEOUT` environment variable. The former variable has higher precedence. Default value: `60`.
 
 * `softlayer_username` - (Optional) The SoftLayer user name. It must be provided, but it can also be sourced from the `SL_USERNAME` or `SOFTLAYER_USERNAME` environment variable. The former variable has higher precedence. 
 
-* `softlayer_api_key` - (Optional) The SoftLayer user name. It must be provided, but it can also be sourced from the `SL_API_KEY` or `SOFTLAYER_API_KEY` environment variable. The former variable has higher precedence. 
+* `softlayer_api_key` - (Optional) The SoftLayer user name. It must be provided, but it can also be sourced from the `SL_API_KEY` or `SOFTLAYER_API_KEY` environment variable. The former variable has higher precedence. This key is required to provision any resource which are SoftLayer related, basically those with _ibmcloud_infra_ prefix in them. For example, _ibmcloud_infra_virtual_guest_.
 
 * `softlayer_timeout` - (Optional) The timeout, expressed in seconds, for the SoftLayer API key. It can also be sourced from the `SL_TIMEOUT`  or `SOFTLAYER_TIMEOUT` environment variable. The former variable has higher precedence. Default value: `60`.
 
